@@ -2,13 +2,13 @@
   <aside
     class="flex flex-col h-screen fixed left-0 top-0 z-50 transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] border-r shadow-2xl"
     :class="[
-      isOpen ? 'w-72' : 'w-20',
+      isOpen ? 'w-60' : 'w-20',
       'bg-white/80 dark:bg-[#09090b]/90 backdrop-blur-2xl border-gray-200 dark:border-white/10',
     ]"
   >
     <div
       class="h-24 flex items-center relative group transition-all duration-300"
-      :class="isOpen ? 'px-7 justify-between' : 'px-0 justify-center'"
+      :class="isOpen ? 'px-5 justify-between' : 'px-0 justify-center'"
     >
       <div class="flex items-center gap-3.5 overflow-hidden">
         <div
@@ -53,6 +53,7 @@
       <router-link
         to="/"
         class="nav-item group"
+        :class="{ 'ml-6': isOpen }"
         active-class="active"
         :title="!isOpen ? 'Dashboard' : ''"
       >
@@ -77,6 +78,7 @@
       <router-link
         to="/waferflatdata"
         class="nav-item group"
+        :class="{ 'ml-6': isOpen }"
         active-class="active"
         :title="!isOpen ? 'Wafer Data' : ''"
       >
@@ -86,11 +88,13 @@
           :class="isOpen ? 'opacity-100 ml-3' : 'opacity-0 w-0 overflow-hidden'"
           >Wafer Data</span
         >
+        <div class="active-indicator"></div>
       </router-link>
 
       <router-link
         to="/equipment-explorer"
         class="nav-item group"
+        :class="{ 'ml-6': isOpen }"
         active-class="active"
         :title="!isOpen ? 'Equip Specs' : ''"
       >
@@ -100,11 +104,13 @@
           :class="isOpen ? 'opacity-100 ml-3' : 'opacity-0 w-0 overflow-hidden'"
           >Equip Specs</span
         >
+        <div class="active-indicator"></div>
       </router-link>
 
       <router-link
         to="/performance-trend"
         class="nav-item group"
+        :class="{ 'ml-6': isOpen }"
         active-class="active"
         :title="!isOpen ? 'Performance' : ''"
       >
@@ -114,11 +120,13 @@
           :class="isOpen ? 'opacity-100 ml-3' : 'opacity-0 w-0 overflow-hidden'"
           >Performance</span
         >
+        <div class="active-indicator"></div>
       </router-link>
 
       <router-link
         to="/error-analytics"
         class="nav-item group"
+        :class="{ 'ml-6': isOpen }"
         active-class="active"
         :title="!isOpen ? 'Alerts' : ''"
       >
@@ -128,6 +136,7 @@
           :class="isOpen ? 'opacity-100 ml-3' : 'opacity-0 w-0 overflow-hidden'"
           >Alert History</span
         >
+        <div class="active-indicator"></div>
       </router-link>
     </nav>
 
@@ -177,33 +186,34 @@ const toggleSidebar = () => {
 </script>
 
 <style scoped>
-/* [수정] justify-start (기본) -> justify-center (사이드바 접힘) 로 전환되도록 CSS 수정 
-   flex 컨테이너에서 텍스트가 사라지면 아이콘만 남게 되어 중앙 정렬 효과를 냅니다.
-*/
+/* 네비게이션 아이템 기본 스타일 */
 .nav-item {
   @apply relative flex items-center px-4 py-3.5 rounded-xl text-slate-600 dark:text-slate-400 transition-all duration-300 ease-out hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-100 overflow-hidden;
-  /* 아이콘과 텍스트 사이 간격을 class 바인딩으로 처리했으므로 gap-3.5 제거하거나 동적 처리 */
 }
 
-/* 사이드바가 접혔을 때(.w-20) 아이콘 중앙 정렬을 위해 justify-center 강제 */
+/* 사이드바 접혔을 때 (.w-20) 아이콘 중앙 정렬 및 들여쓰기 제거 */
 aside.w-20 .nav-item {
   justify-content: center;
   padding-left: 0;
   padding-right: 0;
+  margin-left: 0 !important; /* 들여쓰기 강제 제거 */
 }
 
+/* 활성 상태 스타일 */
 .nav-item.active {
   @apply bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400;
 }
 
+/* 활성 상태 표시바 (왼쪽 파란색 바) 위치 미세 조정 */
 .active-indicator {
-  @apply absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-500 rounded-r-full scale-y-0 transition-transform duration-300;
+  @apply absolute left-[-0.5rem] top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-500 rounded-r-full scale-y-0 transition-transform duration-300;
 }
 
 .nav-item.active .active-indicator {
   @apply scale-y-100;
 }
 
+/* 스크롤바 숨기기 */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
