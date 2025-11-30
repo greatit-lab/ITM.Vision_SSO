@@ -15,22 +15,28 @@ import { EquipmentService } from './equipment/equipment.service';
 import { FiltersController } from './filters/filters.controller';
 import { FiltersService } from './filters/filters.service';
 
+// [추가] Wafer Module
+import { WaferController } from './wafer/wafer.controller';
+import { WaferService } from './wafer/wafer.service';
+
 @Module({
-  imports: [], 
+  imports: [],
   controllers: [
-    DashboardController,      // 추가됨
-    PerformanceController, 
-    ErrorController, 
-    EquipmentController, 
-    FiltersController
+    DashboardController,
+    PerformanceController,
+    ErrorController,
+    EquipmentController,
+    FiltersController,
+    WaferController, // [추가] WaferController 등록
   ],
   providers: [
-    PrismaService, 
-    DashboardService,         // 추가됨
-    PerformanceService, 
-    ErrorService, 
-    EquipmentService, 
-    FiltersService
+    PrismaService,
+    DashboardService,
+    PerformanceService,
+    ErrorService,
+    EquipmentService,
+    FiltersService,
+    WaferService, // [추가] WaferService 등록
   ],
 })
 export class AppModule {}
