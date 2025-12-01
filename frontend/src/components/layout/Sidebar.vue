@@ -5,21 +5,21 @@
     :class="isOpen ? 'w-60' : 'w-[70px]'"
   >
     <div
-      class="relative flex items-center h-16 transition-all duration-300 border-b border-slate-100 dark:border-slate-800/50"
+      class="h-16 flex items-center relative transition-all duration-300 border-b border-slate-100 dark:border-slate-800/50"
       :class="isOpen ? 'px-5 justify-start' : 'px-0 justify-center'"
     >
       <div class="flex items-center gap-3 overflow-hidden">
         <div
-          class="flex items-center justify-center flex-shrink-0 w-8 h-8 text-white rounded-lg shadow-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shadow-indigo-500/20"
+          class="w-8 h-8 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white flex-shrink-0"
         >
-          <i class="text-sm pi pi-bolt"></i>
+          <i class="pi pi-bolt text-sm"></i>
         </div>
         <div
           class="flex flex-col transition-opacity duration-300"
           :class="isOpen ? 'opacity-100' : 'opacity-0 w-0 hidden'"
         >
           <span
-            class="text-base font-extrabold leading-none tracking-tight text-slate-800 dark:text-slate-100 whitespace-nowrap"
+            class="text-base font-extrabold tracking-tight text-slate-800 dark:text-slate-100 whitespace-nowrap leading-none"
             >ITM Dash</span
           >
           <span
@@ -31,7 +31,7 @@
 
       <button
         @click="toggleSidebar"
-        class="absolute z-50 flex items-center justify-center w-5 h-5 transition-all duration-200 transform -translate-y-1/2 bg-white border rounded-full shadow-sm cursor-pointer -right-3 top-1/2 dark:bg-zinc-800 border-slate-200 dark:border-zinc-700 text-slate-400 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 hover:scale-110 hover:border-indigo-200 dark:hover:border-indigo-500/50"
+        class="absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-all duration-200 shadow-sm z-50 transform hover:scale-110 hover:border-indigo-200 dark:hover:border-indigo-500/50 cursor-pointer"
         :title="isOpen ? 'Collapse Sidebar' : 'Expand Sidebar'"
       >
         <i
@@ -41,7 +41,7 @@
       </button>
     </div>
 
-    <nav class="flex-1 px-3 py-2 overflow-y-auto scrollbar-hide">
+    <nav class="flex-1 overflow-y-auto py-2 px-3 scrollbar-hide">
       <div class="mb-3">
         <div
           class="mb-1 px-2 text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-all duration-300 whitespace-nowrap"
@@ -51,14 +51,14 @@
         </div>
         <router-link
           to="/"
-          class="flex items-center px-3 py-2 overflow-hidden text-sm font-bold transition-all duration-200 ease-out rounded-lg cursor-pointer select-none text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-100"
-          :class="{ 'justify-center px-0': !isOpen }"
-          active-class="text-indigo-600 shadow-sm bg-indigo-50 dark:bg-indigo-500/10 dark:text-indigo-300"
+          class="flex items-center py-2 rounded-lg text-sm font-bold transition-all duration-200 ease-out text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-100 overflow-hidden select-none cursor-pointer"
+          :class="isOpen ? 'pl-6 pr-3' : 'justify-center px-0'"
+          active-class="bg-indigo-50 text-indigo-600 shadow-sm dark:bg-indigo-500/10 dark:text-indigo-300"
           :title="!isOpen ? 'Overview' : ''"
         >
           <i class="pi pi-objects-column text-[17px] flex-shrink-0"></i>
           <span
-            class="transition-all duration-300 whitespace-nowrap"
+            class="whitespace-nowrap transition-all duration-300"
             :class="
               isOpen
                 ? 'opacity-100 ml-2.5 w-auto translate-x-0'
@@ -93,14 +93,14 @@
             v-for="item in group.items"
             :key="item.to"
             :to="item.to"
-            class="flex items-center py-2 pl-6 pr-3 overflow-hidden text-sm font-bold transition-all duration-200 ease-out rounded-lg cursor-pointer select-none text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-100"
-            :class="{ 'justify-center px-0': !isOpen }"
-            active-class="text-indigo-600 shadow-sm bg-indigo-50 dark:bg-indigo-500/10 dark:text-indigo-300"
+            class="flex items-center py-2 rounded-lg text-sm font-bold transition-all duration-200 ease-out text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-100 overflow-hidden select-none cursor-pointer"
+            :class="isOpen ? 'pl-6 pr-3' : 'justify-center px-0'"
+            active-class="bg-indigo-50 text-indigo-600 shadow-sm dark:bg-indigo-500/10 dark:text-indigo-300"
             :title="!isOpen ? item.label : ''"
           >
             <i :class="[item.icon, 'text-[17px] flex-shrink-0']"></i>
             <span
-              class="transition-all duration-300 whitespace-nowrap"
+              class="whitespace-nowrap transition-all duration-300"
               :class="
                 isOpen
                   ? 'opacity-100 ml-2.5 w-auto translate-x-0'
@@ -115,14 +115,14 @@
     </nav>
 
     <div
-      class="p-3 transition-all duration-300 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm"
+      class="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm transition-all duration-300"
       :class="isOpen ? '' : 'flex justify-center px-0'"
     >
       <div
         class="flex items-center gap-3 p-1.5 rounded-lg cursor-pointer hover:bg-white dark:hover:bg-slate-700/50 transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-600 shadow-sm hover:shadow-md group"
       >
         <div
-          class="flex items-center justify-center flex-shrink-0 w-8 h-8 text-xs font-bold text-white transition-transform rounded-full shadow-md bg-slate-800 dark:bg-slate-200 dark:text-slate-900 group-hover:scale-105"
+          class="w-8 h-8 rounded-full bg-slate-800 dark:bg-slate-200 flex items-center justify-center text-white dark:text-slate-900 font-bold shadow-md flex-shrink-0 group-hover:scale-105 transition-transform text-xs"
         >
           A
         </div>
@@ -131,7 +131,7 @@
           :class="isOpen ? 'w-auto opacity-100' : 'w-0 opacity-0 hidden'"
         >
           <p
-            class="text-xs font-bold truncate text-slate-700 dark:text-slate-200"
+            class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate"
           >
             Administrator
           </p>
@@ -226,12 +226,6 @@ const toggleGroup = (group: string) => {
 </script>
 
 <style scoped>
-/* [오류 해결] 
-  스타일 태그 내용을 비웠습니다.
-  모든 스타일은 위쪽 template 태그의 Tailwind Utility Class로 이동되어
-  더 이상 CSS 린트 오류가 발생하지 않습니다.
-*/
-
 /* 스크롤바 숨기기 (표준 CSS) */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
