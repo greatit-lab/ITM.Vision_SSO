@@ -1,9 +1,7 @@
-// src/equipment/equipment.service.ts
+// backend/src/equipment/equipment.service.ts
 import { Injectable } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { PrismaService } from '../prisma.service';
 
-// [1] DB 조회 결과 인터페이스 (Raw Data)
 export interface EquipmentRaw {
   eqpid: string;
   pc_name: string;
@@ -27,7 +25,6 @@ export interface EquipmentRaw {
   db_version: string;
 }
 
-// [2] API 반환 데이터 인터페이스 (DTO)
 export interface EquipmentDto {
   eqpId: string;
   pcName: string;
@@ -53,15 +50,13 @@ export interface EquipmentDto {
 
 @Injectable()
 export class EquipmentService {
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  // [수정 1] 메서드 이름을 Controller에 맞춰 'getDetails'로 변경
   async getDetails(
     site?: string,
     sdwt?: string,
     eqpId?: string,
   ): Promise<EquipmentDto[]> {
-    // 1. 동적 쿼리 생성
     let sql = `
       SELECT
           a.eqpid, a.pc_name, COALESCE(s.status, 'OFFLINE') = 'ONLINE' AS is_online,
@@ -75,8 +70,8 @@ export class EquipmentService {
       WHERE 1=1
     `;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const params: any[] = [];
+    // [수정] 타입을 'string[]'으로 명시하여 spread 연산 시 안전하게 처리
+    const params: string[] = [];
     let paramIndex = 1;
 
     if (eqpId) {
@@ -92,47 +87,45 @@ export class EquipmentService {
 
     sql += ' ORDER BY a.eqpid';
 
-    // 2. 쿼리 실행
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const rawData: any = await this.dataSource.query(sql, params);
+    // [수정] unknown[]으로 캐스팅하여 Prisma 쿼리에 전달하거나, any[] 오류를 피하기 위해 타입 정의 활용
+    const rawData = await this.prisma.$queryRawUnsafe<EquipmentRaw[]>(
+      sql,
+      ...params,
+    );
 
-    // 3. 타입 단언
-    const results = rawData as EquipmentRaw[];
-
-    // 4. 결과 매핑
-    return results.map((r) => ({
+    return rawData.map((r) => ({
       eqpId: r.eqpid,
-      pcName: r.pc_name,
+      pcName: r.pc_name || 'N/A',
       isOnline: r.is_online,
-      ipAddress: r.ip_address,
+      ipAddress: r.ip_address || '',
       lastContact: r.last_perf_update,
-      os: r.os,
-      systemType: r.system_type,
-      timezone: r.timezone,
-      macAddress: r.mac_address,
-      cpu: r.cpu,
-      memory: r.memory,
-      disk: r.disk,
-      vga: r.vga,
-      type: r.type,
-      locale: r.locale,
-      systemModel: r.system_model,
-      serialNum: r.serial_num,
-      application: r.application,
-      version: r.version,
-      dbVersion: r.db_version,
+      os: r.os || '',
+      systemType: r.system_type || '',
+      timezone: r.timezone || '',
+      macAddress: r.mac_address || '',
+      cpu: r.cpu || '',
+      memory: r.memory || '',
+      disk: r.disk || '',
+      vga: r.vga || '',
+      type: r.type || '',
+      locale: r.locale || '',
+      systemModel: r.system_model || '',
+      serialNum: r.serial_num || '',
+      application: r.application || '',
+      version: r.version || '',
+      dbVersion: r.db_version || '',
     }));
   }
 
-  // [수정 2] 'getEqpIds' 메서드 추가 (Controller에서 호출됨)
   async getEqpIds(site?: string, sdwt?: string): Promise<string[]> {
     if (!site && !sdwt) {
       return [];
     }
 
     let sql = 'SELECT r.eqpid FROM public.ref_equipment r';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const params: any[] = [];
+
+    // [수정] 타입을 'string[]'으로 명시
+    const params: string[] = [];
     let paramIndex = 1;
     const whereClauses: string[] = [];
 
@@ -151,10 +144,11 @@ export class EquipmentService {
     }
     sql += ' ORDER BY r.eqpid';
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const rawData: any = await this.dataSource.query(sql, params);
-    const results = rawData as { eqpid: string }[];
+    const rawData = await this.prisma.$queryRawUnsafe<{ eqpid: string }[]>(
+      sql,
+      ...params,
+    );
 
-    return results.map((r) => r.eqpid);
+    return rawData.map((r) => r.eqpid);
   }
 }
