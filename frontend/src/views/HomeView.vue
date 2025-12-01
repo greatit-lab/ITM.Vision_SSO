@@ -1,37 +1,38 @@
+<!-- frontend/src/views/HomeView.vue -->
 <template>
   <div
     class="min-h-full transition-colors duration-500 ease-in-out bg-[#F8FAFC] dark:bg-[#09090B] font-sans"
   >
     <div
-      class="flex flex-col md:flex-row justify-between items-center mb-5 gap-4"
+      class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3"
     >
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3">
         <div
-          class="w-12 h-12 rounded-xl bg-white dark:bg-zinc-900 shadow-sm flex items-center justify-center border border-slate-100 dark:border-zinc-800"
+          class="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 shadow-sm flex items-center justify-center border border-slate-100 dark:border-zinc-800"
         >
-          <i class="pi pi-objects-column text-2xl text-indigo-500"></i>
+          <i class="pi pi-objects-column text-xl text-indigo-500"></i>
         </div>
         <div>
           <h1
-            class="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-3"
+            class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2"
           >
             Overview
             <span
               v-if="hasSearched"
-              class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider fade-in shadow-sm select-none"
+              class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 text-[9px] font-bold uppercase tracking-wider fade-in shadow-sm select-none"
             >
-              <span class="relative flex h-2 w-2">
+              <span class="relative flex h-1.5 w-1.5">
                 <span
                   class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
                 ></span>
                 <span
-                  class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"
+                  class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"
                 ></span>
               </span>
               Live
             </span>
           </h1>
-          <p class="text-slate-500 dark:text-slate-400 font-medium text-xs">
+          <p class="text-slate-500 dark:text-slate-400 font-medium text-[10px]">
             System performance summary.
           </p>
         </div>
@@ -39,26 +40,28 @@
     </div>
 
     <div
-      class="mb-6 bg-white dark:bg-[#111111] p-2 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-wrap gap-2 items-center justify-between shadow-sm"
+      class="mb-5 bg-white dark:bg-[#111111] p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-wrap gap-2 items-center justify-between shadow-sm"
     >
       <div class="flex gap-2 flex-1 overflow-x-auto px-1">
-        <div class="min-w-[200px]">
+        <div class="min-w-[140px]">
           <Select
             v-model="filterStore.selectedSite"
             :options="sites"
             placeholder="Select Site"
-            class="w-full custom-dropdown"
+            class="w-full custom-dropdown small"
+            overlayClass="custom-dropdown-panel small"
             :class="{ '!text-slate-400': !filterStore.selectedSite }"
             showClear
             @change="onSiteChanged"
           />
         </div>
-        <div class="min-w-[200px]">
+        <div class="min-w-[140px]">
           <Select
             v-model="filterStore.selectedSdwt"
             :options="sdwts"
             placeholder="Select SDWT"
-            class="w-full custom-dropdown"
+            class="w-full custom-dropdown small"
+            overlayClass="custom-dropdown-panel small"
             :class="{ '!text-slate-400': !filterStore.selectedSdwt }"
             :disabled="!filterStore.selectedSite"
             showClear
@@ -67,10 +70,10 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-1 pr-2">
-        <div v-if="hasSearched" class="flex items-center justify-center w-8">
+      <div class="flex items-center gap-1 pr-1">
+        <div v-if="hasSearched" class="flex items-center justify-center w-6">
           <span
-            class="text-xs font-bold font-mono text-slate-400 dark:text-slate-500"
+            class="text-[10px] font-bold font-mono text-slate-400 dark:text-slate-500"
             >{{ refreshCount }}s</span
           >
         </div>
@@ -82,41 +85,44 @@
           @click="manualRefresh"
           :disabled="!hasSearched"
           v-tooltip.left="'Refresh Now'"
-          class="!w-8 !h-8 !text-slate-400 hover:!text-slate-600 dark:!text-zinc-500 dark:hover:!text-zinc-300 transition-colors"
+          class="!w-7 !h-7 !text-slate-400 hover:!text-slate-600 dark:!text-zinc-500 dark:hover:!text-zinc-300 transition-colors"
         />
       </div>
     </div>
 
     <div
       v-if="!hasSearched"
-      class="flex flex-col justify-center items-center h-80 fade-in border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-3xl"
+      class="flex flex-col justify-center items-center h-72 fade-in border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-3xl"
     >
       <div
-        class="w-14 h-14 bg-slate-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-3 text-slate-400 dark:text-zinc-500"
+        class="w-12 h-12 bg-slate-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-3 text-slate-400 dark:text-zinc-500"
       >
-        <i class="pi pi-search text-xl"></i>
+        <i class="pi pi-search text-lg"></i>
       </div>
-      <h3 class="text-base font-bold text-slate-700 dark:text-slate-200">
+      <h3 class="text-sm font-bold text-slate-700 dark:text-slate-200">
         Ready to Analyze
       </h3>
-      <p class="text-slate-500 dark:text-slate-500 text-xs mt-1">
+      <p class="text-slate-500 dark:text-slate-500 text-[10px] mt-1">
         Please select a <b>Site</b> and <b>SDWT</b> to view the dashboard.
       </p>
     </div>
 
-    <div v-else class="space-y-6 fade-in">
+    <div v-else class="space-y-5 fade-in">
       <div
         v-if="isSummaryLoading"
-        class="flex flex-col justify-center items-center h-24"
+        class="flex flex-col justify-center items-center h-20"
       >
-        <ProgressSpinner style="width: 25px; height: 25px" strokeWidth="4" />
-        <p class="text-xs text-slate-400 mt-2">Loading Summary...</p>
+        <ProgressSpinner style="width: 20px; height: 20px" strokeWidth="4" />
+        <p class="text-[10px] text-slate-400 mt-2">Loading Summary...</p>
       </div>
 
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div
+        v-else
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3"
+      >
         <div
           @click="setActiveFilter('All')"
-          class="relative h-24 rounded-xl p-4 cursor-pointer transition-all duration-300 hover:-translate-y-1 border overflow-hidden"
+          class="relative h-20 rounded-xl p-3 cursor-pointer transition-all duration-300 hover:-translate-y-1 border overflow-hidden"
           :class="[
             activeFilter === 'All'
               ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/20 ring-2 ring-offset-2 ring-indigo-500 dark:ring-offset-black border-transparent'
@@ -126,7 +132,7 @@
           <div class="flex justify-between items-center h-full relative z-10">
             <div>
               <p
-                class="text-[10px] font-bold uppercase tracking-widest mb-0.5"
+                class="text-[9px] font-bold uppercase tracking-widest mb-0.5"
                 :class="
                   activeFilter === 'All'
                     ? 'text-indigo-100'
@@ -136,7 +142,7 @@
                 Total Agents
               </p>
               <p
-                class="text-3xl font-black tracking-tight"
+                class="text-2xl font-black tracking-tight"
                 :class="
                   activeFilter === 'All'
                     ? 'text-white'
@@ -147,21 +153,21 @@
               </p>
             </div>
             <div
-              class="w-12 h-12 rounded-xl flex items-center justify-center"
+              class="w-10 h-10 rounded-lg flex items-center justify-center"
               :class="
                 activeFilter === 'All'
                   ? 'bg-white/20 text-white'
                   : 'bg-slate-50 dark:bg-zinc-800 text-indigo-500'
               "
             >
-              <i class="pi pi-server text-2xl"></i>
+              <i class="pi pi-server text-xl"></i>
             </div>
           </div>
         </div>
 
         <div
           @click="setActiveFilter('Online')"
-          class="relative h-24 rounded-xl p-4 cursor-pointer transition-all duration-300 hover:-translate-y-1 border overflow-hidden"
+          class="relative h-20 rounded-xl p-3 cursor-pointer transition-all duration-300 hover:-translate-y-1 border overflow-hidden"
           :class="[
             activeFilter === 'Online'
               ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 ring-2 ring-offset-2 ring-emerald-500 dark:ring-offset-black border-transparent'
@@ -171,7 +177,7 @@
           <div class="flex justify-between items-center h-full relative z-10">
             <div>
               <p
-                class="text-[10px] font-bold uppercase tracking-widest mb-0.5"
+                class="text-[9px] font-bold uppercase tracking-widest mb-0.5"
                 :class="
                   activeFilter === 'Online'
                     ? 'text-emerald-100'
@@ -181,7 +187,7 @@
                 Online
               </p>
               <p
-                class="text-3xl font-black tracking-tight"
+                class="text-2xl font-black tracking-tight"
                 :class="
                   activeFilter === 'Online'
                     ? 'text-white'
@@ -192,21 +198,21 @@
               </p>
             </div>
             <div
-              class="w-12 h-12 rounded-xl flex items-center justify-center"
+              class="w-10 h-10 rounded-lg flex items-center justify-center"
               :class="
                 activeFilter === 'Online'
                   ? 'bg-white/20 text-white'
                   : 'bg-slate-50 dark:bg-zinc-800 text-emerald-500'
               "
             >
-              <i class="pi pi-wifi text-2xl"></i>
+              <i class="pi pi-wifi text-xl"></i>
             </div>
           </div>
         </div>
 
         <div
           @click="setActiveFilter('Offline')"
-          class="relative h-24 rounded-xl p-4 cursor-pointer transition-all duration-300 hover:-translate-y-1 border overflow-hidden"
+          class="relative h-20 rounded-xl p-3 cursor-pointer transition-all duration-300 hover:-translate-y-1 border overflow-hidden"
           :class="[
             activeFilter === 'Offline'
               ? 'bg-rose-600 text-white shadow-lg shadow-rose-500/20 ring-2 ring-offset-2 ring-rose-500 dark:ring-offset-black border-transparent'
@@ -216,7 +222,7 @@
           <div class="flex justify-between items-center h-full relative z-10">
             <div>
               <p
-                class="text-[10px] font-bold uppercase tracking-widest mb-0.5"
+                class="text-[9px] font-bold uppercase tracking-widest mb-0.5"
                 :class="
                   activeFilter === 'Offline'
                     ? 'text-rose-100'
@@ -226,7 +232,7 @@
                 Offline
               </p>
               <p
-                class="text-3xl font-black tracking-tight"
+                class="text-2xl font-black tracking-tight"
                 :class="[
                   activeFilter === 'Offline'
                     ? 'text-white'
@@ -241,21 +247,21 @@
               </p>
             </div>
             <div
-              class="w-12 h-12 rounded-xl flex items-center justify-center"
+              class="w-10 h-10 rounded-lg flex items-center justify-center"
               :class="
                 activeFilter === 'Offline'
                   ? 'bg-white/20 text-white'
                   : 'bg-slate-50 dark:bg-zinc-800 text-rose-500'
               "
             >
-              <i class="pi pi-ban text-2xl"></i>
+              <i class="pi pi-ban text-xl"></i>
             </div>
           </div>
         </div>
 
         <div
           @click="setActiveFilter('Alarm')"
-          class="relative h-24 rounded-xl p-4 cursor-pointer transition-all duration-300 hover:-translate-y-1 border overflow-hidden"
+          class="relative h-20 rounded-xl p-3 cursor-pointer transition-all duration-300 hover:-translate-y-1 border overflow-hidden"
           :class="[
             activeFilter === 'Alarm'
               ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20 ring-2 ring-offset-2 ring-amber-500 dark:ring-offset-black border-transparent'
@@ -265,7 +271,7 @@
           <div class="flex justify-between items-center h-full relative z-10">
             <div>
               <p
-                class="text-[10px] font-bold uppercase tracking-widest mb-0.5"
+                class="text-[9px] font-bold uppercase tracking-widest mb-0.5"
                 :class="
                   activeFilter === 'Alarm'
                     ? 'text-amber-100'
@@ -274,9 +280,9 @@
               >
                 Alerts
               </p>
-              <div class="flex items-baseline gap-2">
+              <div class="flex items-baseline gap-1.5">
                 <p
-                  class="text-3xl font-black tracking-tight"
+                  class="text-2xl font-black tracking-tight"
                   :class="
                     activeFilter === 'Alarm'
                       ? 'text-white'
@@ -284,10 +290,16 @@
                   "
                 >
                   {{ summary.todayErrorCount }}
+                  <span
+                    class="text-[10px] font-medium opacity-80"
+                    v-if="summary.todayErrorTotalCount > 0"
+                  >
+                    (Total: {{ summary.todayErrorTotalCount }})
+                  </span>
                 </p>
                 <span
                   v-if="summary.newAlarmCount > 0"
-                  class="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                  class="text-[9px] font-bold px-1 py-0.5 rounded"
                   :class="
                     activeFilter === 'Alarm'
                       ? 'bg-white/30 text-white'
@@ -298,21 +310,21 @@
               </div>
             </div>
             <div
-              class="w-12 h-12 rounded-xl flex items-center justify-center"
+              class="w-10 h-10 rounded-lg flex items-center justify-center"
               :class="
                 activeFilter === 'Alarm'
                   ? 'bg-white/20 text-white'
                   : 'bg-slate-50 dark:bg-zinc-800 text-amber-500'
               "
             >
-              <i class="pi pi-bell text-2xl"></i>
+              <i class="pi pi-bell text-xl"></i>
             </div>
           </div>
         </div>
 
         <div
           @click="setActiveFilter('TimeSync')"
-          class="relative h-24 rounded-xl p-4 cursor-pointer transition-all duration-300 hover:-translate-y-1 border overflow-hidden"
+          class="relative h-20 rounded-xl p-3 cursor-pointer transition-all duration-300 hover:-translate-y-1 border overflow-hidden"
           :class="[
             activeFilter === 'TimeSync'
               ? 'bg-pink-600 text-white shadow-lg shadow-pink-500/20 ring-2 ring-offset-2 ring-pink-500 dark:ring-offset-black border-transparent'
@@ -322,7 +334,7 @@
           <div class="flex justify-between items-center h-full relative z-10">
             <div>
               <p
-                class="text-[10px] font-bold uppercase tracking-widest mb-0.5"
+                class="text-[9px] font-bold uppercase tracking-widest mb-0.5"
                 :class="
                   activeFilter === 'TimeSync'
                     ? 'text-pink-100'
@@ -332,7 +344,7 @@
                 Time Sync Err
               </p>
               <p
-                class="text-3xl font-black tracking-tight"
+                class="text-2xl font-black tracking-tight"
                 :class="[
                   activeFilter === 'TimeSync'
                     ? 'text-white'
@@ -346,14 +358,14 @@
               </p>
             </div>
             <div
-              class="w-12 h-12 rounded-xl flex items-center justify-center"
+              class="w-10 h-10 rounded-lg flex items-center justify-center"
               :class="
                 activeFilter === 'TimeSync'
                   ? 'bg-white/20 text-white'
                   : 'bg-slate-50 dark:bg-zinc-800 text-pink-500'
               "
             >
-              <i class="pi pi-clock text-2xl"></i>
+              <i class="pi pi-clock text-xl"></i>
             </div>
           </div>
         </div>
@@ -363,7 +375,7 @@
         class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-200 dark:border-zinc-800 overflow-hidden"
       >
         <DataTable
-          :value="filteredAgents"
+          :value="displayedAgents"
           :paginator="false"
           :rows="rowsPerPage"
           :first="first"
@@ -374,23 +386,23 @@
         >
           <template #header>
             <div
-              class="flex flex-col md:flex-row justify-between items-center gap-4 px-2 py-1"
+              class="flex flex-col md:flex-row justify-between items-center gap-3 px-2 py-1"
             >
-              <div class="flex items-center gap-3">
-                <div class="w-1 h-4 bg-indigo-500 rounded-full"></div>
-                <h3 class="font-bold text-base text-slate-800 dark:text-white">
+              <div class="flex items-center gap-2">
+                <div class="w-1 h-3 bg-indigo-500 rounded-full"></div>
+                <h3 class="font-bold text-sm text-slate-800 dark:text-white">
                   Agent Status
                 </h3>
               </div>
 
               <div
-                class="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400"
+                class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400"
               >
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-medium">Rows:</span>
+                <div class="flex items-center gap-1">
+                  <span class="font-medium">Rows:</span>
                   <select
                     v-model="rowsPerPage"
-                    class="bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded px-2 py-1 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                    class="bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded px-1 py-0.5 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
                     @change="first = 0"
                   >
                     <option :value="15">15</option>
@@ -399,7 +411,7 @@
                   </select>
                 </div>
 
-                <span class="font-medium text-xs min-w-[80px] text-right">
+                <span class="font-medium min-w-[60px] text-right">
                   {{ totalRecords === 0 ? 0 : first + 1 }} -
                   {{ Math.min(first + rowsPerPage, totalRecords) }} of
                   {{ totalRecords }}
@@ -409,34 +421,34 @@
                   <button
                     @click="first = 0"
                     :disabled="first === 0"
-                    class="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     title="First Page"
                   >
-                    <i class="pi pi-angle-double-left text-xs"></i>
+                    <i class="pi pi-angle-double-left text-[10px]"></i>
                   </button>
                   <button
                     @click="prevPage"
                     :disabled="first === 0"
-                    class="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     title="Previous Page"
                   >
-                    <i class="pi pi-angle-left text-xs"></i>
+                    <i class="pi pi-angle-left text-[10px]"></i>
                   </button>
                   <button
                     @click="nextPage"
                     :disabled="first + rowsPerPage >= totalRecords"
-                    class="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     title="Next Page"
                   >
-                    <i class="pi pi-angle-right text-xs"></i>
+                    <i class="pi pi-angle-right text-[10px]"></i>
                   </button>
                   <button
                     @click="lastPage"
                     :disabled="first + rowsPerPage >= totalRecords"
-                    class="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     title="Last Page"
                   >
-                    <i class="pi pi-angle-double-right text-xs"></i>
+                    <i class="pi pi-angle-double-right text-[10px]"></i>
                   </button>
                 </div>
               </div>
@@ -445,10 +457,10 @@
 
           <template #empty>
             <div
-              class="flex flex-col items-center justify-center py-16 text-gray-400"
+              class="flex flex-col items-center justify-center py-12 text-gray-400"
             >
-              <i class="pi pi-filter text-3xl mb-3 opacity-20"></i>
-              <p class="text-xs font-medium">No match found.</p>
+              <i class="pi pi-filter text-2xl mb-2 opacity-20"></i>
+              <p class="text-[10px] font-medium">No match found.</p>
             </div>
           </template>
 
@@ -456,13 +468,13 @@
             header="Connection"
             sortable
             field="isOnline"
-            style="width: 120px"
-            :bodyStyle="{ paddingLeft: '20px' }"
-            headerStyle="padding-left: 20px"
+            style="width: 110px"
+            :bodyStyle="{ paddingLeft: '16px' }"
+            headerStyle="padding-left: 16px"
           >
             <template #body="{ data }">
               <span
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors"
                 :class="
                   data.isOnline
                     ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
@@ -475,20 +487,20 @@
                       ? 'pi pi-check-circle'
                       : 'pi pi-exclamation-circle'
                   "
-                  class="text-xs"
+                  class="text-[9px]"
                 ></i>
                 {{ data.isOnline ? "Online" : "Offline" }}
               </span>
             </template>
           </Column>
 
-          <Column header="Status" style="width: 120px">
+          <Column header="Status" style="width: 100px">
             <template #body="{ data }">
               <span
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors"
                 :class="getStatusBadgeClass(data)"
               >
-                <i :class="getStatusIcon(data)" class="text-xs"></i>
+                <i :class="getStatusIcon(data)" class="text-[9px]"></i>
                 {{ getStatusLabel(data) }}
               </span>
             </template>
@@ -501,21 +513,21 @@
               }}</span></template
             >
           </Column>
-          <Column field="type" header="Type" sortable style="width: 80px">
+          <Column field="type" header="Type" sortable style="width: 70px">
             <template #body="{ data }"
               ><span class="text-slate-600 dark:text-slate-300">{{
                 data.type
               }}</span></template
             >
           </Column>
-          <Column field="ipAddress" header="IP Address" style="width: 120px">
+          <Column field="ipAddress" header="IP Address" style="width: 110px">
             <template #body="{ data }"
               ><span class="text-slate-600 dark:text-slate-300">{{
                 data.ipAddress
               }}</span></template
             >
           </Column>
-          <Column field="pcName" header="PC Name" style="width: 150px">
+          <Column field="pcName" header="PC Name" style="width: 140px">
             <template #body="{ data }"
               ><span class="text-slate-600 dark:text-slate-300">{{
                 data.pcName
@@ -523,11 +535,11 @@
             >
           </Column>
 
-          <Column header="Operating System(OS)" style="width: 180px">
+          <Column header="Operating System(OS)" style="width: 170px">
             <template #body="{ data }">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5">
                 <span
-                  class="inline-flex items-center justify-center w-6 h-6 rounded-md border text-xs transition-colors"
+                  class="inline-flex items-center justify-center w-5 h-5 rounded border text-[10px] transition-colors"
                   :class="getOsStyle(data.os).badge"
                 >
                   <i class="pi pi-microsoft"></i>
@@ -539,14 +551,14 @@
             </template>
           </Column>
 
-          <Column header="CPU / Memory" style="width: 180px">
+          <Column header="CPU / Memory" style="width: 160px">
             <template #body="{ data }">
               <div
-                class="flex flex-col gap-1.5 cursor-pointer opacity-90 hover:opacity-100"
+                class="flex flex-col gap-1 cursor-pointer opacity-90 hover:opacity-100"
                 @click="openChart(data)"
               >
                 <div
-                  class="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 relative overflow-hidden"
+                  class="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1 relative overflow-hidden"
                 >
                   <div
                     class="bg-blue-500 h-full rounded-full"
@@ -554,7 +566,7 @@
                   ></div>
                 </div>
                 <div
-                  class="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 relative overflow-hidden"
+                  class="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1 relative overflow-hidden"
                 >
                   <div
                     class="bg-teal-500 h-full rounded-full"
@@ -565,7 +577,7 @@
             </template>
           </Column>
 
-          <Column style="width: 100px">
+          <Column style="width: 90px">
             <template #header>
               <span
                 v-tooltip.top="'+: Agent Fast\n-: Agent Slow'"
@@ -576,7 +588,7 @@
             </template>
             <template #body="{ data }">
               <span
-                class="text-slate-600 dark:text-slate-300"
+                class="text-xs font-mono tracking-tight"
                 :class="getClockDriftColor(data.clockDrift)"
                 >{{ formatTimeDifference(data.clockDrift) }}</span
               >
@@ -586,23 +598,23 @@
           <Column
             field="lastContact"
             header="Last Contact"
-            style="width: 160px"
+            style="width: 140px"
           >
             <template #body="{ data }"
               ><span
-                class="font-mono text-xs text-slate-600 dark:text-slate-300"
+                class="font-mono text-[11px] text-slate-600 dark:text-slate-300"
                 >{{ formatDate(data.lastContact) }}</span
               ></template
             >
           </Column>
 
-          <Column field="appVersion" header="Agent Ver" style="width: 100px">
+          <Column field="appVersion" header="Agent Ver" style="width: 90px">
             <template #body="{ data }">
               <span
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors"
                 :class="getAgentVerStyle(data.appVersion)"
               >
-                <i class="pi pi-tag text-xs opacity-70"></i>
+                <i class="pi pi-tag text-[9px] opacity-70"></i>
                 {{ data.appVersion }}
               </span>
             </template>
@@ -668,13 +680,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { useFilterStore } from "@/stores/filter"; // Pinia Store 사용
+import { useFilterStore } from "@/stores/filter";
 import {
   dashboardApi,
   type DashboardSummaryDto,
   type AgentStatusDto,
 } from "@/api/dashboard";
-import { performanceApi } from "@/api/performance"; // API 추가
+import { performanceApi } from "@/api/performance";
 import AmChart from "@/components/common/AmChart.vue";
 import Select from "primevue/select";
 import Button from "primevue/button";
@@ -683,26 +695,24 @@ import Column from "primevue/column";
 import Dialog from "primevue/dialog";
 import ProgressSpinner from "primevue/progressspinner";
 
-// Store 사용
 const filterStore = useFilterStore();
 
 const isSummaryLoading = ref(false);
 const isTableLoading = ref(false);
-const isChartLoading = ref(false); // 차트 로딩 상태
+const isChartLoading = ref(false);
 const hasSearched = ref(false);
 
 const activeFilter = ref<"All" | "Online" | "Offline" | "Alarm" | "TimeSync">(
   "All"
 );
 
-// 로컬 상태 대신 Store 상태를 사용하므로 selectedSite, selectedSdwt ref 제거
 const sites = ref<string[]>([]);
 const sdwts = ref<string[]>([]);
-// [수정] summary 초기값에 latestAgentVersion 추가
 const summary = ref<DashboardSummaryDto>({
   totalEqpCount: 0,
   onlineAgentCount: 0,
   todayErrorCount: 0,
+  todayErrorTotalCount: 0, // [수정] 타입 오류 해결을 위한 초기값 추가
   newAlarmCount: 0,
   latestAgentVersion: "",
 });
@@ -714,23 +724,17 @@ const chartData = ref<any[]>([]);
 const refreshCount = ref(30);
 let refreshTimer: number | null = null;
 
-// [수정] onMounted에서 LocalStorage 확인 및 자동 조회
 onMounted(async () => {
   try {
-    // 1. Site 목록 로드
     sites.value = await dashboardApi.getSites();
-
-    // 2. LocalStorage에서 저장된 값 복원
     const savedSite = localStorage.getItem("dashboard_site");
     const savedSdwt = localStorage.getItem("dashboard_sdwt");
 
     if (savedSite && sites.value.includes(savedSite)) {
       filterStore.selectedSite = savedSite;
-      // 해당 Site의 SDWT 목록 로드
       sdwts.value = await dashboardApi.getSdwts(savedSite);
 
       if (savedSdwt) {
-        // SDWT가 있으면 Store 설정 후 데이터 로드
         filterStore.selectedSdwt = savedSdwt;
         await loadData(true);
       }
@@ -744,7 +748,6 @@ onUnmounted(() => {
   stopAutoRefresh();
 });
 
-// [수정] Site 변경 시 LocalStorage 업데이트
 const onSiteChanged = async () => {
   if (filterStore.selectedSite) {
     localStorage.setItem("dashboard_site", filterStore.selectedSite);
@@ -753,7 +756,6 @@ const onSiteChanged = async () => {
     localStorage.removeItem("dashboard_site");
     sdwts.value = [];
   }
-  // Site가 바뀌면 SDWT는 무조건 초기화
   filterStore.selectedSdwt = "";
   localStorage.removeItem("dashboard_sdwt");
 
@@ -761,7 +763,6 @@ const onSiteChanged = async () => {
   stopAutoRefresh();
 };
 
-// [수정] SDWT 변경 시 LocalStorage 업데이트
 const onSdwtChange = async () => {
   if (filterStore.selectedSdwt) {
     localStorage.setItem("dashboard_sdwt", filterStore.selectedSdwt);
@@ -772,7 +773,6 @@ const onSdwtChange = async () => {
   }
 };
 
-// 데이터 로드 함수 (Store 상태 사용)
 const loadData = async (showLoading = true) => {
   if (!filterStore.selectedSite || !filterStore.selectedSdwt) return;
 
@@ -782,27 +782,26 @@ const loadData = async (showLoading = true) => {
   }
   hasSearched.value = true;
 
-  try {
-    const [summaryData, agentData] = await Promise.all([
-      dashboardApi.getSummary(
-        filterStore.selectedSite,
-        filterStore.selectedSdwt
-      ),
-      dashboardApi.getAgentStatus(
-        filterStore.selectedSite,
-        filterStore.selectedSdwt
-      ),
-    ]);
+  dashboardApi
+    .getSummary(filterStore.selectedSite, filterStore.selectedSdwt)
+    .then((data) => {
+      summary.value = data;
+    })
+    .catch((e) => console.error("Summary load failed", e))
+    .finally(() => {
+      isSummaryLoading.value = false;
+    });
 
-    summary.value = summaryData;
-    agentList.value = agentData;
-    startAutoRefresh();
-  } catch (e) {
-    console.error(e);
-  } finally {
-    isSummaryLoading.value = false;
-    isTableLoading.value = false;
-  }
+  dashboardApi
+    .getAgentStatus(filterStore.selectedSite, filterStore.selectedSdwt)
+    .then((data) => {
+      agentList.value = data;
+      startAutoRefresh();
+    })
+    .catch((e) => console.error("Agent status load failed", e))
+    .finally(() => {
+      isTableLoading.value = false;
+    });
 };
 
 const startAutoRefresh = () => {
@@ -829,37 +828,30 @@ const manualRefresh = () => {
   refreshCount.value = 30;
 };
 
-// 차트 오픈 함수 (API 연동 및 로딩/데이터 없음 처리)
 const openChart = async (agent: AgentStatusDto) => {
   selectedAgentId.value = agent.eqpId;
   showChart.value = true;
-  chartData.value = []; // 데이터 초기화
-  isChartLoading.value = true; // 로딩 시작
+  chartData.value = [];
+  isChartLoading.value = true;
 
-  // 1. 조회 기간 설정 (최근 24시간)
   const endDate = new Date();
   const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
 
   try {
-    // 2. 실제 API 호출 (10분 단위 집계)
     const data = await performanceApi.getHistory(
       startDate.toISOString(),
       endDate.toISOString(),
       agent.eqpId,
       600
     );
-
-    // 3. 데이터 할당
     chartData.value = data;
   } catch (e) {
     console.error("Failed to load chart data", e);
     chartData.value = [];
   } finally {
-    isChartLoading.value = false; // 로딩 종료
+    isChartLoading.value = false;
   }
 };
-
-// --- Helper Functions & Computed Properties ---
 
 const chartConfig = {
   xField: "timestamp",
@@ -872,12 +864,14 @@ const chartConfig = {
       valueField: "cpuUsage",
       color: "#3b82f6",
       tooltipText: "CPU: {valueY.formatNumber('#.00')}%",
+      bulletRadius: 3,
     },
     {
       name: "MEM",
       valueField: "memoryUsage",
       color: "#10b981",
       tooltipText: "MEM: {valueY.formatNumber('#.00')}%",
+      bulletRadius: 3,
     },
   ],
 };
@@ -900,6 +894,12 @@ const filteredAgents = computed(() => {
   }
 });
 
+const displayedAgents = computed(() => {
+  const start = first.value;
+  const end = start + rowsPerPage.value;
+  return filteredAgents.value.slice(start, end);
+});
+
 const timeSyncErrorCount = computed(() => {
   return agentList.value.filter((a) => Math.abs(a.clockDrift || 0) > 1800)
     .length;
@@ -907,11 +907,9 @@ const timeSyncErrorCount = computed(() => {
 
 const totalRecords = computed(() => filteredAgents.value.length);
 
-// [수정] getAgentVerStyle을 summary.value.latestAgentVersion과 비교하도록 변경
 const getAgentVerStyle = (ver: string | null) => {
   if (!ver)
     return "bg-transparent border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-600";
-  // 서버에서 받아온 전체 최신 버전과 비교
   if (ver === summary.value.latestAgentVersion) {
     return "bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-500/20 dark:border-indigo-500/50 dark:text-indigo-300 shadow-sm";
   }
@@ -996,18 +994,27 @@ const formatOperatingSystem = (os: string | null, sys: string | null) =>
     "-bit",
     "bit"
   )}`.trim();
+
 const formatTimeDifference = (s: number | null | undefined) => {
-  if (s == null) return "N/A";
+  if (s == null) return "-";
   if (Math.abs(s) < 0.1) return "✔";
+
   const sign = s > 0 ? "-" : "+";
   const abs = Math.abs(s);
-  const h = Math.floor(abs / 3600),
-    m = Math.floor((abs % 3600) / 60),
-    sec = Math.floor(abs % 60);
-  return `${sign} ${h > 0 ? h + "h " : ""}${m > 0 ? m + "m " : ""}${
-    sec > 0 || (h == 0 && m == 0) ? sec + "s" : ""
-  }`.trim();
+  const h = Math.floor(abs / 3600);
+  const m = Math.floor((abs % 3600) / 60);
+  const sec = Math.floor(abs % 60);
+
+  const mm = String(m).padStart(2, "0");
+  const ss = String(sec).padStart(2, "0");
+
+  if (h > 0) {
+    return `${sign}${h}:${mm}:${ss}`;
+  } else {
+    return `${sign}${m}:${ss}`;
+  }
 };
+
 const getClockDriftColor = (s: number | null | undefined) => {
   if (s == null) return "text-slate-600 dark:text-slate-300";
   const absDrift = Math.abs(s);
@@ -1015,15 +1022,19 @@ const getClockDriftColor = (s: number | null | undefined) => {
   if (absDrift > 600) return "text-orange-500 dark:text-orange-400 font-bold";
   return "text-slate-600 dark:text-slate-300";
 };
+
 const formatDate = (d: string | null) => {
   if (!d) return "-";
   const date = new Date(d);
-  const yy = date.getFullYear().toString().slice(2);
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const hh = String(date.getHours()).padStart(2, "0");
-  const min = String(date.getMinutes()).padStart(2, "0");
-  const ss = String(date.getSeconds()).padStart(2, "0");
+  
+  // getFullYear() 대신 getUTCFullYear() 등을 사용
+  const yy = date.getUTCFullYear().toString().slice(2);
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  const hh = String(date.getUTCHours()).padStart(2, "0");
+  const min = String(date.getUTCMinutes()).padStart(2, "0");
+  const ss = String(date.getUTCSeconds()).padStart(2, "0");
+  
   return `${yy}-${mm}-${dd} ${hh}:${min}:${ss}`;
 };
 </script>
@@ -1032,25 +1043,29 @@ const formatDate = (d: string | null) => {
 /* Select Styles */
 :deep(.p-select),
 :deep(.custom-dropdown) {
-  @apply !bg-slate-100 dark:!bg-zinc-800/50 !border-0 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm shadow-none transition-colors;
+  @apply !bg-slate-100 dark:!bg-zinc-800/50 !border-0 text-slate-700 dark:text-slate-200 rounded-lg font-bold text-xs shadow-none transition-colors;
 }
+:deep(.custom-dropdown.small) {
+  @apply h-7 text-[10px];
+}
+:deep(.custom-dropdown.small .p-select-label) {
+  padding: 0.3rem 0.6rem;
+}
+
 :deep(.custom-dropdown:hover) {
   @apply !bg-slate-200 dark:!bg-zinc-800;
 }
-:deep(.p-select-label) {
-  padding: 0.6rem 1rem;
-}
 :deep(.p-select-dropdown) {
-  @apply text-slate-400 dark:text-zinc-500 w-10;
+  @apply text-slate-400 dark:text-zinc-500 w-8;
 }
 :deep(.p-datatable .p-datatable-thead > tr > th) {
   font-weight: 800;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: #64748b;
   background-color: transparent;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.8rem;
   border-bottom: 1px solid #e2e8f0;
 }
 :deep(.dark .p-datatable .p-datatable-thead > tr > th) {
@@ -1067,15 +1082,12 @@ const formatDate = (d: string | null) => {
 :deep(.p-datatable-tbody > tr:hover) {
   background-color: #f8fafc !important;
 }
-/* ▼▼▼ [수정] 다크모드에서 마우스 오버 시 어두운 회색(#27272a)으로 표시 ▼▼▼ */
 :deep(.dark .p-datatable-tbody > tr:hover) {
-  background-color: #27272a !important;
-  color: #e4e4e7 !important;
+  background-color: #09090b !important;
 }
-/* ▲▲▲ [수정] 여기까지 ▲▲▲ */
 :deep(.p-datatable-tbody > tr > td) {
-  padding: 1rem;
-  font-size: 0.85rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.8rem;
   color: #334155;
 }
 :deep(.dark .p-datatable-tbody > tr > td) {
@@ -1098,13 +1110,23 @@ const formatDate = (d: string | null) => {
 
 <style>
 body .p-tooltip .p-tooltip-text {
-  font-size: 11px !important;
+  font-size: 10px !important;
   background-color: #64748b !important;
   white-space: nowrap !important;
-  padding: 4px 8px !important;
+  padding: 3px 6px !important;
 }
 body .p-tooltip .p-tooltip-arrow {
   border-top-color: #64748b !important;
   border-bottom-color: #64748b !important;
+}
+
+/* 추가된 드롭다운 패널 스타일 */
+.custom-dropdown-panel.small .p-select-option {
+  padding: 6px 10px !important;
+  font-size: 12px !important; /* 11px -> 12px로 변경 */
+}
+.custom-dropdown-panel.small .p-select-empty-message {
+  padding: 6px 10px !important;
+  font-size: 12px !important; /* 11px -> 12px로 변경 */
 }
 </style>
