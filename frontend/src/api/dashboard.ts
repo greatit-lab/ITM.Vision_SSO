@@ -1,11 +1,13 @@
+// frontend/src/api/dashboard.ts
 import http from "./http";
 
 export interface DashboardSummaryDto {
   totalEqpCount: number;
   onlineAgentCount: number;
-  todayErrorCount: number;
+  todayErrorCount: number; // 이제 "장비 대수"를 의미함
+  todayErrorTotalCount: number; // [추가] 총 발생 건수 (UI에 (Total: 18) 처럼 표시 가능)
   newAlarmCount: number;
-  latestAgentVersion: string; // [추가]
+  latestAgentVersion: string;
 }
 
 export interface AgentStatusDto {
