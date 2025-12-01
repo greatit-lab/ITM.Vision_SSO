@@ -1127,6 +1127,3 @@ body .p-tooltip .p-tooltip-arrow {
   font-size: 12px !important; /* 11px -> 12px로 변경 */
 }
 </style>
-
-
-
