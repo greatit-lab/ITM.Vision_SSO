@@ -1,3 +1,4 @@
+<!-- frontend/src/App.vue -->
 <template>
   <div
     class="min-h-screen bg-gray-50 dark:bg-[#09090B] flex font-sans text-gray-900 dark:text-gray-100 transition-colors duration-500"
@@ -6,7 +7,7 @@
 
     <main
       class="flex-1 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)]"
-      :class="isSidebarOpen ? 'ml-64' : 'ml-20'"
+      :class="isSidebarOpen ? 'ml-60' : 'ml-[70px]'"
     >
       <Header />
 
