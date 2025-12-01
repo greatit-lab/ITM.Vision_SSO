@@ -258,14 +258,14 @@
 
         <div
           @click="setActiveFilter('Alarm')"
-          class="relative h-20 rounded-xl p-3 cursor-pointer transition-all duration-300 hover:-translate-y-1 border overflow-hidden"
+          class="relative h-20 p-3 overflow-hidden transition-all duration-300 border cursor-pointer rounded-xl hover:-translate-y-1"
           :class="[
             activeFilter === 'Alarm'
               ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20 ring-2 ring-offset-2 ring-amber-500 dark:ring-offset-black border-transparent'
               : 'bg-white dark:bg-[#111111] border-slate-200 dark:border-zinc-800 hover:border-amber-400',
           ]"
         >
-          <div class="flex justify-between items-center h-full relative z-10">
+          <div class="relative z-10 flex items-center justify-between h-full">
             <div>
               <p
                 class="text-[9px] font-bold uppercase tracking-widest mb-0.5"
@@ -307,28 +307,28 @@
               </div>
             </div>
             <div
-              class="w-10 h-10 rounded-lg flex items-center justify-center"
+              class="flex items-center justify-center w-10 h-10 rounded-lg"
               :class="
                 activeFilter === 'Alarm'
                   ? 'bg-white/20 text-white'
                   : 'bg-slate-50 dark:bg-zinc-800 text-amber-500'
               "
             >
-              <i class="pi pi-bell text-xl"></i>
+              <i class="text-xl pi pi-bell"></i>
             </div>
           </div>
         </div>
 
         <div
           @click="setActiveFilter('TimeSync')"
-          class="relative h-20 rounded-xl p-3 cursor-pointer transition-all duration-300 hover:-translate-y-1 border overflow-hidden"
+          class="relative h-20 p-3 overflow-hidden transition-all duration-300 border cursor-pointer rounded-xl hover:-translate-y-1"
           :class="[
             activeFilter === 'TimeSync'
               ? 'bg-pink-600 text-white shadow-lg shadow-pink-500/20 ring-2 ring-offset-2 ring-pink-500 dark:ring-offset-black border-transparent'
               : 'bg-white dark:bg-[#111111] border-slate-200 dark:border-zinc-800 hover:border-pink-400',
           ]"
         >
-          <div class="flex justify-between items-center h-full relative z-10">
+          <div class="relative z-10 flex items-center justify-between h-full">
             <div>
               <p
                 class="text-[9px] font-bold uppercase tracking-widest mb-0.5"
@@ -355,39 +355,39 @@
               </p>
             </div>
             <div
-              class="w-10 h-10 rounded-lg flex items-center justify-center"
+              class="flex items-center justify-center w-10 h-10 rounded-lg"
               :class="
                 activeFilter === 'TimeSync'
                   ? 'bg-white/20 text-white'
                   : 'bg-slate-50 dark:bg-zinc-800 text-pink-500'
               "
             >
-              <i class="pi pi-clock text-xl"></i>
+              <i class="text-xl pi pi-clock"></i>
             </div>
           </div>
         </div>
       </div>
 
       <div
-        class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-200 dark:border-zinc-800 overflow-hidden"
+        class="overflow-hidden bg-white border shadow-sm dark:bg-zinc-900 rounded-2xl border-slate-200 dark:border-zinc-800"
       >
         <DataTable
           :value="displayedAgents"
           :paginator="false"
           :rows="rowsPerPage"
           :first="first"
-          class="p-datatable-sm text-sm"
+          class="text-sm p-datatable-sm"
           :rowHover="true"
           :loading="isTableLoading"
           stripedRows
         >
           <template #header>
             <div
-              class="flex flex-col md:flex-row justify-between items-center gap-3 px-2 py-1"
+              class="flex flex-col items-center justify-between gap-3 px-2 py-1 md:flex-row"
             >
               <div class="flex items-center gap-2">
                 <div class="w-1 h-3 bg-indigo-500 rounded-full"></div>
-                <h3 class="font-bold text-sm text-slate-800 dark:text-white">
+                <h3 class="text-sm font-bold text-slate-800 dark:text-white">
                   Agent Status
                 </h3>
               </div>
@@ -418,7 +418,7 @@
                   <button
                     @click="first = 0"
                     :disabled="first === 0"
-                    class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    class="p-1 transition-colors rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
                     title="First Page"
                   >
                     <i class="pi pi-angle-double-left text-[10px]"></i>
@@ -426,7 +426,7 @@
                   <button
                     @click="prevPage"
                     :disabled="first === 0"
-                    class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    class="p-1 transition-colors rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Previous Page"
                   >
                     <i class="pi pi-angle-left text-[10px]"></i>
@@ -434,7 +434,7 @@
                   <button
                     @click="nextPage"
                     :disabled="first + rowsPerPage >= totalRecords"
-                    class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    class="p-1 transition-colors rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Next Page"
                   >
                     <i class="pi pi-angle-right text-[10px]"></i>
@@ -442,7 +442,7 @@
                   <button
                     @click="lastPage"
                     :disabled="first + rowsPerPage >= totalRecords"
-                    class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    class="p-1 transition-colors rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Last Page"
                   >
                     <i class="pi pi-angle-double-right text-[10px]"></i>
@@ -456,7 +456,7 @@
             <div
               class="flex flex-col items-center justify-center py-12 text-gray-400"
             >
-              <i class="pi pi-filter text-2xl mb-2 opacity-20"></i>
+              <i class="mb-2 text-2xl pi pi-filter opacity-20"></i>
               <p class="text-[10px] font-medium">No match found.</p>
             </div>
           </template>
@@ -1127,4 +1127,5 @@ body .p-tooltip .p-tooltip-arrow {
   font-size: 12px !important; /* 11px -> 12px로 변경 */
 }
 </style>
+
 
