@@ -1,14 +1,50 @@
+// backend/src/dashboard/dashboard.service.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Prisma } from '@prisma/client';
 
-// ... (AgentStatusRawResult 인터페이스 생략) ...
+// [기존] Raw Query 결과 타입 정의
+interface AgentStatusRawResult {
+  eqpid: string;
+  is_online: boolean;
+  last_contact: Date | null;
+  pc_name: string | null;
+  cpu_usage: number;
+  mem_usage: number;
+  app_ver: string | null;
+  type: string | null;
+  ip_address: string | null;
+  os: string | null;
+  system_type: string | null;
+  locale: string | null;
+  timezone: string | null;
+  today_alarm_count: number;
+  last_perf_serv_ts: Date | null;
+  last_perf_eqp_ts: Date | null;
+}
 
 @Injectable()
 export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
-  // ... (compareVersions 함수 생략) ...
+  // [기존] 버전 비교 헬퍼 함수
+  private compareVersions(v1: string, v2: string) {
+    const p1 = v1
+      .replace(/[^0-9.]/g, '')
+      .split('.')
+      .map(Number);
+    const p2 = v2
+      .replace(/[^0-9.]/g, '')
+      .split('.')
+      .map(Number);
+    for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+      const n1 = p1[i] || 0;
+      const n2 = p2[i] || 0;
+      if (n1 > n2) return 1;
+      if (n1 < n2) return -1;
+    }
+    return 0;
+  }
 
   async getSummary(site?: string, sdwt?: string) {
     // 1. 전체 Agent Info에서 최신 버전 조회
@@ -47,31 +83,38 @@ export class DashboardService {
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
     // 3. 병렬 쿼리 실행
-    const [totalEqp, onlineEqp, errorEqpGroup, todayErrorTotal, newAlarm] = await Promise.all([
-      // Total Agents
-      this.prisma.refEquipment.count({ where: equipmentWhere }),
-      
-      // Online Agents
-      this.prisma.refEquipment.count({
-        where: { ...equipmentWhere, agentStatus: { status: 'ONLINE' } },
-      }),
-      
-      // [수정] Alerts (장비 수): GroupBy로 에러가 발생한 '장비'의 개수를 셈
-      this.prisma.plgError.groupBy({
-        by: ['eqpid'],
-        where: { timeStamp: { gte: startOfToday }, equipment: equipmentWhere },
-      }),
+    const [totalEqp, onlineEqp, errorEqpGroup, todayErrorTotal, newAlarm] =
+      await Promise.all([
+        // Total Agents
+        this.prisma.refEquipment.count({ where: equipmentWhere }),
 
-      // [추가] Alerts (총 발생 건수): 기존 로직 유지 (보조 정보용)
-      this.prisma.plgError.count({
-        where: { timeStamp: { gte: startOfToday }, equipment: equipmentWhere },
-      }),
-      
-      // New Alarms (최근 1시간 발생 건수)
-      this.prisma.plgError.count({
-        where: { timeStamp: { gte: oneHourAgo }, equipment: equipmentWhere },
-      }),
-    ]);
+        // Online Agents
+        this.prisma.refEquipment.count({
+          where: { ...equipmentWhere, agentStatus: { status: 'ONLINE' } },
+        }),
+
+        // [수정] Alerts (장비 수): GroupBy로 에러가 발생한 '장비'의 개수를 셈
+        this.prisma.plgError.groupBy({
+          by: ['eqpid'],
+          where: {
+            timeStamp: { gte: startOfToday },
+            equipment: equipmentWhere,
+          },
+        }),
+
+        // [추가] Alerts (총 발생 건수): 기존 로직 유지 (보조 정보용)
+        this.prisma.plgError.count({
+          where: {
+            timeStamp: { gte: startOfToday },
+            equipment: equipmentWhere,
+          },
+        }),
+
+        // New Alarms (최근 1시간 발생 건수)
+        this.prisma.plgError.count({
+          where: { timeStamp: { gte: oneHourAgo }, equipment: equipmentWhere },
+        }),
+      ]);
 
     return {
       totalEqpCount: totalEqp,
