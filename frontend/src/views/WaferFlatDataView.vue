@@ -131,6 +131,7 @@
               placeholder="Start"
               class="w-full custom-dropdown small date-picker"
               :disabled="!filters.eqpId"
+              @update:model-value="loadFilterOptions"
             />
           </div>
 
@@ -143,6 +144,7 @@
               placeholder="End"
               class="w-full custom-dropdown small date-picker"
               :disabled="!filters.eqpId"
+              @update:model-value="loadFilterOptions"
             />
           </div>
         </div>
@@ -224,10 +226,10 @@
 
     <div
       v-if="hasSearched"
-      class="flex flex-col flex-1 min-h-0 gap-4 pb-4 overflow-hidden xl:flex-row fade-in"
+      class="flex flex-col flex-1 min-h-0 gap-4 pb-4 overflow-hidden 2xl:flex-row fade-in"
     >
       <div
-        class="flex-[5] flex flex-col gap-3 min-w-[600px] overflow-hidden h-full"
+        class="flex-[5] flex flex-col gap-3 w-full 2xl:min-w-[600px] overflow-hidden h-full"
       >
         <div
           class="flex flex-col overflow-hidden bg-white border shadow-sm rounded-xl dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 shrink-0 h-[45%]"
@@ -370,10 +372,14 @@
                 </template>
               </Column>
 
-              <Column field="servTs" header="EQP TIME" style="min-width: 160px">
+              <Column
+                field="dateTime"
+                header="EQP TIME"
+                style="min-width: 160px"
+              >
                 <template #body="{ data }"
                   ><span class="font-mono text-slate-500 dark:text-slate-400">{{
-                    formatDate(data.servTs)
+                    formatDate(data.dateTime)
                   }}</span></template
                 >
               </Column>
@@ -426,7 +432,8 @@
 
             <div
               v-else-if="activeTab === 'points'"
-              class="h-full overflow-auto"
+              class="overflow-auto"
+              style="max-height: 280px"
             >
               <table
                 v-if="pointData && pointData.data && pointData.data.length > 0"
@@ -443,7 +450,7 @@
                       class="py-2 px-2 whitespace-nowrap border-b dark:border-zinc-700 min-w-[80px]"
                       :class="
                         h === 'point'
-                          ? 'pl-4 text-left bg-teal-50 dark:bg-zinc-800 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]'
+                          ? 'pl-4 pr-4 text-right bg-teal-50 dark:bg-zinc-800 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]'
                           : 'text-right'
                       "
                     >
@@ -472,7 +479,7 @@
                       class="py-1 px-2 min-w-[80px] cursor-pointer"
                       :class="
                         pointData.headers[ci] === 'point'
-                          ? 'pl-4 text-left font-bold sticky left-0 z-10 bg-white dark:bg-zinc-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]'
+                          ? 'pl-4 pr-4 text-right font-bold sticky left-0 z-10 bg-white dark:bg-zinc-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]'
                           : 'text-right'
                       "
                     >
@@ -483,7 +490,7 @@
               </table>
               <div
                 v-else
-                class="flex items-center justify-center h-full text-xs text-slate-400"
+                class="flex items-center justify-center h-full text-xs text-slate-400 py-10"
               >
                 No point data available
               </div>
@@ -674,7 +681,9 @@
         </div>
       </div>
 
-      <div class="flex-[2] flex flex-col gap-4 h-full min-w-[400px]">
+      <div
+        class="flex-[2] flex flex-col gap-4 h-full w-full 2xl:min-w-[400px]"
+      >
         <div
           class="flex-1 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-slate-200 dark:border-zinc-800 relative flex flex-col items-center justify-center p-1 overflow-hidden"
         >
@@ -928,29 +937,7 @@ const onEqpSelect = async (event: any) => {
 
   if (!selectedEqp) return;
 
-  const params = {
-    eqpId: filters.eqpId,
-    startDate: filters.startDate?.toISOString(),
-    endDate: filters.endDate?.toISOString(),
-  };
-
-  const [lots, wafers, cRcps, sRcps, sGrps, filmsList] = await Promise.all([
-    waferApi.getDistinctValues("lotids", params),
-    waferApi.getDistinctValues("waferids", params),
-    waferApi.getDistinctValues("cassettercps", params),
-    waferApi.getDistinctValues("stagercps", params),
-    waferApi.getDistinctValues("stagegroups", params),
-    waferApi.getDistinctValues("films", params),
-  ]);
-
-  lotIds.value = lots;
-  filteredLotIds.value = lots;
-  waferIds.value = wafers;
-  filteredWaferIds.value = wafers;
-  cassetteRcps.value = cRcps;
-  stageRcps.value = sRcps;
-  stageGroups.value = sGrps;
-  films.value = filmsList;
+  loadFilterOptions();
 };
 
 // Handle manual change or clear of EQP ID
@@ -1160,12 +1147,14 @@ const resetFilters = () => {
 const formatDate = (dateStr: string) => {
   if (!dateStr) return "-";
   const d = new Date(dateStr);
-  const yy = d.getFullYear().toString().slice(2);
-  const MM = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const HH = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  const ss = String(d.getSeconds()).padStart(2, "0");
+  const yy = d.getUTCFullYear().toString().slice(2);
+  const MM = String(d.getUTCMonth() + 1).padStart(2, "0"); // 월
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const HH = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");   // 분
+  const ss = String(d.getUTCSeconds()).padStart(2, "0");
+  
+  // ▼▼▼ 반환 문자열에 ${MM}이 포함되어야 합니다. ▼▼▼
   return `${yy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
 };
 
