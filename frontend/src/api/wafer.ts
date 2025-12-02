@@ -1,6 +1,7 @@
 // frontend/src/api/wafer.ts
 import axios from "axios";
 
+// [수정] 백엔드 포트 3000번으로 설정
 const apiClient = axios.create({
   baseURL: "http://localhost:3000/api",
   headers: { "Content-Type": "application/json" },
@@ -39,6 +40,13 @@ export interface StatisticItem {
 export interface PointDataResponseDto {
   headers: string[];
   data: any[][];
+}
+
+// [추가] 스펙트럼 데이터 DTO
+export interface SpectrumDto {
+  class: string;
+  wavelengths: number[];
+  values: number[];
 }
 
 // API 함수
@@ -82,7 +90,6 @@ export const waferApi = {
 
   // PDF 존재 여부 확인
   checkPdf: async (eqpId: string, servTs: string) => {
-    // servTs는 Date 객체일 수 있으므로 문자열로 변환
     const dt =
       typeof servTs === "string"
         ? servTs
@@ -95,7 +102,7 @@ export const waferApi = {
     return data.exists;
   },
 
-  // ▼▼▼ [수정] PDF 이미지 Base64 데이터 요청 및 반환 (async) ▼▼▼
+  // PDF 이미지 Base64 데이터 요청
   getPdfImageBase64: async (
     eqpId: string,
     dateTime: string,
@@ -112,11 +119,18 @@ export const waferApi = {
       pointNumber,
     };
 
-    // 서버가 Base64 문자열만 반환하도록 기대
     const { data } = await apiClient.get<string>("/WaferData/pdfimage", {
       params,
     });
 
+    return data;
+  },
+
+  // [추가] Spectrum 데이터 요청 함수
+  getSpectrum: async (params: any) => {
+    const { data } = await apiClient.get<SpectrumDto[]>("/WaferData/spectrum", {
+      params,
+    });
     return data;
   },
 };
