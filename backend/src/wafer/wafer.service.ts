@@ -288,7 +288,7 @@ export class WaferService {
     if (p.waferId) sql += ` AND waferid = ${p.waferId}`;
     if (p.cassetteRcp) sql += ` AND cassettercp = '${p.cassetteRcp}'`;
     if (p.stageRcp) sql += ` AND stagercp = '${p.stageRcp}'`;
-    
+
     if (p.stageGroup) sql += ` AND stagegroup = '${p.stageGroup}'`;
     if (p.film) sql += ` AND film = '${p.film}'`;
 
