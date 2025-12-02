@@ -111,7 +111,7 @@ export const waferApi = {
       dateTime: dt,
       pointNumber,
     };
-    
+
     // 서버가 Base64 문자열만 반환하도록 기대
     const { data } = await apiClient.get<string>("/WaferData/pdfimage", {
       params,
