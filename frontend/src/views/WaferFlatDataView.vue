@@ -228,7 +228,7 @@
       v-if="hasSearched"
       class="flex flex-col flex-1 min-h-0 gap-4 pb-4 overflow-hidden 2xl:flex-row fade-in"
     >
-      <div class="flex-1 flex flex-col gap-3 w-full overflow-hidden h-full">
+      <div class="flex flex-col flex-1 w-full h-full gap-3 overflow-hidden">
         <div
           class="flex flex-col overflow-hidden bg-white border shadow-sm rounded-xl dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 shrink-0 h-[50%]"
         >
@@ -386,37 +386,37 @@
         </div>
 
         <div
-          class="flex-1 min-h-0 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-slate-200 dark:border-zinc-800 overflow-hidden flex flex-col"
+          class="flex flex-col flex-1 min-h-0 overflow-hidden bg-white border shadow-sm dark:bg-zinc-900 rounded-xl border-slate-200 dark:border-zinc-800"
         >
           <div class="flex border-b border-slate-100 dark:border-zinc-800">
             <button
               @click="activeTab = 'points'"
-              class="px-4 py-2 text-xs font-bold border-b-2 transition-colors flex items-center gap-2"
+              class="flex items-center gap-2 px-4 py-2 text-xs font-bold transition-colors border-b-2"
               :class="
                 activeTab === 'points'
                   ? 'border-teal-500 text-teal-600 dark:text-teal-400'
                   : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
               "
             >
-              <i class="pi pi-list text-xs"></i> Wafer Points
+              <i class="text-xs pi pi-list"></i> Wafer Points
             </button>
             <button
               @click="activeTab = 'stats'"
-              class="px-4 py-2 text-xs font-bold border-b-2 transition-colors flex items-center gap-2"
+              class="flex items-center gap-2 px-4 py-2 text-xs font-bold transition-colors border-b-2"
               :class="
                 activeTab === 'stats'
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
               "
             >
-              <i class="pi pi-chart-bar text-xs"></i> Statistics
+              <i class="text-xs pi pi-chart-bar"></i> Statistics
             </button>
           </div>
 
           <div class="relative flex-1 overflow-auto">
             <div
               v-if="isStatsLoading || isPointsLoading"
-              class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-zinc-900/80 z-10"
+              class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-zinc-900/80"
             >
               <ProgressSpinner style="width: 25px; height: 25px" />
             </div>
@@ -430,14 +430,15 @@
 
             <div
               v-else-if="activeTab === 'points'"
-              class="overflow-auto h-full"
+              class="overflow-auto"
+              style="max-height: 280p"
             >
               <table
                 v-if="pointData && pointData.data && pointData.data.length > 0"
                 class="w-full text-xs text-center border-collapse table-fixed"
               >
                 <thead
-                  class="sticky top-0 z-20 text-xs font-bold uppercase bg-teal-50 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 shadow-sm"
+                  class="sticky top-0 z-20 text-xs font-bold uppercase shadow-sm bg-teal-50 dark:bg-zinc-800 text-slate-600 dark:text-slate-300"
                 >
                   <tr>
                     <th
@@ -459,7 +460,7 @@
                   <tr
                     v-for="(row, idx) in pointData.data"
                     :key="idx"
-                    class="group transition-colors cursor-pointer"
+                    class="transition-colors cursor-pointer group"
                     :class="{
                       'bg-teal-100 dark:bg-teal-900/40':
                         idx === selectedPointIdx,
@@ -489,7 +490,7 @@
               </table>
               <div
                 v-else
-                class="flex items-center justify-center h-full text-xs text-slate-400 py-10"
+                class="flex items-center justify-center h-full py-10 text-xs text-slate-400"
               >
                 No point data available
               </div>
@@ -536,134 +537,134 @@
                 >
                   <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/50">
                     <td
-                      class="py-1 px-2 pl-4 font-bold text-slate-600 dark:text-slate-400"
+                      class="px-2 py-1 pl-4 font-bold text-slate-600 dark:text-slate-400"
                     >
                       Max
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.t1.max, 3) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.gof.max, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.z.max, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right pr-4">
+                    <td class="px-2 py-1 text-right pr-4">
                       {{ fmt(statistics.srvisz.max, 4) }}
                     </td>
                   </tr>
                   <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/50">
                     <td
-                      class="py-1 px-2 pl-4 font-bold text-slate-600 dark:text-slate-400"
+                      class="px-2 py-1 pl-4 font-bold text-slate-600 dark:text-slate-400"
                     >
                       Min
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.t1.min, 3) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.gof.min, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.z.min, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right pr-4">
+                    <td class="px-2 py-1 text-right pr-4">
                       {{ fmt(statistics.srvisz.min, 4) }}
                     </td>
                   </tr>
                   <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/50">
                     <td
-                      class="py-1 px-2 pl-4 font-bold text-slate-600 dark:text-slate-400"
+                      class="px-2 py-1 pl-4 font-bold text-slate-600 dark:text-slate-400"
                     >
                       Range
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.t1.range, 3) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.gof.range, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.z.range, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right pr-4">
+                    <td class="px-2 py-1 text-right pr-4">
                       {{ fmt(statistics.srvisz.range, 4) }}
                     </td>
                   </tr>
                   <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/50">
                     <td
-                      class="py-1 px-2 pl-4 font-bold text-slate-600 dark:text-slate-400"
+                      class="px-2 py-1 pl-4 font-bold text-slate-600 dark:text-slate-400"
                     >
                       Mean
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.t1.mean, 3) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.gof.mean, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.z.mean, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right pr-4">
+                    <td class="px-2 py-1 text-right pr-4">
                       {{ fmt(statistics.srvisz.mean, 4) }}
                     </td>
                   </tr>
                   <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/50">
                     <td
-                      class="py-1 px-2 pl-4 font-bold text-slate-600 dark:text-slate-400"
+                      class="px-2 py-1 pl-4 font-bold text-slate-600 dark:text-slate-400"
                     >
                       StdD
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.t1.stdDev, 3) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.gof.stdDev, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.z.stdDev, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right pr-4">
+                    <td class="px-2 py-1 text-right pr-4">
                       {{ fmt(statistics.srvisz.stdDev, 4) }}
                     </td>
                   </tr>
                   <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/50">
                     <td
-                      class="py-1 px-2 pl-4 font-bold text-slate-600 dark:text-slate-400"
+                      class="px-2 py-1 pl-4 font-bold text-slate-600 dark:text-slate-400"
                     >
                       %StdD
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.t1.percentStdDev, 3) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.gof.percentStdDev, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.z.percentStdDev, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right pr-4">
+                    <td class="px-2 py-1 text-right pr-4">
                       {{ fmt(statistics.srvisz.percentStdDev, 4) }}
                     </td>
                   </tr>
                   <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/50">
                     <td
-                      class="py-1 px-2 pl-4 font-bold text-slate-600 dark:text-slate-400"
+                      class="px-2 py-1 pl-4 font-bold text-slate-600 dark:text-slate-400"
                     >
                       %NonU
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.t1.percentNonU, 3) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.gof.percentNonU, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right">
+                    <td class="px-2 py-1 text-right">
                       {{ fmt(statistics.z.percentNonU, 4) }}
                     </td>
-                    <td class="py-1 px-2 text-right pr-4">
+                    <td class="px-2 py-1 text-right pr-4">
                       {{ fmt(statistics.srvisz.percentNonU, 4) }}
                     </td>
                   </tr>
@@ -681,6 +682,7 @@
       </div>
 
       <div class="w-[450px] shrink-0 flex flex-col gap-4 h-full">
+        <!-- 🔥 [수정된 Wafer Map 영역 - 높이 유지 + smooth 전환] -->
         <div
           class="h-[415px] shrink-0 rounded-xl dark:border-zinc-800 relative flex flex-col items-center justify-center p-4 overflow-hidden"
         >
@@ -689,65 +691,62 @@
           >
             <i class="pi pi-image mr-2 text-teal-500"></i> Wafer Map
           </div>
-
+        
+          <!-- 🟩 이 div가 전체 높이를 유지하는 wrapper -->
           <div
-            class="relative h-full aspect-square max-w-full rounded-full border-4 border-slate-100 dark:border-zinc-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] overflow-hidden bg-slate-50 dark:bg-black flex items-center justify-center"
+            class="relative w-full h-full max-w-full aspect-square rounded-full border-4 border-slate-100 dark:border-zinc-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] overflow-hidden bg-slate-50 dark:bg-black flex items-center justify-center"
           >
-            <div
-              v-if="isImageLoading"
-              class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 dark:bg-zinc-900/80 z-20 backdrop-blur-sm transition-opacity duration-300"
-            >
-              <ProgressSpinner
-                style="width: 40px; height: 40px"
-                strokeWidth="4"
-              />
-              <span class="mt-3 text-xs text-slate-500 font-bold animate-pulse"
-                >Processing Map...</span
-              >
-            </div>
-
-            <div
-              v-if="!pdfImageUrl"
-              class="flex flex-col items-center justify-center text-slate-400 w-full h-full transition-opacity duration-300"
-              :class="{
-                'opacity-0': isImageLoading,
-                'opacity-40': !isImageLoading,
-              }"
-            >
-              <i class="pi pi-circle text-6xl mb-3 opacity-20"></i>
-              <span class="text-xs">No Map Image Available</span>
-            </div>
-
-            <div
-              v-else
-              class="w-full h-full relative fade-in flex items-center justify-center"
-            >
-              <img
-                :src="pdfImageUrl"
-                class="w-full h-full object-contain rounded-full"
-              />
+            <!-- ⛔ 로딩 오버레이 -->
+            <transition name="fade">
               <div
-                class="absolute inset-0 pointer-events-none rounded-full overflow-hidden"
+                v-if="isImageLoading"
+                class="absolute inset-0 flex flex-col items-center justify-center
+                bg-white/70 dark:bg-black/60 backdrop-blur-sm z-20"
               >
-                <div
-                  class="absolute top-0 bottom-0 left-1/2 w-px bg-red-500 transform -translate-x-1/2"
-                ></div>
-                <div
-                  class="absolute left-0 right-0 top-1/2 h-px bg-red-500 transform -translate-y-1/2"
-                ></div>
+                <ProgressSpinner style="width: 40px; height: 40px" strokeWidth="4" />
+                <span class="mt-3 text-xs text-slate-500 font-bold animate-pulse">
+                  Processing Map…
+                </span>
               </div>
+            </transition>
+        
+            <!-- ❌ 이미지가 없을 때 placeholder (부모 높이 유지됨) -->
+            <transition name="fade">
+              <div
+                v-if="!pdfImageUrl && !isImageLoading"
+                class="absolute inset-0 flex flex-col items-center justify-center
+                text-slate-400 opacity-50 pointer-events-none"
+              >
+                <i class="pi pi-circle text-6xl mb-3 opacity-20"></i>
+                <span class="text-xs">No Map Image Available</span>
+              </div>
+            </transition>
+        
+            <!-- 🖼 이미지가 있을 때 -->
+            <transition name="fade">
+              <img
+                v-if="pdfImageUrl && !isImageLoading"
+                :src="pdfImageUrl"
+                class="absolute inset-0 w-full h-full object-contain rounded-full"
+              />
+            </transition>
+        
+            <!-- 십자선 (항상 유지) -->
+            <div class="absolute inset-0 pointer-events-none rounded-full overflow-hidden">
+              <div class="absolute top-0 bottom-0 left-1/2 w-px bg-red-500 -translate-x-1/2"></div>
+              <div class="absolute left-0 right-0 top-1/2 h-px bg-red-500 -translate-y-1/2"></div>
             </div>
           </div>
-
+        
+          <!-- Point Badge -->
           <div
             v-if="selectedRow && pdfExists"
             class="absolute bottom-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full backdrop-blur-md font-mono shadow-lg border border-white/10 z-30"
           >
-            {{ selectedRow.lotId }} W{{ selectedRow.waferId }} #{{
-              selectedPointValue
-            }}
+            {{ selectedRow.lotId }} W{{ selectedRow.waferId }} #{{ selectedPointValue }}
           </div>
         </div>
+
 
         <div
           class="flex-1 min-h-0 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-slate-200 dark:border-zinc-800 flex flex-col overflow-hidden shrink-0"
@@ -1342,3 +1341,4 @@ table td {
   font-size: 11px !important;
 }
 </style>
+
