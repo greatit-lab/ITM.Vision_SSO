@@ -3,38 +3,40 @@
   <div
     class="min-h-full transition-colors duration-500 ease-in-out bg-[#F8FAFC] dark:bg-[#09090B] font-sans"
   >
-    <div
-      class="flex flex-col items-center justify-between gap-3 mb-4 md:flex-row"
-    >
-      <div class="flex items-center gap-3">
+    <div class="flex flex-col items-center justify-between gap-3 md:flex-row">
+      <div class="flex items-center gap-2 px-1 mb-2">
         <div
-          class="flex items-center justify-center w-10 h-10 bg-white border shadow-sm rounded-xl dark:bg-zinc-900 border-slate-100 dark:border-zinc-800"
+          class="flex items-center justify-center w-8 h-8 bg-white border rounded-lg shadow-sm dark:bg-zinc-900 border-slate-100 dark:border-zinc-800"
         >
-          <i class="text-xl text-indigo-500 pi pi-objects-column"></i>
+          <i class="text-lg text-indigo-500 pi pi-objects-column"></i>
         </div>
-        <div>
+
+        <div class="flex items-baseline gap-2">
           <h1
-            class="flex items-center gap-2 text-xl font-extrabold tracking-tight text-slate-900 dark:text-white"
+            class="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white"
           >
             Overview
-            <span
-              v-if="hasSearched"
-              class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 text-[9px] font-bold uppercase tracking-wider fade-in shadow-sm select-none"
-            >
-              <span class="relative flex h-1.5 w-1.5">
-                <span
-                  class="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping bg-emerald-400"
-                ></span>
-                <span
-                  class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"
-                ></span>
-              </span>
-              Live
-            </span>
           </h1>
-          <p class="text-slate-500 dark:text-slate-400 font-medium text-[10px]">
+          <span
+            class="text-slate-400 dark:text-slate-500 font-medium text-[11px]"
+          >
             System performance summary.
-          </p>
+          </span>
+
+          <span
+            v-if="hasSearched"
+            class="flex items-center gap-1 px-2 py-0.5 ml-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 text-[9px] font-bold uppercase tracking-wider fade-in shadow-sm select-none self-center"
+          >
+            <span class="relative flex h-1.5 w-1.5">
+              <span
+                class="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping bg-emerald-400"
+              ></span>
+              <span
+                class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"
+              ></span>
+            </span>
+            Live
+          </span>
         </div>
       </div>
     </div>
@@ -1154,3 +1156,4 @@ body .p-tooltip .p-tooltip-arrow {
   font-size: 12px !important; /* 11px -> 12px로 변경 */
 }
 </style>
+
