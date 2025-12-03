@@ -223,7 +223,7 @@ const createLineChart = (
       // 툴팁 배경: 반투명 검정(모던한 느낌) + 시리즈 색상 테두리
       tooltip.get("background")?.setAll({
         fill: am5.color(0x1e293b), // Slate-800 (아주 짙은 남색/검정)
-        fillOpacity: 0.85,         // 적당한 투명도
+        fillOpacity: 0.65,         // 적당한 투명도
         stroke: seriesColor,       // 테두리는 시리즈 색상으로 구분
         strokeWidth: 1,            // 얇고 세련된 테두리
         cornerRadius: 6,           // 부드러운 라운딩
@@ -231,14 +231,14 @@ const createLineChart = (
         shadowBlur: 10,
         shadowOffsetX: 4,
         shadowOffsetY: 4,
-        shadowOpacity: 0.2
+        shadowOpacity: 0.2,
       } as any);
 
       // 툴팁 텍스트: 흰색 고정 (어두운 배경 위)
       tooltip.label.setAll({
         fill: am5.color(0xffffff),
         fontSize: 12,
-        fontWeight: "500" // Regular보다는 굵게, Bold보다는 얇게
+        fontWeight: "500", // Regular보다는 굵게, Bold보다는 얇게
       });
 
       const series = chartInstance.series.push(
@@ -342,3 +342,4 @@ watch(
   { deep: true }
 );
 </script>
+
