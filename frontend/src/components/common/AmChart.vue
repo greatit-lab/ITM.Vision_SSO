@@ -10,9 +10,6 @@ import * as am5xy from "@amcharts/amcharts5/xy";
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 import am5themes_Dark from "@amcharts/amcharts5/themes/Dark";
 
-// [라이선스] 여기에 구매하신 amCharts 라이선스 키를 입력하세요.
-am5.addLicense("YOUR_LICENSE_KEY_HERE");
-
 const props = defineProps<{
   chartType: string;
   data: any[];
@@ -342,4 +339,5 @@ watch(
   { deep: true }
 );
 </script>
+
 
