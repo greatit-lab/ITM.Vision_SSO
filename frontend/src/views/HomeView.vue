@@ -645,13 +645,9 @@
           </p>
         </div>
 
-        <AmChart
+        <EChart
           v-if="!isChartLoading && chartData.length > 0"
-          chartType="PerformanceLineChart"
-          :data="chartData"
-          :config="chartConfig"
-          height="100%"
-          :isDarkMode="false"
+          :option="chartOption"
         />
 
         <div
@@ -686,7 +682,7 @@ import {
   type AgentStatusDto,
 } from "@/api/dashboard";
 import { performanceApi } from "@/api/performance";
-import AmChart from "@/components/common/AmChart.vue";
+import EChart from "@/components/common/EChart.vue"; // ECharts 컴포넌트 사용
 import Select from "primevue/select";
 import Button from "primevue/button";
 import DataTable from "primevue/datatable";
@@ -707,7 +703,6 @@ const activeFilter = ref<"All" | "Online" | "Offline" | "Alarm" | "TimeSync">(
 
 const sites = ref<string[]>([]);
 const sdwts = ref<string[]>([]);
-// [수정] 타입 오류 해결: todayErrorTotalCount 초기값 0 추가
 const summary = ref<DashboardSummaryDto>({
   totalEqpCount: 0,
   onlineAgentCount: 0,
@@ -724,8 +719,13 @@ const chartData = ref<any[]>([]);
 const refreshCount = ref(30);
 let refreshTimer: number | null = null;
 
+// 다크 모드 감지 상태
+const isDarkMode = ref(document.documentElement.classList.contains("dark"));
+let themeObserver: MutationObserver | null = null;
+
 onMounted(async () => {
   try {
+    // 사이트 목록 로드 및 필터 복원 로직
     sites.value = await dashboardApi.getSites();
     const savedSite = localStorage.getItem("dashboard_site");
     const savedSdwt = localStorage.getItem("dashboard_sdwt");
@@ -739,6 +739,19 @@ onMounted(async () => {
         await loadData(true);
       }
     }
+
+    // 다크 모드 변경 감지 옵저버 등록
+    themeObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === "class") {
+          isDarkMode.value = document.documentElement.classList.contains("dark");
+        }
+      });
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
   } catch (e) {
     console.error(e);
   }
@@ -746,6 +759,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopAutoRefresh();
+  // 옵저버 해제
+  if (themeObserver) themeObserver.disconnect();
 });
 
 const onSiteChanged = async () => {
@@ -782,7 +797,6 @@ const loadData = async (showLoading = true) => {
   }
   hasSearched.value = true;
 
-  // 병렬 요청으로 로딩 속도 최적화
   dashboardApi
     .getSummary(filterStore.selectedSite, filterStore.selectedSdwt)
     .then((data) => {
@@ -854,28 +868,127 @@ const openChart = async (agent: AgentStatusDto) => {
   }
 };
 
-const chartConfig = {
-  xField: "timestamp",
-  xTimeUnit: "minute",
-  xAxisDateFormat: "yy-MM-dd HH:mm",
-  tooltipDateFormat: "yy-MM-dd HH:mm",
-  series: [
-    {
-      name: "CPU",
-      valueField: "cpuUsage",
-      color: "#3b82f6",
-      tooltipText: "CPU: {valueY.formatNumber('#.00')}%",
-      bulletRadius: 3,
+// ECharts 옵션 계산 (chartData 또는 isDarkMode가 변경되면 자동 업데이트)
+const chartOption = computed(() => {
+  if (!chartData.value || chartData.value.length === 0) return {};
+
+  const timestamps = chartData.value.map((d) => d.timestamp);
+  const cpuValues = chartData.value.map((d) => d.cpuUsage);
+  const memValues = chartData.value.map((d) => d.memoryUsage);
+
+  // 테마별 색상 정의
+  const textColor = isDarkMode.value ? "#cbd5e1" : "#475569"; // Slate-300 : Slate-600
+  const gridColor = isDarkMode.value
+    ? "rgba(255, 255, 255, 0.1)"
+    : "rgba(0, 0, 0, 0.1)";
+  const tooltipBg = isDarkMode.value
+    ? "rgba(24, 24, 27, 0.9)"
+    : "rgba(255, 255, 255, 0.9)";
+  const tooltipBorder = isDarkMode.value ? "#3f3f46" : "#e2e8f0";
+  const tooltipText = isDarkMode.value ? "#fff" : "#1e293b";
+
+  return {
+    backgroundColor: "transparent",
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: tooltipBg,
+      borderColor: tooltipBorder,
+      textStyle: {
+        color: tooltipText,
+      },
+      axisPointer: { type: "cross", label: { backgroundColor: "#6b7280" } },
+      formatter: (params: any) => {
+        let html = `<div class="font-bold mb-1" style="color:${tooltipText}">${params[0].axisValueLabel}</div>`;
+        params.forEach((p: any) => {
+          const colorDot = `<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:${p.color};"></span>`;
+          html += `<div style="color:${tooltipText}">${colorDot} ${
+            p.seriesName
+          }: ${p.value.toFixed(2)}%</div>`;
+        });
+        return html;
+      },
     },
-    {
-      name: "MEM",
-      valueField: "memoryUsage",
-      color: "#10b981",
-      tooltipText: "MEM: {valueY.formatNumber('#.00')}%",
-      bulletRadius: 3,
+    legend: {
+      data: ["CPU Usage", "Memory Usage"],
+      bottom: 0,
+      textStyle: { color: textColor }, // 테마별 색상 적용
     },
-  ],
-};
+    grid: {
+      left: "3%",
+      right: "4%",
+      bottom: "10%",
+      top: "10%",
+      containLabel: true,
+    },
+    xAxis: {
+      type: "category",
+      boundaryGap: false,
+      data: timestamps.map((t: string) => {
+        const d = new Date(t);
+        return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+          d.getDate()
+        ).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(
+          d.getMinutes()
+        ).padStart(2, "0")}`;
+      }),
+      axisLabel: { color: textColor }, // 테마별 색상 적용
+      axisLine: { lineStyle: { color: gridColor } },
+    },
+    yAxis: {
+      type: "value",
+      name: "Usage (%)",
+      min: 0,
+      max: 100,
+      axisLabel: { color: textColor }, // 테마별 색상 적용
+      nameTextStyle: { color: textColor, padding: [0, 0, 0, 20] }, // 테마별 색상 적용
+      splitLine: { show: true, lineStyle: { color: gridColor } }, // 테마별 색상 적용
+    },
+    series: [
+      {
+        name: "CPU Usage",
+        type: "line",
+        data: cpuValues,
+        smooth: true,
+        showSymbol: false,
+        itemStyle: { color: "#3b82f6" },
+        areaStyle: {
+          color: {
+            type: "linear",
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: "rgba(59, 130, 246, 0.3)" },
+              { offset: 1, color: "rgba(59, 130, 246, 0)" },
+            ],
+          },
+        },
+      },
+      {
+        name: "Memory Usage",
+        type: "line",
+        data: memValues,
+        smooth: true,
+        showSymbol: false,
+        itemStyle: { color: "#10b981" },
+        areaStyle: {
+          color: {
+            type: "linear",
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: "rgba(16, 185, 129, 0.3)" },
+              { offset: 1, color: "rgba(16, 185, 129, 0)" },
+            ],
+          },
+        },
+      },
+    ],
+  };
+});
 
 const first = ref(0);
 const rowsPerPage = ref(15);
@@ -923,6 +1036,7 @@ const prevPage = () => {
 const nextPage = () => {
   if (first.value + rowsPerPage.value < totalRecords.value)
     first.value += rowsPerPage.value;
+  loadData(true); // 간단한 페이지네이션 갱신 트리거 (필요시 수정)
 };
 const lastPage = () => {
   first.value =
@@ -1024,7 +1138,6 @@ const getClockDriftColor = (s: number | null | undefined) => {
   return "text-slate-600 dark:text-slate-300";
 };
 
-// [수정] UTC 시간 메서드를 사용하여 타임존 중복 보정 방지
 const formatDate = (d: string | null) => {
   if (!d) return "-";
   const date = new Date(d);
@@ -1039,13 +1152,13 @@ const formatDate = (d: string | null) => {
 </script>
 
 <style scoped>
-/* Select Styles - [수정] 폰트 크기를 11px로 조정하여 '한 단계 작게' 적용 */
+/* Select Styles - 폰트 크기를 11px로 조정 */
 :deep(.p-select),
 :deep(.custom-dropdown) {
   @apply !bg-slate-100 dark:!bg-zinc-800/50 !border-0 text-slate-700 dark:text-slate-200 rounded-lg font-bold shadow-none transition-colors;
 }
 
-/* [핵심 수정] 라벨(선택된 텍스트) 폰트 크기 11px 적용 및 수직 정렬을 위한 패딩 조정 */
+/* 라벨(선택된 텍스트) 폰트 크기 11px 적용 및 수직 정렬 패딩 조정 */
 :deep(.custom-dropdown .p-select-label) {
   @apply text-[13px] py-[5px] px-3;
 }
@@ -1119,22 +1232,13 @@ const formatDate = (d: string | null) => {
 <style>
 .custom-dropdown-panel .p-select-option {
   padding: 6px 10px !important;
-  font-size: 11px !important; /* [수정] 옵션 폰트 11px */
+  font-size: 11px !important; /* 옵션 폰트 11px */
 }
 .custom-dropdown-panel .p-select-empty-message {
   padding: 6px 10px !important;
   font-size: 11px !important;
 }
 /* 툴팁 스타일 */
-body .p-tooltip .p-tooltip-text {
-  font-size: 10px !important;
-  background-color: #64748b !important;
-  white-space: nowrap !important;
-  padding: 3px 6px !important;
-}
-</style>
-
-<style>
 body .p-tooltip .p-tooltip-text {
   font-size: 10px !important;
   background-color: #64748b !important;
@@ -1149,11 +1253,10 @@ body .p-tooltip .p-tooltip-arrow {
 /* 추가된 드롭다운 패널 스타일 */
 .custom-dropdown-panel.small .p-select-option {
   padding: 6px 10px !important;
-  font-size: 12px !important; /* 11px -> 12px로 변경 */
+  font-size: 12px !important;
 }
 .custom-dropdown-panel.small .p-select-empty-message {
   padding: 6px 10px !important;
-  font-size: 12px !important; /* 11px -> 12px로 변경 */
+  font-size: 12px !important;
 }
 </style>
-
