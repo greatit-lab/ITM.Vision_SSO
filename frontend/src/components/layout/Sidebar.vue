@@ -196,6 +196,11 @@ const menuGroups = [
         icon: "pi pi-compass",
       },
       { to: "/error-analytics", label: "Alert History", icon: "pi pi-bell" },
+      {
+        to: "/spectrum-analytics",
+        label: "Spectrum Analysis",
+        icon: "pi pi-bolt",
+      },
     ],
   },
 ];
