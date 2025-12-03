@@ -900,22 +900,52 @@ const pdfExists = ref(false);
 const pdfImageUrl = ref<string | null>(null);
 
 const spectrumData = ref<any[]>([]);
+const spectrumData = ref<any[]>([]);
+
+// [추가] 다크모드 감지
+const isDarkMode = ref(document.documentElement.classList.contains("dark"));
+onMounted(() => {
+  const observer = new MutationObserver(() => {
+    isDarkMode.value = document.documentElement.classList.contains("dark");
+  });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+});
+
+// [수정] 스펙트럼 차트 설정 (Config)
 const spectrumConfig = ref<any>({
   xAxisType: "value",
   xField: "wavelength",
-  yAxes: [{ title: "Values" }],
+  xAxisTitle: "Wavelength (nm)",
+
+  yAxes: [
+    {
+      title: "TE-Reflectance (%)",
+      min: 0,
+      max: 90,
+    },
+  ],
+
   series: [
     {
-      name: "Exp",
+      name: "EXP",
       valueField: "exp",
-      color: "#ef4444",
-      tooltipText: "Exp: {valueY}",
+      // [수정] 세련된 Vivid Red
+      color: "#FF5252",
+      strokeWidth: 3,
+      // 툴팁 텍스트는 흰색 고정이므로 [bold] 태그만 사용
+      tooltipText: "[bold]EXP[/]\n{valueX}nm: {valueY.formatNumber('#.00')}%",
     },
     {
-      name: "Gen",
+      name: "GEN",
       valueField: "gen",
-      color: "#3b82f6",
-      tooltipText: "Gen: {valueY}",
+      // [수정] 세련된 Vivid Blue
+      color: "#448AFF",
+      strokeWidth: 3,
+      strokeDasharray: [4, 4],
+      tooltipText: "[bold]GEN[/]\n{valueX}nm: {valueY.formatNumber('#.00')}%",
     },
   ],
 });
@@ -1124,9 +1154,8 @@ const onRowSelect = async (event: any) => {
   }
 };
 
-const loadPointImage = async (idx: number) => {
-  const pointValue = idx;
 
+const loadPointImage = async (pointValue: number) => {
   if (!pdfExists.value || !selectedRow.value) return;
   isImageLoading.value = true;
   pdfImageUrl.value = null;
@@ -1145,78 +1174,91 @@ const loadPointImage = async (idx: number) => {
   }
 };
 
+// [수정] Spectrum 데이터 로드 (10배 곱하기, 대소문자 무시, ts 기준)
 const loadSpectrumData = async (pointValue: number) => {
   if (!selectedRow.value) return;
 
-  isSpectrumLoading.value = true;
   spectrumData.value = [];
+  isSpectrumLoading.value = true;
 
   try {
     const rawData = await waferApi.getSpectrum({
       eqpId: selectedRow.value.eqpId,
       ts: selectedRow.value.dateTime,
       lotId: selectedRow.value.lotId,
-      waferId: selectedRow.value.waferId,
-      pointNumber: pointValue, // 반드시 DB와 동일한 Point 값
+      waferId: String(selectedRow.value.waferId),
+      pointNumber: pointValue,
     });
 
-    if (!rawData || rawData.length === 0) {
-      console.warn("No spectrum data");
-      return;
-    }
+    if (!rawData || rawData.length === 0) return;
 
-    const expData = rawData.find((d) => d.class === "exp");
-    const genData = rawData.find((d) => d.class === "gen");
+    const expData = rawData.find(
+      (d) => d.class && d.class.toUpperCase() === "EXP"
+    );
+    const genData = rawData.find(
+      (d) => d.class && d.class.toUpperCase() === "GEN"
+    );
 
-    const baseWavelengths =
-      expData?.wavelengths || genData?.wavelengths || [];
+    const base = expData?.wavelengths || genData?.wavelengths || [];
 
-    const chartData = baseWavelengths.map((wl, i) => {
+    // [수정] 데이터 매핑 (값 * 100)
+    spectrumData.value = base.map((wl: number, i: number) => {
+      const expVal = expData?.values?.[i];
+      const genVal = genData?.values?.[i];
+
       return {
         wavelength: wl,
-        exp: expData?.values[i] ?? null,
-        gen: genData?.values[i] ?? null,
+        exp: expVal !== null && expVal !== undefined ? expVal * 100 : null,
+        gen: genVal !== null && genVal !== undefined ? genVal * 100 : null,
       };
     });
-
-    spectrumData.value = chartData;
-
-    // 👇 중요: amCharts 인스턴스에 직접 데이터 갱신함
-    if (spectrumChart.value) {
-      spectrumChart.value.set("data", chartData);
-    }
   } catch (err) {
-    console.error("loadSpectrumData error:", err);
+    console.error("Failed to load spectrum data:", err);
   } finally {
     isSpectrumLoading.value = false;
   }
 };
 
-
-const onPointClick = (idx: number) => {
+// [수정] Point 클릭 핸들러 (병렬 처리 및 안전한 접근 적용)
+const onPointClick = async (idx: number) => {
+  // 1. 기본값 설정
   let pointValue = idx + 1;
 
-  if (pointData.value && pointData.value.headers && pointData.value.data) {
+  // 2. Point 값 추출
+  if (pointData.value?.headers && pointData.value?.data?.[idx]) {
     const pointColIndex = pointData.value.headers.findIndex(
-      (h) => h.toLowerCase() === "point"
+      (h) => h?.toLowerCase() === "point"
     );
-    const rowData = pointData.value.data[idx];
 
-    if (pointColIndex > -1 && rowData) {
-      pointValue = Number(rowData[pointColIndex]);
+    if (pointColIndex > -1) {
+      const cellValue = pointData.value.data[idx][pointColIndex];
+      const parsed = Number(cellValue);
+      if (!isNaN(parsed)) {
+        pointValue = parsed;
+      }
     }
   }
 
+  // 3. UI 상태 업데이트
   selectedPointValue.value = pointValue;
-  selectedPointIdx.value = idx; // 하이라이트용 인덱스 업데이트
+  selectedPointIdx.value = idx;
+
+  // 4. 이미지 및 차트 데이터 병렬 로딩
+  const tasks: Promise<void>[] = [];
 
   if (pdfExists.value && selectedRow.value) {
-    loadPointImage(pointValue);
+    tasks.push(loadPointImage(pointValue));
   } else {
     pdfImageUrl.value = null;
   }
 
-  loadSpectrumData(pointValue);
+  tasks.push(loadSpectrumData(pointValue));
+
+  try {
+    await Promise.all(tasks);
+  } catch (error) {
+    console.error("Error loading point details:", error);
+  }
 };
 
 const resetFilters = () => {
@@ -1369,6 +1411,7 @@ table td {
   font-size: 11px !important;
 }
 </style>
+
 
 
 
