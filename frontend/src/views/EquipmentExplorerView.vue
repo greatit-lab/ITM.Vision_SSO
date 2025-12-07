@@ -338,7 +338,6 @@
                   <Column
                     header="Last Contact"
                     :rowspan="2"
-                    sortable
                     field="lastContact"
                     style="width: 140px"
                   />
@@ -519,7 +518,13 @@
                 </template>
               </Column>
               <Column field="locale"></Column>
-              <Column field="timezone"></Column>
+
+              <Column field="timezone">
+                <template #body="{ data }">
+                  <span>{{ formatTimezone(data.timezone) }}</span>
+                </template>
+              </Column>
+
               <Column field="cpu"
                 ><template #body="{ data }"
                   ><span :title="data.cpu">{{
@@ -697,8 +702,32 @@ const formatSimpleCpu = (cpu: string) => {
   return cpu.replace("Intel(R) Core(TM)", "").replace("CPU @", "").trim();
 };
 
-const formatDate = (d: string | null) =>
-  d ? new Date(d).toLocaleString() : "-";
+// [수정] 날짜 포맷 변경: 2025-09-30 -> 25-09-30, 시간 제거
+const formatDate = (d: string | null) => {
+  if (!d) return "-";
+  const date = new Date(d);
+  const yy = date.getUTCFullYear().toString().slice(2);
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+};
+
+// [추가] Timezone 약어 처리 함수
+const formatTimezone = (tz: string) => {
+  if (!tz) return "";
+  switch (tz) {
+    case "Korea Standard Time":
+      return "KST";
+    case "China Standard Time":
+      return "CST";
+    case "Pacific Standard Time":
+      return "PST";
+    case "Singapore Standard Time":
+      return "SGT";
+    default:
+      return tz;
+  }
+};
 
 const copyToClipboard = async (text: string) => {
   if (!text) return;
