@@ -7,7 +7,7 @@
       <div
         class="flex items-center justify-center w-8 h-8 bg-white border rounded-lg shadow-sm dark:bg-zinc-900 border-slate-100 dark:border-zinc-800"
       >
-        <i class="text-lg text-teal-600 pi pi-chart-pie dark:text-teal-400"></i>
+        <i class="text-lg text-teal-600 pi pi-curly-braces dark:text-teal-400"></i>
       </div>
       <div class="flex items-baseline gap-2">
         <h1
@@ -57,65 +57,45 @@
             />
           </div>
 
-          <div class="min-w-[160px] shrink-0 relative group">
-            <AutoComplete
+          <div class="min-w-[160px] shrink-0">
+            <Select
               v-model="filters.eqpId"
-              :suggestions="filteredEqpIds"
-              @complete="searchEqp"
+              :options="eqpIds"
+              filter
               placeholder="EQP ID"
               :disabled="!filterStore.selectedSdwt"
-              dropdown
+              showClear
               class="w-full custom-dropdown small"
-              inputClass="custom-input-text small !pr-7"
-              panelClass="custom-dropdown-panel small"
-              @item-select="onEqpSelect"
+              overlayClass="custom-dropdown-panel small"
               @change="onEqpChange"
             />
-            <i
-              v-if="filters.eqpId"
-              @click="clearEqpId"
-              class="pi pi-times absolute right-8 top-1/2 -translate-y-1/2 text-[9px] text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 cursor-pointer z-10 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
-            ></i>
           </div>
 
-          <div class="min-w-[160px] shrink-0 relative group">
-            <AutoComplete
+          <div class="min-w-[160px] shrink-0">
+            <Select
               v-model="filters.lotId"
-              :suggestions="filteredLotIds"
-              @complete="searchLot"
+              :options="lotIds"
+              filter
               placeholder="Lot ID"
               :disabled="!filters.eqpId"
-              dropdown
+              showClear
               class="w-full custom-dropdown small"
-              inputClass="custom-input-text small !pr-7"
-              panelClass="custom-dropdown-panel small"
-              @item-select="onLotSelect"
+              overlayClass="custom-dropdown-panel small"
               @change="onLotChange"
             />
-            <i
-              v-if="filters.lotId"
-              @click="clearLotId"
-              class="pi pi-times absolute right-8 top-1/2 -translate-y-1/2 text-[9px] text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 cursor-pointer z-10 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
-            ></i>
           </div>
 
-          <div class="min-w-[100px] shrink-0 relative group">
-            <AutoComplete
+          <div class="min-w-[100px] shrink-0">
+            <Select
               v-model="filters.waferId"
-              :suggestions="filteredWaferIds"
-              @complete="searchWafer"
-              placeholder="Wafer ID"
+              :options="waferIds"
+              filter
+              placeholder="Wafer"
               :disabled="!filters.lotId"
-              dropdown
+              showClear
               class="w-full custom-dropdown small"
-              inputClass="custom-input-text small !pr-7"
-              panelClass="custom-dropdown-panel small"
+              overlayClass="custom-dropdown-panel small"
             />
-            <i
-              v-if="filters.waferId"
-              @click="filters.waferId = ''"
-              class="pi pi-times absolute right-8 top-1/2 -translate-y-1/2 text-[9px] text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 cursor-pointer z-10 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
-            ></i>
           </div>
 
           <div class="min-w-[130px] shrink-0">
@@ -851,11 +831,11 @@ import {
 } from "@/api/wafer";
 import { equipmentApi } from "@/api/equipment";
 import EChart from "@/components/common/EChart.vue";
-import type { ECharts } from "echarts"; // ECharts 타입 임포트
+import type { ECharts } from "echarts";
 
 // PrimeVue Components
 import Select from "primevue/select";
-import AutoComplete from "primevue/autocomplete";
+// AutoComplete import 제거됨
 import DatePicker from "primevue/datepicker";
 import Button from "primevue/button";
 import DataTable from "primevue/datatable";
@@ -882,11 +862,9 @@ const filters = reactive({
 });
 
 const eqpIds = ref<string[]>([]);
-const filteredEqpIds = ref<string[]>([]);
+// filtered* 변수 제거됨 (Select 내부 필터 사용)
 const lotIds = ref<string[]>([]);
-const filteredLotIds = ref<string[]>([]);
 const waferIds = ref<string[]>([]);
-const filteredWaferIds = ref<string[]>([]);
 const cassetteRcps = ref<string[]>([]);
 const stageRcps = ref<string[]>([]);
 const stageGroups = ref<string[]>([]);
@@ -915,11 +893,9 @@ const spectrumData = ref<any[]>([]);
 
 const activeTab = ref<"points" | "stats">("points");
 
-// 줌 상태 관리 변수
 const isZoomed = ref(false);
 let spectrumChartInstance: ECharts | null = null;
 
-// 다크 모드 감지 로직
 const isDarkMode = ref(document.documentElement.classList.contains("dark"));
 let themeObserver: MutationObserver | null = null;
 
@@ -962,17 +938,11 @@ onUnmounted(() => {
   if (themeObserver) themeObserver.disconnect();
 });
 
-// 차트 생성 완료 시 핸들러
 const onChartCreated = (instance: any) => {
   spectrumChartInstance = instance;
-
-  // 줌 이벤트 리스너 등록
   instance.on("dataZoom", (params: any) => {
-    // dataZoom 이벤트 발생 시 줌 상태 확인
-    // batch 배열로 들어오는 경우가 많음
     const batch = params.batch?.[0];
     if (batch) {
-      // start가 0이 아니거나 end가 100이 아니면 줌된 상태로 간주
       if (batch.start !== 0 || batch.end !== 100) {
         isZoomed.value = true;
       } else {
@@ -982,17 +952,15 @@ const onChartCreated = (instance: any) => {
   });
 };
 
-// 줌 리셋 함수
 const resetZoom = () => {
   if (spectrumChartInstance) {
     spectrumChartInstance.dispatchAction({
-      type: "restore", // 차트 초기 상태로 복구
+      type: "restore",
     });
-    isZoomed.value = false; // 버튼 숨김
+    isZoomed.value = false;
   }
 };
 
-// ECharts 옵션 계산
 const spectrumOption = computed(() => {
   if (!spectrumData.value || spectrumData.value.length === 0) return {};
 
@@ -1009,8 +977,6 @@ const spectrumOption = computed(() => {
 
   return {
     backgroundColor: "transparent",
-
-    // 마우스 휠 줌 활성화 (Toolbox는 사용하지 않음)
     dataZoom: [
       {
         type: "inside",
@@ -1018,7 +984,6 @@ const spectrumOption = computed(() => {
         filterMode: "filter",
       },
     ],
-
     tooltip: {
       trigger: "axis",
       backgroundColor: isDarkMode.value
@@ -1045,7 +1010,6 @@ const spectrumOption = computed(() => {
         return html;
       },
     },
-    // 범례를 차트 안쪽 우측 상단으로 이동
     legend: {
       data: ["EXP", "GEN"],
       top: 5,
@@ -1063,11 +1027,11 @@ const spectrumOption = computed(() => {
       padding: [5, 10],
     },
     grid: {
-      left: 50, // Y축 제목 공간 확보
+      left: 50,
       right: 20,
-      bottom: 45, // X축 제목 공간 확보
-      top: 30, // 범례 공간
-      containLabel: false, // 직접 제어
+      bottom: 45,
+      top: 30,
+      containLabel: false,
     },
     dataset: {
       source: spectrumData.value,
@@ -1095,7 +1059,7 @@ const spectrumOption = computed(() => {
       type: "value",
       name: "TE-Reflectance (%)",
       nameLocation: "middle",
-      nameRotate: 90, // 세로 회전
+      nameRotate: 90,
       nameGap: 35,
       nameTextStyle: {
         color: textColor,
@@ -1123,7 +1087,7 @@ const spectrumOption = computed(() => {
         encode: { x: "wavelength", y: "gen" },
         showSymbol: false,
         smooth: true,
-        lineStyle: { width: 2 }, // 실선 변경
+        lineStyle: { width: 2 },
         itemStyle: { color: "#6366F1" },
       },
     ],
@@ -1171,34 +1135,25 @@ const loadEqpIds = async () => {
     );
 };
 
-const onEqpSelect = (event: any) => {
-  filters.eqpId = event.value;
-  localStorage.setItem("dashboard_eqpid", filters.eqpId);
-  filters.lotId = "";
-  filters.waferId = "";
-  if (filters.eqpId) loadFilterOptions();
+// AutoComplete용 Select 이벤트 핸들러 제거 및 Select용 핸들러 통합
+const onEqpChange = () => {
+  if (filters.eqpId) {
+    localStorage.setItem("dashboard_eqpid", filters.eqpId);
+    filters.lotId = "";
+    filters.waferId = "";
+    loadFilterOptions();
+  } else {
+    localStorage.removeItem("dashboard_eqpid");
+    filters.lotId = "";
+    filters.waferId = "";
+  }
 };
 
-const onEqpChange = () => {
-  if (!filters.eqpId) clearEqpId();
-};
-const clearEqpId = () => {
-  filters.eqpId = "";
-  localStorage.removeItem("dashboard_eqpid");
-  filters.lotId = "";
-  filters.waferId = "";
-};
-const onLotSelect = (event: any) => {
-  filters.lotId = event.value;
-  filters.waferId = "";
-};
 const onLotChange = () => {
-  if (!filters.lotId) clearLotId();
-};
-const clearLotId = () => {
-  filters.lotId = "";
   filters.waferId = "";
+  if (filters.lotId) loadFilterOptions();
 };
+
 const onAdvancedFilterChange = () => {
   loadFilterOptions();
 };
@@ -1225,32 +1180,14 @@ const loadFilterOptions = async () => {
     waferApi.getDistinctValues("films", params),
   ]);
   lotIds.value = lots;
-  filteredLotIds.value = lots;
   waferIds.value = wafers;
-  filteredWaferIds.value = wafers;
   cassetteRcps.value = cRcps;
   stageRcps.value = sRcps;
   stageGroups.value = sGrps;
   films.value = filmsList;
 };
 
-const searchEqp = (e: any) => {
-  filteredEqpIds.value = eqpIds.value.filter((id) =>
-    id.toLowerCase().includes(e.query.toLowerCase())
-  );
-};
-const searchLot = (e: any) => {
-  const query = e.query.toLowerCase();
-  filteredLotIds.value = query
-    ? lotIds.value.filter((id) => id.toLowerCase().includes(query))
-    : lotIds.value;
-};
-const searchWafer = (e: any) => {
-  const query = e.query.toLowerCase();
-  filteredWaferIds.value = query
-    ? waferIds.value.filter((id) => id.toLowerCase().includes(query))
-    : waferIds.value;
-};
+// AutoComplete용 search 함수 제거됨
 
 const searchData = async () => {
   first.value = 0;
@@ -1602,4 +1539,3 @@ table td {
   font-size: 11px !important;
 }
 </style>
-
