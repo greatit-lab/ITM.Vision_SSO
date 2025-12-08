@@ -3,8 +3,8 @@
   <div
     class="min-h-full transition-colors duration-500 ease-in-out bg-[#F8FAFC] dark:bg-[#09090B] font-sans"
   >
-    <div class="flex flex-col items-center justify-between gap-3 md:flex-row">
-      <div class="flex items-center gap-2 px-1 mb-2">
+    <div class="flex items-center justify-between gap-3 px-1 mb-2 shrink-0">
+      <div class="flex items-center gap-2">
         <div
           class="flex items-center justify-center w-8 h-8 bg-white border rounded-lg shadow-sm dark:bg-zinc-900 border-slate-100 dark:border-zinc-800"
         >
@@ -22,30 +22,35 @@
           >
             System performance summary.
           </span>
-
-          <span
-            v-if="hasSearched"
-            class="flex items-center gap-1 px-2 py-0.5 ml-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 text-[9px] font-bold uppercase tracking-wider fade-in shadow-sm select-none self-center"
-          >
-            <span class="relative flex h-1.5 w-1.5">
-              <span
-                class="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping bg-emerald-400"
-              ></span>
-              <span
-                class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"
-              ></span>
-            </span>
-            Live
-          </span>
         </div>
+      </div>
+
+      <div
+        v-if="hasSearched"
+        class="flex items-center gap-2 px-3 py-1 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50 rounded-full animate-pulse transition-all"
+      >
+        <span class="relative flex w-1.5 h-1.5">
+          <span
+            class="absolute inline-flex w-full h-full rounded-full opacity-75 bg-rose-400 animate-ping"
+          ></span>
+          <span
+            class="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500"
+          ></span>
+        </span>
+        <span
+          class="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider"
+          >LIVE</span
+        >
       </div>
     </div>
 
     <div
-      class="mb-5 bg-white dark:bg-[#111111] p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-wrap gap-2 items-center justify-between shadow-sm"
+      class="mb-5 bg-white dark:bg-[#111111] p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-wrap gap-2 items-center justify-between shadow-sm transition-colors duration-300"
     >
-      <div class="flex flex-1 gap-2 px-1 overflow-x-auto">
-        <div class="min-w-[140px]">
+      <div
+        class="flex items-center flex-1 gap-2 px-1 py-1 overflow-x-auto scrollbar-hide"
+      >
+        <div class="min-w-[140px] shrink-0">
           <Select
             v-model="filterStore.selectedSite"
             :options="sites"
@@ -57,7 +62,7 @@
             @change="onSiteChanged"
           />
         </div>
-        <div class="min-w-[180px]">
+        <div class="min-w-[160px] shrink-0">
           <Select
             v-model="filterStore.selectedSdwt"
             :options="sdwts"
@@ -72,7 +77,9 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-1 pr-1">
+      <div
+        class="flex items-center gap-1 pr-1 pl-2 border-l border-slate-100 dark:border-zinc-800"
+      >
         <div v-if="hasSearched" class="flex items-center justify-center w-6">
           <span
             class="text-[10px] font-bold font-mono text-slate-400 dark:text-slate-500"
@@ -94,7 +101,7 @@
 
     <div
       v-if="!hasSearched"
-      class="flex flex-col items-center justify-center border-2 border-dashed h-72 fade-in border-slate-200 dark:border-zinc-800 rounded-3xl"
+      class="flex flex-col items-center justify-center h-72 border-2 border-dashed fade-in border-slate-200 dark:border-zinc-800 rounded-3xl"
     >
       <div
         class="flex items-center justify-center w-12 h-12 mb-3 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500"
@@ -104,7 +111,7 @@
       <h3 class="text-sm font-bold text-slate-700 dark:text-slate-200">
         Ready to Analyze
       </h3>
-      <p class="text-slate-500 dark:text-slate-500 text-[10px] mt-1">
+      <p class="mt-1 text-[10px] text-slate-500 dark:text-slate-500">
         Please select a <b>Site</b> and <b>SDWT</b> to view the dashboard.
       </p>
     </div>
@@ -115,7 +122,7 @@
         class="flex flex-col items-center justify-center h-20"
       >
         <ProgressSpinner style="width: 20px; height: 20px" strokeWidth="4" />
-        <p class="text-[10px] text-slate-400 mt-2">Loading Summary...</p>
+        <p class="mt-2 text-[10px] text-slate-400">Loading Summary...</p>
       </div>
 
       <div v-else class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
@@ -298,7 +305,7 @@
                 </p>
                 <span
                   v-if="summary.newAlarmCount > 0"
-                  class="text-[9px] font-bold px-1 py-0.5 rounded"
+                  class="px-1 py-0.5 text-[9px] font-bold rounded"
                   :class="
                     activeFilter === 'Alarm'
                       ? 'bg-white/30 text-white'
@@ -372,7 +379,7 @@
 
       <div class="flex flex-col gap-4">
         <div
-          class="flex flex-col md:flex-row items-center justify-between px-2"
+          class="flex flex-col items-center justify-between px-2 md:flex-row"
         >
           <div class="flex items-center gap-2 mb-2 md:mb-0">
             <div class="w-1 h-4 bg-indigo-500 rounded-full"></div>
@@ -380,20 +387,20 @@
               Agent Status Monitoring
             </h3>
             <span
-              class="text-xs font-medium text-slate-400 dark:text-slate-500 ml-1"
+              class="ml-1 text-xs font-medium text-slate-400 dark:text-slate-500"
             >
               ({{ totalRecords }} Machines)
             </span>
           </div>
 
           <div
-            class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-zinc-900 py-1.5 px-3 rounded-lg border border-slate-200 dark:border-zinc-800 shadow-sm"
+            class="flex items-center gap-3 px-3 py-1.5 text-xs text-slate-500 bg-white border rounded-lg shadow-sm dark:text-slate-400 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800"
           >
             <div class="flex items-center gap-2">
               <span class="font-medium">Rows:</span>
               <select
                 v-model="rowsPerPage"
-                class="bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded px-1 py-0.5 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                class="px-1 py-0.5 font-medium border rounded cursor-pointer bg-slate-50 dark:bg-zinc-800 border-slate-200 dark:border-zinc-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 @change="first = 0"
               >
                 <option :value="20">20</option>
@@ -401,7 +408,7 @@
                 <option :value="60">60</option>
               </select>
             </div>
-            <div class="h-3 w-px bg-slate-200 dark:bg-zinc-700 mx-1"></div>
+            <div class="h-3 w-px mx-1 bg-slate-200 dark:bg-zinc-700"></div>
             <span class="font-medium min-w-[60px] text-right">
               {{ totalRecords === 0 ? 0 : first + 1 }} -
               {{ Math.min(first + rowsPerPage, totalRecords) }}
@@ -410,28 +417,28 @@
               <button
                 @click="first = 0"
                 :disabled="first === 0"
-                class="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded disabled:opacity-30"
+                class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30"
               >
                 <i class="pi pi-angle-double-left"></i>
               </button>
               <button
                 @click="prevPage"
                 :disabled="first === 0"
-                class="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded disabled:opacity-30"
+                class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30"
               >
                 <i class="pi pi-angle-left"></i>
               </button>
               <button
                 @click="nextPage"
                 :disabled="first + rowsPerPage >= totalRecords"
-                class="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded disabled:opacity-30"
+                class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30"
               >
                 <i class="pi pi-angle-right"></i>
               </button>
               <button
                 @click="lastPage"
                 :disabled="first + rowsPerPage >= totalRecords"
-                class="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded disabled:opacity-30"
+                class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-30"
               >
                 <i class="pi pi-angle-double-right"></i>
               </button>
@@ -445,23 +452,23 @@
 
         <div
           v-else
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 pb-4"
+          class="grid grid-cols-1 gap-4 pb-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
         >
           <div
             v-for="agent in displayedAgents"
             :key="agent.eqpId"
-            class="relative flex flex-col bg-white dark:bg-[#111111] border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group hover:-translate-y-1"
+            class="relative flex flex-col overflow-hidden transition-all duration-300 bg-white border shadow-sm dark:bg-[#111111] border-slate-200 dark:border-zinc-800 rounded-xl hover:shadow-lg group hover:-translate-y-1"
           >
             <div
               class="absolute top-0 left-0 w-full h-2 transition-colors duration-300"
               :class="getStatusBarClass(agent)"
             ></div>
 
-            <div class="p-3 flex flex-col h-full gap-2 pt-4">
+            <div class="flex flex-col h-full gap-2 p-3 pt-4">
               <div class="flex items-start justify-between">
                 <div>
                   <h4
-                    class="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-1.5"
+                    class="flex items-center gap-1.5 text-sm font-black tracking-tight text-slate-800 dark:text-slate-100"
                   >
                     {{ agent.eqpId }}
                     <span
@@ -475,7 +482,7 @@
                     title="Click to copy IP"
                     @click="copyToClipboard(agent.ipAddress)"
                   >
-                    <i class="pi pi-globe text-[9px]"></i> {{ agent.ipAddress }}
+                    <i class="text-[9px] pi pi-globe"></i> {{ agent.ipAddress }}
                   </div>
                 </div>
 
@@ -498,14 +505,14 @@
 
               <div class="grid grid-cols-5 gap-2 text-[10px]">
                 <div
-                  class="col-span-5 flex items-center justify-between p-1.5 rounded bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800"
+                  class="flex items-center justify-between col-span-5 p-1.5 border rounded bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-800"
                 >
                   <span
-                    class="text-slate-400 font-semibold flex items-center gap-1"
+                    class="flex items-center gap-1 font-semibold text-slate-400"
                     ><i class="pi pi-microsoft"></i> OS</span
                   >
                   <span
-                    class="text-slate-600 dark:text-slate-300 font-medium truncate max-w-[180px]"
+                    class="font-medium truncate text-slate-600 dark:text-slate-300 max-w-[180px]"
                     :class="getOsStyle(agent.os).text"
                   >
                     {{ formatOperatingSystem(agent.os, agent.systemType) }}
@@ -513,30 +520,31 @@
                 </div>
 
                 <div
-                  class="col-span-3 flex items-center justify-between p-1.5 rounded bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 overflow-hidden"
+                  class="flex items-center justify-between col-span-3 p-1.5 overflow-hidden border rounded bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-800"
                 >
                   <span
-                    class="text-slate-400 font-semibold text-[9px] whitespace-nowrap"
-                    >PC Name</span
+                    class="font-semibold text-slate-400 text-[9px] whitespace-nowrap flex items-center gap-1"
                   >
+                    <i class="pi pi-desktop text-[9px]"></i> PC
+                  </span>
                   <span
-                    class="text-slate-600 dark:text-slate-300 font-medium truncate ml-2 text-right"
+                    class="ml-2 font-medium text-right truncate text-slate-600 dark:text-slate-300"
                     :title="agent.pcName"
                     >{{ agent.pcName }}</span
                   >
                 </div>
 
                 <div
-                  class="col-span-2 flex items-center justify-between p-1.5 rounded bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 overflow-hidden"
+                  class="flex items-center justify-between col-span-2 p-1.5 overflow-hidden border rounded bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-800"
                 >
                   <span
                     v-tooltip.top="'+: Agent Fast, -: Agent Slow'"
-                    class="text-slate-400 font-semibold text-[9px] whitespace-nowrap flex items-center gap-1 cursor-help hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    class="flex items-center gap-1 font-semibold text-slate-400 text-[9px] whitespace-nowrap cursor-help hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                   >
-                    <i class="pi pi-clock text-[9px]"></i>
+                    <i class="text-[9px] pi pi-clock"></i>
                   </span>
                   <span
-                    class="font-mono font-bold truncate ml-2 text-right"
+                    class="ml-2 font-mono font-bold text-right truncate"
                     :class="getClockDriftColor(agent.clockDrift)"
                   >
                     {{ formatTimeDifference(agent.clockDrift) }}
@@ -545,7 +553,7 @@
               </div>
 
               <div
-                class="mt-auto pt-2 border-t border-dashed border-slate-200 dark:border-zinc-800 cursor-pointer group/chart"
+                class="pt-2 mt-auto border-t border-dashed border-slate-200 dark:border-zinc-800 cursor-pointer group/chart"
                 @click="openChart(agent)"
               >
                 <div class="flex items-center gap-2 mb-1.5">
@@ -553,15 +561,15 @@
                     >CPU</span
                   >
                   <div
-                    class="flex-1 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden"
+                    class="flex-1 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-800"
                   >
                     <div
-                      class="h-full bg-blue-500 rounded-full transition-all duration-500"
+                      class="h-full transition-all duration-500 bg-blue-500 rounded-full"
                       :style="{ width: `${Math.min(agent.cpuUsage, 100)}%` }"
                     ></div>
                   </div>
                   <span
-                    class="text-[9px] font-mono text-slate-500 w-8 text-right"
+                    class="text-[9px] font-mono text-right text-slate-500 w-8"
                     >{{ agent.cpuUsage.toFixed(0) }}%</span
                   >
                 </div>
@@ -571,23 +579,23 @@
                     >MEM</span
                   >
                   <div
-                    class="flex-1 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden"
+                    class="flex-1 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-800"
                   >
                     <div
-                      class="h-full bg-teal-500 rounded-full transition-all duration-500"
+                      class="h-full transition-all duration-500 bg-teal-500 rounded-full"
                       :style="{
                         width: `${Math.min(agent.memoryUsage, 100)}%`,
                       }"
                     ></div>
                   </div>
                   <span
-                    class="text-[9px] font-mono text-slate-500 w-8 text-right"
+                    class="text-[9px] font-mono text-right text-slate-500 w-8"
                     >{{ agent.memoryUsage.toFixed(0) }}%</span
                   >
                 </div>
               </div>
 
-              <div class="pt-1 flex justify-between items-center text-[9px]">
+              <div class="flex items-center justify-between pt-1 text-[9px]">
                 <span class="text-slate-400">Last Contact</span>
                 <span
                   class="font-mono font-medium"
@@ -621,7 +629,7 @@
       >
         <div
           v-if="isChartLoading"
-          class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 dark:bg-zinc-950/80 rounded-xl"
+          class="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-white/80 dark:bg-zinc-950/80"
         >
           <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="4" />
           <p class="mt-4 text-sm font-medium text-slate-500 animate-pulse">
