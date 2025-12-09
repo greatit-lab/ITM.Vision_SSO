@@ -133,7 +133,7 @@
             class="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200"
           >
             <i class="text-purple-500 pi pi-chart-line"></i>
-            Top Memory Consumers Trend - {{ selectedEqpId }}
+            {{ selectedEqpId }} - Top Memory Consumers Trend
           </h3>
           <span class="text-[10px] text-slate-400 font-medium">
             (Displaying top {{ displayedProcessCount }} processes)
@@ -177,7 +177,7 @@
           <div class="flex items-center gap-2">
             <i class="text-xs text-purple-500 pi pi-list"></i>
             <h3 class="text-xs font-bold text-slate-700 dark:text-slate-200">
-              Process Statistics Summary - {{ selectedEqpId }}
+              {{ selectedEqpId }} - Process Statistics Summary
             </h3>
           </div>
           <div class="text-[11px] font-mono text-slate-400 dark:text-slate-500">
@@ -680,3 +680,4 @@ const resetZoom = () => {
 .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>
+
