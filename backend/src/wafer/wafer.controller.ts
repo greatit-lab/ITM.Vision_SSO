@@ -36,15 +36,23 @@ export class WaferController {
     return this.waferService.getSpectrum(query);
   }
 
-  // ▼▼▼ [신규 추가] 시뮬레이션 정합성 분석 (Residual Map) ▼▼▼
   @Get('residual-map')
   getResidualMap(@Query() query: WaferQueryParams) {
     return this.waferService.getResidualMap(query);
   }
 
-  // ▼▼▼ [신규 추가] 공정 Fingerprint (Golden Spectrum) ▼▼▼
   @Get('golden-spectrum')
   getGoldenSpectrum(@Query() query: WaferQueryParams) {
     return this.waferService.getGoldenSpectrum(query);
+  }
+
+  @Get('metrics')
+  getAvailableMetrics(@Query() query: WaferQueryParams) {
+    return this.waferService.getAvailableMetrics(query);
+  }
+
+  @Get('trend')
+  getLotUniformityTrend(@Query() query: WaferQueryParams & { metric: string }) {
+    return this.waferService.getLotUniformityTrend(query);
   }
 }
