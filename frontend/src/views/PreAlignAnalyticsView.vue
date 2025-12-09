@@ -428,7 +428,7 @@ const chartOption = computed(() => {
       show: true,
       top: 5,
       left: "auto",
-      right: 10,
+      right: 80,
       textStyle: { color: textColor },
       itemGap: 15,
       selectedMode: true,
@@ -458,7 +458,6 @@ const chartOption = computed(() => {
       axisLabel: {
         color: textColor,
         fontSize: 10,
-        rotate: 45,
         hideOverlap: true, // [유지] 라벨 겹침 방지 (너무 조밀하지 않게 자동 조절)
         
         // [수정] 요청하신 "12-05 10:00" 형식 적용
@@ -513,7 +512,7 @@ const chartOption = computed(() => {
         type: "line",
         data: xmmData, // [수정] 변환된 [시간, 값] 데이터 사용
         yAxisIndex: 0,
-        showSymbol: false,
+        showSymbol: true,
         symbolSize: 2,
         itemStyle: { color: "#3b82f6" },
         lineStyle: { width: 1.5 },
@@ -523,7 +522,7 @@ const chartOption = computed(() => {
         type: "line",
         data: ymmData, // [수정] 변환된 [시간, 값] 데이터 사용
         yAxisIndex: 0,
-        showSymbol: false,
+        showSymbol: true,
         symbolSize: 2,
         itemStyle: { color: "#10b981" },
         lineStyle: { width: 1.5 },
@@ -533,7 +532,7 @@ const chartOption = computed(() => {
         type: "line",
         data: notchData, // [수정] 변환된 [시간, 값] 데이터 사용
         yAxisIndex: 1,
-        showSymbol: false,
+        showSymbol: true,
         symbolSize: 2,
         itemStyle: { color: "#f59e0b" },
         lineStyle: { width: 1.5 },
@@ -541,16 +540,6 @@ const chartOption = computed(() => {
     ],
   };
 });
-
-// Utils
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return "-";
-  const d = new Date(dateStr);
-  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(
-    2,
-    "0"
-  )}:${String(d.getMinutes()).padStart(2, "0")}`;
-};
 </script>
 
 <style scoped>
@@ -595,3 +584,4 @@ const formatDate = (dateStr: string) => {
   }
 }
 </style>
+
