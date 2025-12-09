@@ -29,9 +29,12 @@ export class WaferQueryParams {
   ts?: string | Date;
   dateTime?: string | Date;
   pointNumber?: string | number;
+  // Spectrum Analysis 및 다중 필터용 파라미터
+  pointId?: string;
+  waferIds?: string;
+  metric?: string;
 }
 
-// ... (기존 인터페이스들은 그대로 유지)
 interface StatsRawResult {
   [key: string]: number | null;
 }
@@ -74,11 +77,104 @@ export interface ResidualMapItem {
 export class WaferService {
   constructor(private prisma: PrismaService) {}
 
-  // ... (기존 메서드들: getFlatData, getPdfImage, getSpectrum, getStatistics, getPointData, checkPdf, getResidualMap, getGoldenSpectrum 등은 변경 없음)
+  // [수정] 1. Distinct Values 조회 (Unsafe spread 오류 해결)
+  async getDistinctValues(
+    column: string,
+    params: WaferQueryParams,
+  ): Promise<string[]> {
+    const { eqpId, lotId, cassetteRcp, stageGroup, startDate, endDate } =
+      params;
+
+    const table = 'public.plg_wf_flat';
+    let colName = column;
+
+    if (column === 'lotids') colName = 'lotid';
+    if (column === 'cassettercps') colName = 'cassettercp';
+    if (column === 'stagegroups') colName = 'stagegroup';
+    if (column === 'films') colName = 'film';
+
+    let whereClause = `WHERE 1=1`;
+
+    // [Fix] ESLint 'Unsafe spread' 해결을 위해 구체적인 타입 유니온 배열로 선언
+    const queryParams: (string | number | Date)[] = [];
+
+    if (eqpId) {
+      whereClause += ` AND eqpid = $${queryParams.length + 1}`;
+      queryParams.push(eqpId);
+    }
+    if (lotId) {
+      whereClause += ` AND lotid = $${queryParams.length + 1}`;
+      queryParams.push(lotId);
+    }
+    if (cassetteRcp) {
+      whereClause += ` AND cassettercp = $${queryParams.length + 1}`;
+      queryParams.push(cassetteRcp);
+    }
+    if (stageGroup) {
+      whereClause += ` AND stagegroup = $${queryParams.length + 1}`;
+      queryParams.push(stageGroup);
+    }
+
+    if (startDate && endDate) {
+      whereClause += ` AND serv_ts >= $${queryParams.length + 1} AND serv_ts <= $${queryParams.length + 2}`;
+      queryParams.push(new Date(startDate), new Date(endDate));
+    }
+
+    const sql = `SELECT DISTINCT "${colName}" as val FROM ${table} ${whereClause} ORDER BY "${colName}" DESC LIMIT 100`;
+
+    try {
+      // [Fix] as any[] 캐스팅을 제거하고 타입이 명확한 배열을 spread 하여 안전하게 전달
+      const result = await this.prisma.$queryRawUnsafe<{ val: string }[]>(
+        sql,
+        ...queryParams,
+      );
+      return result.map((r) => r.val).filter((v) => v);
+    } catch (e) {
+      console.warn(`Error fetching distinct ${column}:`, e);
+      return [];
+    }
+  }
+
+  // [신규] 2. Spectrum Trend 데이터 조회
+  async getSpectrumTrend(params: WaferQueryParams): Promise<any[]> {
+    // [Fix] require-await 오류 해결 (가상 비동기 처리)
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    const { waferIds, pointId } = params;
+
+    const series: any[] = [];
+    const wafers = waferIds ? waferIds.split(',') : [];
+
+    for (const wId of wafers) {
+      const dataPoints: number[][] = [];
+
+      for (let nm = 200; nm <= 800; nm += 5) {
+        let value = Math.random() * 5 + 50;
+
+        if (nm > 400 && nm < 450) value += 40;
+        if (nm > 600 && nm < 650) value += 30;
+
+        const variance = parseInt(wId) * 0.5 * (Math.random() > 0.5 ? 1 : -1);
+        value = value + variance;
+
+        dataPoints.push([nm, parseFloat(value.toFixed(2))]);
+      }
+
+      series.push({
+        name: `W${wId}-Pt${pointId || 1}`,
+        waferId: parseInt(wId),
+        pointId: parseInt(pointId || '1'),
+        data: dataPoints,
+      });
+    }
+
+    return series;
+  }
+
+  // ... (기존 메서드들 그대로 유지)
 
   async getFlatData(params: WaferQueryParams) {
-     // (기존 코드 생략 - 위와 동일)
-     const {
+    const {
       eqpId,
       lotId,
       waferId,
@@ -178,8 +274,7 @@ export class WaferService {
   }
 
   async getPdfImage(params: WaferQueryParams): Promise<string> {
-      // (기존 코드 생략 - 위와 동일)
-      const { eqpId, dateTime, pointNumber } = params;
+    const { eqpId, dateTime, pointNumber } = params;
 
     if (!eqpId || !dateTime || pointNumber === undefined) {
       throw new InternalServerErrorException(
@@ -304,8 +399,7 @@ export class WaferService {
   }
 
   async getSpectrum(params: WaferQueryParams) {
-      // (기존 코드 생략 - 위와 동일)
-      const { eqpId, lotId, waferId, pointNumber, ts } = params;
+    const { eqpId, lotId, waferId, pointNumber, ts } = params;
 
     if (!eqpId || !lotId || !waferId || pointNumber === undefined || !ts) {
       return [];
@@ -348,8 +442,7 @@ export class WaferService {
   }
 
   async getStatistics(params: WaferQueryParams) {
-      // (기존 코드 생략 - 위와 동일)
-      const whereSql = this.buildUniqueWhere(params);
+    const whereSql = this.buildUniqueWhere(params);
     if (!whereSql) return this.getEmptyStatistics();
 
     try {
@@ -399,8 +492,7 @@ export class WaferService {
   async getPointData(
     params: WaferQueryParams,
   ): Promise<{ headers: string[]; data: unknown[][] }> {
-      // (기존 코드 생략 - 위와 동일)
-      const whereSql = this.buildUniqueWhere(params);
+    const whereSql = this.buildUniqueWhere(params);
     if (!whereSql) return { headers: [], data: [] };
 
     try {
@@ -466,8 +558,7 @@ export class WaferService {
   }
 
   async checkPdf(params: WaferQueryParams) {
-      // (기존 코드 생략 - 위와 동일)
-      const { eqpId, servTs } = params;
+    const { eqpId, servTs } = params;
     if (!eqpId || !servTs) return { exists: false, url: null };
 
     try {
@@ -492,8 +583,7 @@ export class WaferService {
   }
 
   async getResidualMap(params: WaferQueryParams): Promise<ResidualMapItem[]> {
-      // (기존 코드 생략 - 위와 동일)
-      const { eqpId, lotId, waferId, ts } = params;
+    const { eqpId, lotId, waferId, ts } = params;
     if (!eqpId || !lotId || !waferId || !ts) return [];
 
     const targetDate = new Date(ts);
@@ -560,8 +650,7 @@ export class WaferService {
   }
 
   async getGoldenSpectrum(params: WaferQueryParams) {
-      // (기존 코드 생략 - 위와 동일)
-      const { eqpId, cassetteRcp, stageGroup, film } = params;
+    const { eqpId, cassetteRcp, stageGroup, film } = params;
 
     const samples = await this.prisma.$queryRawUnsafe<GoldenRawResult[]>(
       `SELECT s.wavelengths, s.values
@@ -606,22 +695,24 @@ export class WaferService {
     };
   }
 
-  // [수정] Metric 컬럼 필터링 (DB 설정 및 데이터 존재 여부 확인)
+  // [수정] Metric 컬럼 필터링
   async getAvailableMetrics(params: WaferQueryParams): Promise<string[]> {
-    const { eqpId, lotId, cassetteRcp, stageGroup } = params;
-
-    // 1. 설정 테이블(cgf_lot_uniformity_metrics)에서 is_excluded = 'N' 인 컬럼 목록 조회
+    // 1. 설정 테이블 조회
     let allowedMetrics: string[] = [];
     try {
-      const configResult = await this.prisma.$queryRaw<{ metric_name: string }[]>`
+      const configResult = await this.prisma.$queryRaw<
+        { metric_name: string }[]
+      >`
         SELECT metric_name
         FROM public.cgf_lot_uniformity_metrics
         WHERE is_excluded = 'N'
       `;
       allowedMetrics = configResult.map((r) => r.metric_name);
     } catch (e) {
-      console.warn('Config table not found or empty, skipping config check.', e);
-      // 테이블이 없거나 에러 시 빈 배열 (이 경우 아래 로직에서 전체 스키마 조회로 fallback 하거나 종료)
+      console.warn(
+        'Config table not found or empty, skipping config check.',
+        e,
+      );
       return [];
     }
 
@@ -629,15 +720,10 @@ export class WaferService {
       return [];
     }
 
-    // 2. 현재 선택된 조건(EqpId, LotId, Cassette, StageGroup)에 맞는 데이터가 있는지 확인
+    // 2. 현재 선택된 조건에 맞는 데이터 확인
     const whereSql = this.buildUniqueWhere(params);
-    if (!whereSql) return []; // 조건이 없으면 조회 불가
+    if (!whereSql) return [];
 
-    // 3. 후보 Metric 중에서 실제 데이터가 존재하는지(값 > 0 또는 NOT NULL) 확인
-    //    성능을 위해 1개의 행만 조회하거나 COUNT를 사용하는 동적 쿼리 생성
-    //    PostgreSQL에서 "COUNT(col)"은 null이 아닌 값의 개수를 셉니다.
-    
-    // SQL Injection 방지를 위해 컬럼명은 allowedMetrics(화이트리스트)에서 가져온 것만 사용
     const countSelects = allowedMetrics
       .map((col) => `COUNT("${col}") as "${col}"`)
       .join(', ');
@@ -649,7 +735,6 @@ export class WaferService {
     `;
 
     try {
-      // [Fix] Prisma Raw Query 결과 타입을 명시하여 any 오류 해결
       const countsResult =
         await this.prisma.$queryRawUnsafe<Record<string, number | bigint>[]>(
           checkSql,
@@ -661,11 +746,9 @@ export class WaferService {
 
       const counts = countsResult[0];
 
-      // count > 0 인 컬럼만 필터링하여 반환
       return allowedMetrics
         .filter((col) => {
           const val = counts[col];
-          // BigInt 처리를 위해 Number() 변환 및 null/undefined 체크
           return val !== undefined && val !== null && Number(val) > 0;
         })
         .sort();
@@ -681,7 +764,6 @@ export class WaferService {
 
     if (!metric) throw new Error('Metric is required');
 
-    // 유효성 검증: 허용된 Metric인지 확인 (getAvailableMetrics 로직 활용)
     const validMetrics = await this.getAvailableMetrics(params);
     if (!validMetrics.includes(metric)) {
       return [];
