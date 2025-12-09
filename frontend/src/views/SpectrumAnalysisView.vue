@@ -1,509 +1,515 @@
 <!-- frontend/src/views/SpectrumAnalysisView.vue -->
 <template>
   <div
-    class="min-h-full transition-colors duration-500 bg-[#F8FAFC] dark:bg-[#09090B] font-sans flex flex-col"
+    class="flex flex-col h-full w-full font-sans transition-colors duration-500 bg-[#F8FAFC] dark:bg-[#09090B] overflow-hidden"
   >
     <div class="flex items-center gap-2 px-1 mb-2 shrink-0">
       <div
         class="flex items-center justify-center w-8 h-8 bg-white border rounded-lg shadow-sm dark:bg-zinc-900 border-slate-100 dark:border-zinc-800"
       >
-        <i class="text-lg text-violet-600 pi pi-bolt dark:text-violet-400"></i>
+        <i
+          class="text-lg text-indigo-500 pi pi-wave-pulse dark:text-indigo-400"
+        ></i>
       </div>
       <div class="flex items-baseline gap-2">
         <h1
           class="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white"
         >
-          Spectrum Analytics
+          Spectrum Analysis
         </h1>
         <span
           class="text-slate-400 dark:text-slate-500 font-medium text-[11px]"
         >
-          Advanced Fault Detection & Fingerprint Analysis
+          Wavelength vs Intensity multi-wafer comparison.
         </span>
       </div>
     </div>
 
     <div
-      class="mb-4 bg-white dark:bg-[#111111] p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-2 shadow-sm transition-colors duration-300 shrink-0"
+      class="mb-3 bg-white dark:bg-[#111111] p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col gap-2 shadow-sm shrink-0 transition-colors duration-300"
     >
-      <div
-        class="flex items-center flex-1 gap-2 px-1 py-1 overflow-x-auto scrollbar-hide"
-      >
-        <div class="min-w-[140px] shrink-0">
-          <Select
-            v-model="filter.site"
-            :options="sites"
-            placeholder="Site"
-            showClear
-            class="w-full custom-dropdown small"
-            overlayClass="custom-dropdown-panel small"
-            :class="{ '!text-slate-400': !filter.site }"
-            @change="onSiteChange"
+      <div class="flex items-center justify-between gap-2">
+        <div
+          class="flex items-center flex-1 gap-2 px-1 py-1 overflow-x-auto scrollbar-hide"
+        >
+          <div class="min-w-[140px] shrink-0">
+            <Select
+              v-model="filterStore.selectedSite"
+              :options="sites"
+              placeholder="Site"
+              showClear
+              class="w-full custom-dropdown small"
+              overlayClass="custom-dropdown-panel small"
+              @change="onSiteChange"
+            />
+          </div>
+          <div class="min-w-[160px] shrink-0">
+            <Select
+              v-model="filterStore.selectedSdwt"
+              :options="sdwts"
+              placeholder="SDWT"
+              :disabled="!filterStore.selectedSite"
+              showClear
+              class="w-full custom-dropdown small"
+              overlayClass="custom-dropdown-panel small"
+              @change="onSdwtChange"
+            />
+          </div>
+          <div class="min-w-[160px] shrink-0">
+            <Select
+              v-model="filters.eqpId"
+              :options="eqpIds"
+              filter
+              placeholder="EQP ID"
+              :disabled="!filterStore.selectedSdwt"
+              showClear
+              class="w-full custom-dropdown small"
+              overlayClass="custom-dropdown-panel small"
+              @change="onEqpChange"
+            />
+          </div>
+          <div class="min-w-[160px] shrink-0">
+            <Select
+              v-model="filters.lotId"
+              :options="lotIds"
+              filter
+              placeholder="Lot ID"
+              :disabled="!filters.eqpId"
+              showClear
+              class="w-full custom-dropdown small"
+              overlayClass="custom-dropdown-panel small"
+              @change="onLotChange"
+            />
+          </div>
+
+          <div
+            class="w-px h-6 bg-slate-200 dark:bg-zinc-700 mx-1 shrink-0"
+          ></div>
+
+          <div class="min-w-[130px] shrink-0">
+            <DatePicker
+              v-model="filters.startDate"
+              showIcon
+              dateFormat="yy-mm-dd"
+              placeholder="Start"
+              class="w-full custom-dropdown small date-picker"
+              :disabled="!filters.eqpId"
+              @update:model-value="onDateChange"
+            />
+          </div>
+          <div class="min-w-[130px] shrink-0">
+            <DatePicker
+              v-model="filters.endDate"
+              showIcon
+              dateFormat="yy-mm-dd"
+              placeholder="End"
+              class="w-full custom-dropdown small date-picker"
+              :disabled="!filters.eqpId"
+              @update:model-value="onDateChange"
+            />
+          </div>
+        </div>
+        <div
+          class="flex items-center gap-1 pl-2 border-l shrink-0 border-slate-100 dark:border-zinc-800"
+        >
+          <Button
+            icon="pi pi-refresh"
+            text
+            rounded
+            severity="secondary"
+            v-tooltip.bottom="'Reset'"
+            class="!w-7 !h-7 !text-slate-400 hover:!text-slate-600 dark:!text-zinc-500 dark:hover:!text-zinc-300"
+            @click="resetFilters"
           />
         </div>
-
-        <div class="min-w-[180px] shrink-0">
-          <Select
-            v-model="filter.sdwt"
-            :options="sdwts"
-            placeholder="SDWT"
-            showClear
-            :disabled="!filter.site"
-            class="w-full custom-dropdown small"
-            overlayClass="custom-dropdown-panel small"
-            :class="{ '!text-slate-400': !filter.sdwt }"
-            @change="onSdwtChange"
-          />
-        </div>
-
-        <div class="min-w-[160px] shrink-0 relative group">
-          <AutoComplete
-            v-model="filter.eqpId"
-            :suggestions="filteredEqpIds"
-            @complete="searchEqp"
-            placeholder="EQP ID"
-            :disabled="!filter.sdwt"
-            dropdown
-            class="w-full custom-dropdown small"
-            inputClass="custom-input-text small !pr-7"
-            panelClass="custom-dropdown-panel small"
-            @item-select="loadLots"
-          />
-          <i
-            v-if="filter.eqpId"
-            @click="
-              filter.eqpId = '';
-              lotIds = [];
-              waferIds = [];
-            "
-            class="pi pi-times absolute right-8 top-1/2 -translate-y-1/2 text-[9px] text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 cursor-pointer z-10 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
-          ></i>
-        </div>
-
-        <div class="min-w-[160px] shrink-0">
-          <Select
-            v-model="filter.lotId"
-            :options="lotIds"
-            placeholder="Lot ID"
-            showClear
-            :disabled="!filter.eqpId"
-            class="w-full custom-dropdown small"
-            overlayClass="custom-dropdown-panel small"
-            :class="{ '!text-slate-400': !filter.lotId }"
-            @change="loadWafers"
-          />
-        </div>
-
-        <div class="min-w-[100px] shrink-0">
-          <Select
-            v-model="filter.waferId"
-            :options="waferIds"
-            placeholder="Wafer"
-            showClear
-            :disabled="!filter.lotId"
-            class="w-full custom-dropdown small"
-            overlayClass="custom-dropdown-panel small"
-            :class="{ '!text-slate-400': !filter.waferId }"
-          />
-        </div>
-      </div>
-
-      <div
-        class="flex items-center gap-1 pl-2 border-l shrink-0 border-slate-100 dark:border-zinc-800"
-      >
-        <Button
-          icon="pi pi-search"
-          rounded
-          class="!bg-violet-600 !border-violet-600 hover:!bg-violet-700 !w-8 !h-8 !text-xs"
-          @click="analyze"
-          :loading="isLoading"
-          :disabled="!filter.waferId"
-        />
       </div>
     </div>
 
     <div
-      v-if="hasAnalyzed"
-      class="flex flex-1 min-h-0 gap-4 pb-4 overflow-hidden 2xl:flex-row fade-in"
+      v-if="filters.lotId"
+      class="flex flex-1 min-h-0 gap-4 pb-2 overflow-hidden lg:flex-row flex-col animate-fade-in"
     >
       <div
-        class="flex flex-col flex-1 w-full h-full overflow-hidden bg-white border shadow-sm rounded-xl dark:bg-zinc-900 border-slate-200 dark:border-zinc-800"
+        class="flex flex-col w-full lg:w-64 shrink-0 bg-white dark:bg-[#111111] border border-slate-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden"
       >
         <div
-          class="flex items-center justify-between p-3 border-b border-slate-100 dark:border-zinc-800 dark:bg-zinc-900"
+          class="p-3 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/30"
         >
-          <div class="flex items-center gap-2 pl-1">
-            <div class="w-1 h-3 rounded-full bg-rose-500"></div>
-            <h3 class="text-sm font-bold text-slate-700 dark:text-slate-200">
-              Simulation Fidelity Map
-            </h3>
-          </div>
-          <span
-            class="text-[10px] font-bold bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded border border-rose-100 dark:border-rose-800"
+          <h3
+            class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2"
           >
-            Residual Error
-          </span>
+            Target Selection
+          </h3>
+
+          <div class="mb-3">
+            <label class="text-[10px] font-bold text-slate-400 block mb-1"
+              >MEASUREMENT POINT</label
+            >
+            <Select
+              v-model="filters.pointId"
+              :options="pointIds"
+              placeholder="Select Point"
+              class="w-full custom-dropdown small"
+              overlayClass="custom-dropdown-panel small"
+            />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[10px] font-bold text-slate-400"
+                >WAFERS ({{ selectedWafers.length }})</label
+              >
+              <button
+                @click="toggleAllWafers"
+                class="text-[10px] text-indigo-500 hover:text-indigo-600 font-bold"
+              >
+                {{
+                  selectedWafers.length === waferList.length
+                    ? "Deselect All"
+                    : "Select All"
+                }}
+              </button>
+            </div>
+            <div class="h-px bg-slate-200 dark:bg-zinc-700 mb-2"></div>
+            <div
+              class="max-h-[300px] lg:max-h-none overflow-y-auto custom-scrollbar pr-1 space-y-1"
+            >
+              <div
+                v-for="w in waferList"
+                :key="w"
+                @click="toggleWafer(w)"
+                class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors border"
+                :class="
+                  selectedWafers.includes(w)
+                    ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800'
+                    : 'border-transparent hover:bg-slate-50 dark:hover:bg-zinc-900'
+                "
+              >
+                <div
+                  class="w-4 h-4 rounded border flex items-center justify-center transition-colors"
+                  :class="
+                    selectedWafers.includes(w)
+                      ? 'bg-indigo-500 border-indigo-500'
+                      : 'border-slate-300 dark:border-zinc-600'
+                  "
+                >
+                  <i
+                    v-if="selectedWafers.includes(w)"
+                    class="pi pi-check text-white text-[10px]"
+                  ></i>
+                </div>
+                <span
+                  class="text-xs font-mono font-medium"
+                  :class="
+                    selectedWafers.includes(w)
+                      ? 'text-indigo-700 dark:text-indigo-300'
+                      : 'text-slate-600 dark:text-slate-400'
+                  "
+                >
+                  Wafer #{{ w }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="relative flex-1">
-          <EChart :option="heatmapOption" @chartCreated="onHeatmapCreated" />
-          <div
-            class="absolute p-2 text-xs rounded bottom-4 left-4 text-slate-400 bg-white/90 dark:bg-black/60 backdrop-blur-sm pointer-events-none border border-slate-100 dark:border-zinc-700"
-          >
-            <i class="mr-1 pi pi-info-circle"></i> Click a point to compare
-            spectrum
-          </div>
+
+        <div class="mt-auto p-3 border-t border-slate-100 dark:border-zinc-800">
+          <Button
+            label="Analyze Spectrum"
+            icon="pi pi-search"
+            class="w-full !text-xs !font-bold !py-2 !rounded-lg"
+            :loading="isLoading"
+            :disabled="!isReadyToSearch"
+            @click="searchData"
+          />
         </div>
       </div>
 
       <div
-        class="flex flex-col flex-1 w-full h-full overflow-hidden bg-white border shadow-sm rounded-xl dark:bg-zinc-900 border-slate-200 dark:border-zinc-800"
+        class="flex flex-col flex-1 overflow-hidden bg-white border shadow-sm rounded-xl dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 relative"
       >
         <div
-          class="flex items-center justify-between p-3 border-b border-slate-100 dark:border-zinc-800 dark:bg-zinc-900"
+          class="flex items-center justify-between px-4 py-2 border-b border-slate-100 dark:border-zinc-800 shrink-0"
         >
-          <div class="flex items-center gap-2 pl-1">
-            <div class="w-1 h-3 rounded-full bg-violet-500"></div>
-            <h3 class="text-sm font-bold text-slate-700 dark:text-slate-200">
-              Spectrum Fingerprint
+          <div class="flex items-center gap-2">
+            <div class="w-1 h-3 bg-indigo-500 rounded-full"></div>
+            <h3 class="text-xs font-bold text-slate-700 dark:text-slate-200">
+              Spectrum Trend (Intensity vs Wavelength)
             </h3>
           </div>
           <div class="flex items-center gap-2">
             <span
-              v-if="selectedPoint"
-              class="text-[10px] font-mono font-bold px-2 py-0.5 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-zinc-700"
+              v-if="chartSeries.length > 0"
+              class="text-[10px] text-slate-400 font-mono"
             >
-              Pt #{{ selectedPoint }}
+              Range: 200nm ~ 800nm
             </span>
           </div>
         </div>
-        <div class="relative flex-1 p-2">
+
+        <div
+          class="relative flex-1 w-full min-h-0 bg-slate-50/30 dark:bg-black/20"
+        >
           <div
-            v-if="!selectedPoint"
-            class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 opacity-60"
+            v-if="!hasSearched"
+            class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 opacity-60 select-none"
           >
-            <i class="mb-2 text-4xl pi pi-chart-line opacity-20"></i>
-            <span class="text-xs"
-              >Select a point from the map to view details</span
-            >
+            <i
+              class="pi pi-chart-line text-4xl mb-3 text-slate-300 dark:text-zinc-700"
+            ></i>
+            <p class="text-sm font-medium">Select wafers and click Analyze</p>
           </div>
-          <EChart v-else :option="spectrumOption" />
+
+          <EChart v-else :option="chartOption" class="w-full h-full" />
         </div>
       </div>
     </div>
 
     <div
       v-else
-      class="flex flex-col items-center justify-center flex-1 min-h-[400px] text-slate-400 opacity-50"
+      class="flex flex-col items-center justify-center flex-1 text-slate-400 opacity-50 select-none min-h-[400px]"
     >
       <div
         class="flex items-center justify-center w-16 h-16 mb-4 rounded-full shadow-inner bg-slate-100 dark:bg-zinc-800"
       >
-        <i class="text-3xl pi pi-search text-slate-300 dark:text-zinc-600"></i>
+        <i
+          class="text-3xl pi pi-wave-pulse text-slate-300 dark:text-zinc-600"
+        ></i>
       </div>
-      <p class="text-sm font-medium">Select filters and click Analyze.</p>
+      <p class="text-sm font-medium">Please select a Lot to begin analysis</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, onMounted, computed, onUnmounted } from "vue";
+import { useFilterStore } from "@/stores/filter";
 import { dashboardApi } from "@/api/dashboard";
 import { equipmentApi } from "@/api/equipment";
-import {
-  waferApi,
-  type WaferFlatDataDto,
-  type ResidualMapDto,
-} from "@/api/wafer";
+import { waferApi } from "@/api/wafer";
 import EChart from "@/components/common/EChart.vue";
-
-// PrimeVue Components
 import Select from "primevue/select";
-import AutoComplete from "primevue/autocomplete";
+import DatePicker from "primevue/datepicker";
 import Button from "primevue/button";
 
-// [수정] 차트 데이터용 로컬 인터페이스 정의
-interface SpectrumChartItem {
-  wavelength: number;
-  value: number;
-}
+// --- State & Filters ---
+const filterStore = useFilterStore();
+const isLoading = ref(false);
+const hasSearched = ref(false);
 
-// State
-const filter = reactive({
-  site: "",
-  sdwt: "",
-  eqpId: "",
-  lotId: "",
-  waferId: "",
-});
 const sites = ref<string[]>([]);
 const sdwts = ref<string[]>([]);
 const eqpIds = ref<string[]>([]);
-const filteredEqpIds = ref<string[]>([]);
 const lotIds = ref<string[]>([]);
-const waferIds = ref<string[]>([]);
+const waferList = ref<string[]>([]); // Available Wafers in Lot
+const pointIds = ref<string[]>(["1", "2", "3", "4", "5"]); // Mock Points
 
-const isLoading = ref(false);
-const hasAnalyzed = ref(false);
-const selectedPoint = ref<number | null>(null);
-
-// Data State - [수정] 명시적 타입 선언으로 'any' 문제 해결
-const residualData = ref<ResidualMapDto[]>([]);
-const currentSpectrum = ref<SpectrumChartItem[]>([]);
-const goldenSpectrum = ref<SpectrumChartItem[]>([]);
-const waferInfo = ref<WaferFlatDataDto | null>(null);
-
-// --- Lifecycle & Filters ---
-onMounted(async () => {
-  sites.value = await dashboardApi.getSites();
+// Filter Local State
+const filters = reactive({
+  eqpId: "",
+  lotId: "",
+  pointId: "1",
+  startDate: new Date(Date.now() - 7 * 864e5),
+  endDate: new Date(),
 });
 
+const selectedWafers = ref<string[]>([]);
+const chartSeries = ref<any[]>([]);
+
+// Dark Mode Detection (Safe)
+const isDarkMode = ref(document.documentElement.classList.contains("dark"));
+let themeObserver: MutationObserver;
+
+// --- Computed ---
+const isReadyToSearch = computed(
+  () => filters.lotId && filters.pointId && selectedWafers.value.length > 0
+);
+
+// --- Lifecycle ---
+onMounted(async () => {
+  sites.value = await dashboardApi.getSites();
+  // Load saved state logic...
+  const savedSite = localStorage.getItem("spec_site");
+  if (savedSite && sites.value.includes(savedSite)) {
+    filterStore.selectedSite = savedSite;
+    sdwts.value = await dashboardApi.getSdwts(savedSite);
+  }
+
+  // Theme Observer (Safe Implementation)
+  themeObserver = new MutationObserver((m) => {
+    m.forEach((mu) => {
+      if (mu.attributeName === "class")
+        isDarkMode.value = document.documentElement.classList.contains("dark");
+    });
+  });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+});
+
+onUnmounted(() => {
+  if (themeObserver) themeObserver.disconnect();
+});
+
+// --- Handlers ---
 const onSiteChange = async () => {
-  sdwts.value = await dashboardApi.getSdwts(filter.site);
-  eqpIds.value = [];
-  filter.sdwt = "";
-  filter.eqpId = "";
-  filter.lotId = "";
-  filter.waferId = "";
+  if (filterStore.selectedSite) {
+    localStorage.setItem("spec_site", filterStore.selectedSite);
+    sdwts.value = await dashboardApi.getSdwts(filterStore.selectedSite);
+  } else {
+    sdwts.value = [];
+  }
+  resetFrom(0);
 };
 const onSdwtChange = async () => {
-  eqpIds.value = await equipmentApi.getEqpIds(undefined, filter.sdwt);
-  filter.eqpId = "";
-  filter.lotId = "";
-  filter.waferId = "";
+  if (filterStore.selectedSdwt) {
+    eqpIds.value = await equipmentApi.getEqpIds(
+      undefined,
+      filterStore.selectedSdwt
+    );
+  } else {
+    eqpIds.value = [];
+  }
+  resetFrom(1);
 };
-const searchEqp = (e: any) => {
-  filteredEqpIds.value = eqpIds.value.filter((id) =>
-    id.toLowerCase().includes(e.query.toLowerCase())
-  );
+const onEqpChange = () => {
+  if (filters.eqpId) loadLotIds();
+  else resetFrom(2);
 };
-const loadLots = async () => {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - 7);
-  lotIds.value = await waferApi.getDistinctValues("lotids", {
-    eqpId: filter.eqpId,
-    startDate: start.toISOString(),
-    endDate: end.toISOString(),
-  });
-  filter.lotId = "";
-  filter.waferId = "";
+const onLotChange = async () => {
+  if (filters.lotId) {
+    // Mock: Get Wafer List for Lot
+    // In real app: waferApi.getWafersInLot(filters.lotId)
+    waferList.value = Array.from({ length: 25 }, (_, i) => String(i + 1));
+    selectedWafers.value = ["1", "2", "3"]; // Default select
+  } else {
+    resetFrom(3);
+  }
 };
-const loadWafers = async () => {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - 7);
-  waferIds.value = await waferApi.getDistinctValues("waferids", {
-    eqpId: filter.eqpId,
-    lotId: filter.lotId,
-    startDate: start.toISOString(),
-    endDate: end.toISOString(),
-  });
-  filter.waferId = "";
+const onDateChange = () => {
+  if (filters.eqpId) loadLotIds();
 };
 
-// --- Analysis Logic ---
-const analyze = async () => {
-  if (!filter.waferId) return;
+const resetFrom = (level: number) => {
+  if (level <= 0) {
+    filterStore.selectedSdwt = "";
+    eqpIds.value = [];
+  }
+  if (level <= 1) {
+    filters.eqpId = "";
+  }
+  if (level <= 2) {
+    filters.lotId = "";
+    lotIds.value = [];
+  }
+  if (level <= 3) {
+    waferList.value = [];
+    selectedWafers.value = [];
+    chartSeries.value = [];
+    hasSearched.value = false;
+  }
+};
+
+const loadLotIds = async () => {
+  lotIds.value = await waferApi.getDistinctValues("lotids", {
+    eqpId: filters.eqpId,
+    startDate: filters.startDate?.toISOString(),
+    endDate: filters.endDate?.toISOString(),
+  });
+};
+
+const toggleWafer = (w: string) => {
+  if (selectedWafers.value.includes(w))
+    selectedWafers.value = selectedWafers.value.filter((item) => item !== w);
+  else selectedWafers.value.push(w);
+};
+
+const toggleAllWafers = () => {
+  if (selectedWafers.value.length === waferList.value.length)
+    selectedWafers.value = [];
+  else selectedWafers.value = [...waferList.value];
+};
+
+const searchData = async () => {
+  if (!isReadyToSearch.value) return;
   isLoading.value = true;
-  selectedPoint.value = null;
+  hasSearched.value = true;
 
   try {
-    const flatRes = await waferApi.getFlatData({
-      eqpId: filter.eqpId,
-      lotId: filter.lotId,
-      waferId: filter.waferId,
-      pageSize: 1,
+    // Call API (Simulated in Service)
+    // Make sure waferApi has getSpectrumTrend method
+    chartSeries.value = await waferApi.getSpectrumTrend({
+      lotId: filters.lotId,
+      pointId: filters.pointId,
+      waferIds: selectedWafers.value.join(","),
     });
-
-    // [수정] 방어적 코딩: items가 undefined일 경우 안전하게 처리
-    const currentWafer = flatRes?.items?.[0] ?? null;
-
-    if (!currentWafer) {
-      throw new Error("Wafer not found");
-    }
-
-    waferInfo.value = currentWafer;
-
-    // [타입 안전] currentWafer는 null이 아님이 보장됨
-    const [residuals, golden] = await Promise.all([
-      waferApi.getResidualMap({
-        eqpId: filter.eqpId,
-        lotId: filter.lotId,
-        waferId: filter.waferId,
-        ts: currentWafer.servTs,
-      }),
-      waferApi.getGoldenSpectrum({
-        eqpId: filter.eqpId,
-        cassetteRcp: currentWafer.cassetteRcp,
-        stageGroup: currentWafer.stageGroup,
-        film: currentWafer.film,
-      }),
-    ]);
-
-    residualData.value = residuals ?? [];
-
-    if (
-      golden &&
-      Array.isArray(golden.wavelengths) &&
-      Array.isArray(golden.values)
-    ) {
-      goldenSpectrum.value = golden.wavelengths.map(
-        (wl: number, i: number) => ({
-          wavelength: wl,
-          value: (golden.values[i] ?? 0) * 100,
-        })
-      );
-    } else {
-      goldenSpectrum.value = [];
-    }
-
-    hasAnalyzed.value = true;
   } catch (e) {
     console.error(e);
-    residualData.value = [];
-    goldenSpectrum.value = [];
   } finally {
     isLoading.value = false;
   }
 };
 
-// --- Chart Options ---
-const heatmapOption = computed(() => {
-  const rData = residualData.value || [];
-  // [수정] d가 undefined일 가능성 차단 및 안전한 매핑
-  const data = rData.map((d) => [
-    d?.x ?? 0,
-    d?.y ?? 0,
-    d?.residual ?? 0,
-    d?.point ?? 0,
-  ]);
+const resetFilters = () => {
+  filterStore.reset();
+  resetFrom(0);
+};
 
-  // [수정] 오류 1 해결: 안전한 fallback 처리
-  const maxVal =
-    rData.length > 0
-      ? Math.max(...rData.map((d) => Number(d?.residual ?? 0)))
-      : 10;
+// --- Chart Option ---
+const chartOption = computed(() => {
+  const textColor = isDarkMode.value ? "#cbd5e1" : "#475569";
+  const gridColor = isDarkMode.value
+    ? "rgba(255, 255, 255, 0.1)"
+    : "rgba(0, 0, 0, 0.1)";
 
   return {
+    backgroundColor: "transparent",
     tooltip: {
-      position: "top",
-      formatter: (params: any) =>
-        `Point: ${params.value[3]}<br>Error: ${params.value[2].toFixed(2)}`,
+      trigger: "axis",
+      backgroundColor: isDarkMode.value
+        ? "rgba(24, 24, 27, 0.9)"
+        : "rgba(255, 255, 255, 0.95)",
+      textStyle: { color: isDarkMode.value ? "#fff" : "#1e293b", fontSize: 11 },
+      axisPointer: { type: "cross" },
     },
-    grid: { top: 10, bottom: 10, left: 10, right: 10 },
-    xAxis: { type: "value", show: false, min: -150, max: 150 },
-    yAxis: { type: "value", show: false, min: -150, max: 150 },
-    visualMap: {
-      min: 0,
-      max: maxVal,
-      calculable: true,
-      orient: "horizontal",
-      left: "center",
-      bottom: 10,
-      inRange: { color: ["#3b82f6", "#fcd34d", "#ef4444"] },
+    legend: {
+      data: chartSeries.value.map((s) => s.name),
+      textStyle: { color: textColor },
+      type: "scroll",
+      top: 0,
     },
-    series: [
-      {
-        type: "heatmap",
-        data: data,
-        itemStyle: { borderColor: "#fff", borderWidth: 1 },
-        pointSize: 20,
-      },
+    grid: { left: 40, right: 40, top: 40, bottom: 40, containLabel: true },
+    dataZoom: [
+      { type: "inside", xAxisIndex: 0 },
+      { type: "slider", xAxisIndex: 0, bottom: 0, height: 16 },
     ],
-  };
-});
-
-const onHeatmapCreated = (chart: any) => {
-  chart.on("click", async (params: any) => {
-    if (params && params.value && params.value.length > 3) {
-      const point = params.value[3];
-      await loadPointSpectrum(point);
-    }
-  });
-};
-
-const loadPointSpectrum = async (point: number) => {
-  const info = waferInfo.value;
-  if (!info) return; // Guard Clause
-
-  selectedPoint.value = point;
-
-  // [수정] 오류 2 예방: API 호출
-  const spec = await waferApi.getSpectrum({
-    eqpId: filter.eqpId,
-    lotId: filter.lotId,
-    waferId: filter.waferId,
-    ts: info.servTs,
-    pointNumber: point,
-  });
-
-  // [수정] spec 배열 및 expObj 유효성 검사 강화
-  if (!spec || !Array.isArray(spec)) {
-    currentSpectrum.value = [];
-    return;
-  }
-
-  const expObj = spec.find(
-    (s: any) =>
-      s &&
-      s.class &&
-      typeof s.class === "string" &&
-      s.class.toLowerCase() === "exp"
-  );
-
-  if (
-    expObj &&
-    Array.isArray(expObj.wavelengths) &&
-    Array.isArray(expObj.values)
-  ) {
-    currentSpectrum.value = expObj.wavelengths.map((wl: number, i: number) => ({
-      wavelength: wl,
-      value: (expObj.values[i] ?? 0) * 100, // 안전한 값 접근
-    }));
-  } else {
-    currentSpectrum.value = [];
-  }
-};
-
-const spectrumOption = computed(() => {
-  // [수정] 오류 2 해결: 배열 요소가 undefined일 가능성 차단
-  const currData = currentSpectrum.value || [];
-  const goldData = goldenSpectrum.value || [];
-
-  return {
-    tooltip: { trigger: "axis" },
-    legend: { data: ["Current (EXP)", "Golden Reference"], top: 0 },
-    grid: { left: 50, right: 20, bottom: 40, top: 30 },
     xAxis: {
-      type: "category",
-      data: currData.map((d) => d?.wavelength ?? 0), // Safe map
+      type: "value",
       name: "Wavelength (nm)",
       nameLocation: "middle",
       nameGap: 25,
+      min: 200,
+      max: 800,
+      axisLabel: { color: textColor },
+      splitLine: { show: false },
     },
     yAxis: {
       type: "value",
-      name: "Reflectance (%)",
-      nameLocation: "middle",
-      nameGap: 35,
+      name: "Intensity",
+      scale: true,
+      axisLabel: { color: textColor },
+      splitLine: { lineStyle: { color: gridColor, type: "dashed" } },
     },
-    series: [
-      {
-        name: "Current (EXP)",
-        type: "line",
-        data: currData.map((d) => d?.value ?? 0), // Safe map
-        showSymbol: false,
-        lineStyle: { width: 2, color: "#f43f5e" },
-      },
-      {
-        name: "Golden Reference",
-        type: "line",
-        data: goldData.map((d) => d?.value ?? 0), // Safe map
-        showSymbol: false,
-        lineStyle: { width: 2, type: "dashed", color: "#64748b" },
-        z: 0,
-      },
-    ],
+    series: chartSeries.value.map((s) => ({
+      name: s.name,
+      type: "line",
+      data: s.data,
+      smooth: true,
+      showSymbol: false,
+      lineStyle: { width: 1.5 },
+      emphasis: { focus: "series" },
+    })),
   };
 });
 </script>
@@ -514,23 +520,52 @@ const spectrumOption = computed(() => {
   @apply !bg-slate-100 dark:!bg-zinc-800/50 !border-0 text-slate-700 dark:text-slate-200 rounded-lg font-bold shadow-none transition-colors;
 }
 :deep(.custom-dropdown .p-select-label) {
-  @apply text-[13px] py-[5px] px-3;
-}
-:deep(.custom-input-text.small) {
-  @apply !text-[13px] !p-1 !h-7 !bg-transparent !border-0;
+  @apply text-[11px] py-[3px] px-2;
 }
 :deep(.custom-dropdown.small) {
-  @apply h-7;
+  @apply h-6;
 }
 :deep(.custom-dropdown:hover) {
   @apply !bg-slate-200 dark:!bg-zinc-800;
 }
-:deep(.p-select-dropdown),
-:deep(.p-autocomplete-dropdown) {
-  @apply text-slate-400 dark:text-zinc-500 w-6 !bg-transparent !border-0 !shadow-none;
+:deep(.date-picker .p-inputtext) {
+  @apply !text-[11px] !py-0 !px-2 !h-6;
 }
-:deep(.p-select-dropdown svg),
-:deep(.p-autocomplete-dropdown svg) {
-  @apply w-3 h-3;
+:deep(.p-select-dropdown) {
+  @apply text-slate-400 dark:text-zinc-500 w-5;
+}
+:deep(.p-select-dropdown svg) {
+  @apply w-2.5 h-2.5;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
