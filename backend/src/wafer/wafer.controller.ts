@@ -55,4 +55,16 @@ export class WaferController {
   getLotUniformityTrend(@Query() query: WaferQueryParams & { metric: string }) {
     return this.waferService.getLotUniformityTrend(query);
   }
+
+  // [신규] Spectrum Analysis - 실제 포인트 목록 조회
+  @Get('points')
+  getPoints(@Query() query: WaferQueryParams) {
+    return this.waferService.getDistinctPoints(query);
+  }
+
+  // [신규] Spectrum Analysis - 실제 스펙트럼 트렌드 데이터 조회
+  @Get('trend/spectrum')
+  getSpectrumTrend(@Query() query: WaferQueryParams) {
+    return this.waferService.getSpectrumTrend(query);
+  }
 }
