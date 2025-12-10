@@ -44,9 +44,9 @@
         >
       </div>
     </div>
-    
+
     <div
-      class="mb-3 bg-white dark:bg-[#111111] p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-2 shadow-sm transition-colors duration-300 shrink-0"
+      class="mb-5 bg-white dark:bg-[#111111] p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-2 shadow-sm transition-colors duration-300 shrink-0"
     >
       <div
         class="flex items-center flex-1 gap-2 px-1 py-1 overflow-x-auto scrollbar-hide"
@@ -125,8 +125,9 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-2 pl-2 border-l shrink-0 border-slate-100 dark:border-zinc-800">
-        
+      <div
+        class="flex items-center gap-2 pl-2 border-l shrink-0 border-slate-100 dark:border-zinc-800"
+      >
         <div class="flex items-center gap-1">
           <Button
             icon="pi pi-search"
@@ -150,13 +151,17 @@
 
         <div class="w-px h-4 bg-slate-200 dark:bg-zinc-700 mx-1"></div>
 
-        <div class="flex items-center gap-2 bg-slate-50 dark:bg-zinc-800/50 rounded-lg px-2 py-0.5 border border-slate-100 dark:border-zinc-800"
-             :class="{ 'opacity-50 pointer-events-none': !selectedEqpId }">
-           <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-             <span>AUTO</span>
-             <i class="pi pi-clock text-[9px]"></i>
-           </div>
-           <Select
+        <div
+          class="flex items-center gap-2 bg-slate-50 dark:bg-zinc-800/50 rounded-lg px-2 py-0.5 border border-slate-100 dark:border-zinc-800"
+          :class="{ 'opacity-50 pointer-events-none': !selectedEqpId }"
+        >
+          <div
+            class="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap"
+          >
+            <span>AUTO</span>
+            <i class="pi pi-clock text-[9px]"></i>
+          </div>
+          <Select
             v-model="intervalSeconds"
             :options="intervalOptions"
             optionLabel="label"
@@ -166,10 +171,9 @@
             :class="{ '!text-rose-500 font-bold': isRealtime }"
             overlayClass="custom-dropdown-panel small"
             @change="toggleRealtime"
-            :disabled="!selectedEqpId" 
+            :disabled="!selectedEqpId"
           />
         </div>
-
       </div>
     </div>
 
@@ -177,8 +181,9 @@
       v-if="hasSearched"
       class="flex-1 flex flex-col gap-3 animate-fade-in pb-2 min-h-0"
     >
-      <div class="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-2 gap-3 flex-1 min-h-0">
-        
+      <div
+        class="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-2 gap-3 flex-1 min-h-0"
+      >
         <div
           class="bg-white dark:bg-[#111111] p-3 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm h-full relative flex flex-col group min-h-[200px]"
         >
@@ -186,17 +191,32 @@
             <h3
               class="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2"
             >
-              <i class="pi pi-desktop text-blue-500"></i> {{ selectedEqpId }} - CPU Usage
+              <i class="pi pi-desktop text-blue-500"></i> {{ selectedEqpId }} -
+              CPU Usage
             </h3>
           </div>
           <div class="flex-1 min-h-0 w-full relative">
-            <EChart v-if="chartData.length > 0" :option="cpuOption" @chartCreated="(inst) => onChartInit('cpu', inst)" />
-            <div v-else class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs">No Data</div>
+            <EChart
+              v-if="chartData.length > 0"
+              :option="cpuOption"
+              @chartCreated="(inst) => onChartInit('cpu', inst)"
+            />
+            <div
+              v-else
+              class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs"
+            >
+              No Data
+            </div>
             <transition name="fade">
-               <button v-if="zoomStates.cpu" @click="resetChartZoom('cpu')" class="absolute top-2 right-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md flex items-center gap-1 transition-colors z-10">
-                 <i class="pi pi-refresh" style="font-size: 0.6rem"></i> Reset Zoom
-               </button>
-             </transition>
+              <button
+                v-if="zoomStates.cpu"
+                @click="resetChartZoom('cpu')"
+                class="absolute top-2 right-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md flex items-center gap-1 transition-colors z-10"
+              >
+                <i class="pi pi-refresh" style="font-size: 0.6rem"></i> Reset
+                Zoom
+              </button>
+            </transition>
           </div>
         </div>
 
@@ -207,17 +227,32 @@
             <h3
               class="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2"
             >
-              <i class="pi pi-microchip text-emerald-500"></i> {{ selectedEqpId }} - Memory Usage
+              <i class="pi pi-microchip text-emerald-500"></i>
+              {{ selectedEqpId }} - Memory Usage
             </h3>
           </div>
           <div class="flex-1 min-h-0 w-full relative">
-            <EChart v-if="chartData.length > 0" :option="memOption" @chartCreated="(inst) => onChartInit('mem', inst)" />
-            <div v-else class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs">No Data</div>
-             <transition name="fade">
-               <button v-if="zoomStates.mem" @click="resetChartZoom('mem')" class="absolute top-2 right-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md flex items-center gap-1 transition-colors z-10">
-                 <i class="pi pi-refresh" style="font-size: 0.6rem"></i> Reset Zoom
-               </button>
-             </transition>
+            <EChart
+              v-if="chartData.length > 0"
+              :option="memOption"
+              @chartCreated="(inst) => onChartInit('mem', inst)"
+            />
+            <div
+              v-else
+              class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs"
+            >
+              No Data
+            </div>
+            <transition name="fade">
+              <button
+                v-if="zoomStates.mem"
+                @click="resetChartZoom('mem')"
+                class="absolute top-2 right-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md flex items-center gap-1 transition-colors z-10"
+              >
+                <i class="pi pi-refresh" style="font-size: 0.6rem"></i> Reset
+                Zoom
+              </button>
+            </transition>
           </div>
         </div>
 
@@ -228,17 +263,32 @@
             <h3
               class="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2"
             >
-              <i class="pi pi-cog text-amber-500"></i> {{ selectedEqpId }} - CPU Temp & Fan Speed
+              <i class="pi pi-cog text-amber-500"></i> {{ selectedEqpId }} - CPU
+              Temp & Fan Speed
             </h3>
           </div>
           <div class="flex-1 min-h-0 w-full relative">
-            <EChart v-if="chartData.length > 0" :option="cpuTempFanOption" @chartCreated="(inst) => onChartInit('dual', inst)" />
-            <div v-else class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs">No Data</div>
-             <transition name="fade">
-               <button v-if="zoomStates.dual" @click="resetChartZoom('dual')" class="absolute top-2 right-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md flex items-center gap-1 transition-colors z-10">
-                 <i class="pi pi-refresh" style="font-size: 0.6rem"></i> Reset Zoom
-               </button>
-             </transition>
+            <EChart
+              v-if="chartData.length > 0"
+              :option="cpuTempFanOption"
+              @chartCreated="(inst) => onChartInit('dual', inst)"
+            />
+            <div
+              v-else
+              class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs"
+            >
+              No Data
+            </div>
+            <transition name="fade">
+              <button
+                v-if="zoomStates.dual"
+                @click="resetChartZoom('dual')"
+                class="absolute top-2 right-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md flex items-center gap-1 transition-colors z-10"
+              >
+                <i class="pi pi-refresh" style="font-size: 0.6rem"></i> Reset
+                Zoom
+              </button>
+            </transition>
           </div>
         </div>
 
@@ -249,17 +299,32 @@
             <h3
               class="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2"
             >
-              <i class="pi pi-palette text-orange-500"></i> {{ selectedEqpId }} - GPU Temp
+              <i class="pi pi-palette text-orange-500"></i>
+              {{ selectedEqpId }} - GPU Temp
             </h3>
           </div>
           <div class="flex-1 min-h-0 w-full relative">
-            <EChart v-if="chartData.length > 0" :option="gpuOption" @chartCreated="(inst) => onChartInit('gpu', inst)" />
-            <div v-else class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs">No Data</div>
-             <transition name="fade">
-               <button v-if="zoomStates.gpu" @click="resetChartZoom('gpu')" class="absolute top-2 right-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md flex items-center gap-1 transition-colors z-10">
-                 <i class="pi pi-refresh" style="font-size: 0.6rem"></i> Reset Zoom
-               </button>
-             </transition>
+            <EChart
+              v-if="chartData.length > 0"
+              :option="gpuOption"
+              @chartCreated="(inst) => onChartInit('gpu', inst)"
+            />
+            <div
+              v-else
+              class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs"
+            >
+              No Data
+            </div>
+            <transition name="fade">
+              <button
+                v-if="zoomStates.gpu"
+                @click="resetChartZoom('gpu')"
+                class="absolute top-2 right-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md flex items-center gap-1 transition-colors z-10"
+              >
+                <i class="pi pi-refresh" style="font-size: 0.6rem"></i> Reset
+                Zoom
+              </button>
+            </transition>
           </div>
         </div>
       </div>
@@ -267,17 +332,28 @@
       <div
         class="bg-white dark:bg-[#111111] rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden h-auto shrink-0 flex flex-col"
       >
-        <div class="px-4 py-2 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 flex items-center gap-2 shrink-0">
+        <div
+          class="px-4 py-2 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 flex items-center gap-2 shrink-0"
+        >
           <i class="pi pi-list text-teal-500 text-xs"></i>
           <h3 class="text-xs font-bold text-slate-700 dark:text-slate-200">
             Performance Summary (Peak Values)
           </h3>
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left text-slate-600 dark:text-slate-400 table-fixed">
-            <thead class="text-[10px] text-slate-500 uppercase bg-slate-50 dark:bg-zinc-800 dark:text-slate-400">
+          <table
+            class="w-full text-xs text-left text-slate-600 dark:text-slate-400 table-fixed"
+          >
+            <thead
+              class="text-[10px] text-slate-500 uppercase bg-slate-50 dark:bg-zinc-800 dark:text-slate-400"
+            >
               <tr>
-                <th scope="col" class="px-4 py-2 w-[120px] text-left font-bold text-slate-600 dark:text-slate-300">EQP ID</th>
+                <th
+                  scope="col"
+                  class="px-4 py-2 w-[120px] text-left font-bold text-slate-600 dark:text-slate-300"
+                >
+                  EQP ID
+                </th>
                 <th scope="col" class="px-4 py-2 text-left">CPU Peak Time</th>
                 <th scope="col" class="px-4 py-2 text-left">CPU Max (%)</th>
                 <th scope="col" class="px-4 py-2 text-left">CPU Temp (°C)</th>
@@ -289,19 +365,51 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-zinc-800">
-              <tr v-for="item in summaryData" :key="item.eqpId" class="hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors">
-                <td class="px-4 py-1.5 text-left font-bold text-slate-700 dark:text-slate-200">{{ item.eqpId }}</td>
-                <td class="px-4 py-1.5 text-left font-mono">{{ formatDate(item.cpuPeakTime) }}</td>
-                <td class="px-4 py-1.5 text-left font-mono text-red-600 dark:text-red-400 font-bold">{{ fmt(item.cpuMax, 2) }}</td>
-                <td class="px-4 py-1.5 text-left font-mono">{{ fmt(item.cpuTempAtPeak, 1) }}</td>
-                <td class="px-4 py-1.5 text-left font-mono">{{ fmt(item.fanSpeedAtPeak, 0) }}</td>
-                <td class="px-4 py-1.5 text-left font-mono">{{ formatDate(item.memPeakTime) }}</td>
-                <td class="px-4 py-1.5 text-left font-mono text-red-600 dark:text-red-400 font-bold">{{ fmt(item.memMax, 2) }}</td>
-                <td class="px-4 py-1.5 text-left font-mono">{{ formatDate(item.gpuPeakTime) }}</td>
-                <td class="px-4 py-1.5 text-left font-mono text-red-600 dark:text-red-400 font-bold">{{ fmt(item.gpuMax, 1) }}</td>
+              <tr
+                v-for="item in summaryData"
+                :key="item.eqpId"
+                class="hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition-colors"
+              >
+                <td
+                  class="px-4 py-1.5 text-left font-bold text-slate-700 dark:text-slate-200"
+                >
+                  {{ item.eqpId }}
+                </td>
+                <td class="px-4 py-1.5 text-left font-mono">
+                  {{ formatDate(item.cpuPeakTime) }}
+                </td>
+                <td
+                  class="px-4 py-1.5 text-left font-mono text-red-600 dark:text-red-400 font-bold"
+                >
+                  {{ fmt(item.cpuMax, 2) }}
+                </td>
+                <td class="px-4 py-1.5 text-left font-mono">
+                  {{ fmt(item.cpuTempAtPeak, 1) }}
+                </td>
+                <td class="px-4 py-1.5 text-left font-mono">
+                  {{ fmt(item.fanSpeedAtPeak, 0) }}
+                </td>
+                <td class="px-4 py-1.5 text-left font-mono">
+                  {{ formatDate(item.memPeakTime) }}
+                </td>
+                <td
+                  class="px-4 py-1.5 text-left font-mono text-red-600 dark:text-red-400 font-bold"
+                >
+                  {{ fmt(item.memMax, 2) }}
+                </td>
+                <td class="px-4 py-1.5 text-left font-mono">
+                  {{ formatDate(item.gpuPeakTime) }}
+                </td>
+                <td
+                  class="px-4 py-1.5 text-left font-mono text-red-600 dark:text-red-400 font-bold"
+                >
+                  {{ fmt(item.gpuMax, 1) }}
+                </td>
               </tr>
               <tr v-if="summaryData.length === 0">
-                <td colspan="9" class="px-4 py-8 text-center text-slate-400">No Summary Data Available</td>
+                <td colspan="9" class="px-4 py-8 text-center text-slate-400">
+                  No Summary Data Available
+                </td>
               </tr>
             </tbody>
           </table>
@@ -375,10 +483,16 @@ const isRealtime = ref(false);
 let refreshTimer: number | null = null;
 
 const zoomStates = reactive<Record<string, boolean>>({
-  cpu: false, mem: false, dual: false, gpu: false
+  cpu: false,
+  mem: false,
+  dual: false,
+  gpu: false,
 });
 const chartInstances = reactive<Record<string, ECharts | null>>({
-  cpu: null, mem: null, dual: null, gpu: null
+  cpu: null,
+  mem: null,
+  dual: null,
+  gpu: null,
 });
 
 const isDarkMode = ref(document.documentElement.classList.contains("dark"));
@@ -393,27 +507,29 @@ const intervalOptions = [
 
 const getTooltipFormatter = (unitMap: Record<string, string>) => {
   return (params: any) => {
-    if(!params || !params[0]) return '';
-    const xDate = new Date(params[0].axisValueLabel); 
-    const timeStr = isNaN(xDate.getTime()) 
-      ? params[0].axisValueLabel 
-      : xDate.toLocaleTimeString('en-GB', { hour12: false }); 
+    if (!params || !params[0]) return "";
+    const xDate = new Date(params[0].axisValueLabel);
+    const timeStr = isNaN(xDate.getTime())
+      ? params[0].axisValueLabel
+      : xDate.toLocaleTimeString("en-GB", { hour12: false });
 
     let html = `<div class="font-bold mb-1">${timeStr}</div>`;
-    
+
     params.forEach((p: any) => {
-      let key = '';
-      if(p.seriesName === 'CPU Usage') key = 'cpuUsage';
-      else if(p.seriesName === 'Memory Usage') key = 'memoryUsage';
-      else if(p.seriesName === 'CPU Temp') key = 'cpuTemp';
-      else if(p.seriesName === 'Fan Speed') key = 'fanSpeed';
-      else if(p.seriesName === 'GPU Temp') key = 'gpuTemp';
-      
-      if(key && p.data[key] !== undefined) {
-        const u = unitMap[p.seriesName] || '';
+      let key = "";
+      if (p.seriesName === "CPU Usage") key = "cpuUsage";
+      else if (p.seriesName === "Memory Usage") key = "memoryUsage";
+      else if (p.seriesName === "CPU Temp") key = "cpuTemp";
+      else if (p.seriesName === "Fan Speed") key = "fanSpeed";
+      else if (p.seriesName === "GPU Temp") key = "gpuTemp";
+
+      if (key && p.data[key] !== undefined) {
+        const u = unitMap[p.seriesName] || "";
         const valNum = Number(p.data[key]);
         const colorDot = `<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:${p.color};"></span>`;
-        html += `<div>${colorDot} ${p.seriesName}: ${valNum.toFixed(2)} ${u}</div>`;
+        html += `<div>${colorDot} ${p.seriesName}: ${valNum.toFixed(
+          2
+        )} ${u}</div>`;
       }
     });
     return html;
@@ -426,14 +542,17 @@ const axisFormatter = (value: number | string) => {
   return Number.isInteger(val) ? val : val.toFixed(1);
 };
 
-const getAxisRange = (field: keyof PerformanceDataPointDto, isPercent: boolean = false) => {
+const getAxisRange = (
+  field: keyof PerformanceDataPointDto,
+  isPercent: boolean = false
+) => {
   if (!chartData.value.length) return {};
-  const values = chartData.value.map(d => Number(d[field]));
+  const values = chartData.value.map((d) => Number(d[field]));
   const min = Math.min(...values);
   const max = Math.max(...values);
-  
+
   const range = max - min || (min === 0 ? 1 : Math.abs(min * 0.1));
-  const padding = range * 0.2; 
+  const padding = range * 0.2;
 
   let newMin = min - padding;
   let newMax = max + padding;
@@ -442,7 +561,7 @@ const getAxisRange = (field: keyof PerformanceDataPointDto, isPercent: boolean =
     newMin = Math.max(0, newMin);
     newMax = Math.min(100, newMax);
   } else {
-    if (field === 'fanSpeed') newMin = Math.max(0, newMin);
+    if (field === "fanSpeed") newMin = Math.max(0, newMin);
   }
 
   return { min: newMin, max: newMax };
@@ -465,13 +584,13 @@ const commonChartOption = () => {
     grid: { left: 50, right: 35, top: 30, bottom: 25 },
     dataZoom: [
       {
-        type: 'inside',
+        type: "inside",
         xAxisIndex: [0],
-        filterMode: 'filter',
-      }
+        filterMode: "filter",
+      },
     ],
     dataset: {
-      source: chartData.value
+      source: chartData.value,
     },
     xAxis: {
       type: "category",
@@ -479,15 +598,19 @@ const commonChartOption = () => {
         color: textColor,
         fontSize: 10,
         formatter: (value: string) => {
-           const d = new Date(value);
-           if(isNaN(d.getTime())) return value;
-           return `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-        }
+          const d = new Date(value);
+          if (isNaN(d.getTime())) return value;
+          return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+            d.getDate()
+          ).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(
+            d.getMinutes()
+          ).padStart(2, "0")}`;
+        },
       },
       axisLine: { lineStyle: { color: gridColor } },
     },
     legend: {
-      show: false
+      show: false,
     },
     yAxis: {
       type: "value",
@@ -500,21 +623,24 @@ const commonChartOption = () => {
 
 const cpuOption = computed(() => {
   const base = commonChartOption();
-  const range = getAxisRange('cpuUsage', true);
-  
+  const range = getAxisRange("cpuUsage", true);
+
   return {
     ...base,
-    tooltip: { ...base.tooltip, formatter: getTooltipFormatter({ "CPU Usage": "%" }) },
+    tooltip: {
+      ...base.tooltip,
+      formatter: getTooltipFormatter({ "CPU Usage": "%" }),
+    },
     yAxis: {
       ...base.yAxis,
       min: range.min,
-      max: range.max
+      max: range.max,
     },
     series: [
       {
         name: "CPU Usage",
         type: "line",
-        encode: { x: 'timestamp', y: 'cpuUsage' },
+        encode: { x: "timestamp", y: "cpuUsage" },
         smooth: true,
         showSymbol: true,
         symbolSize: 3,
@@ -522,7 +648,10 @@ const cpuOption = computed(() => {
         areaStyle: {
           color: {
             type: "linear",
-            x: 0, y: 0, x2: 0, y2: 1,
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
             colorStops: [
               { offset: 0, color: "rgba(59, 130, 246, 0.3)" },
               { offset: 1, color: "rgba(59, 130, 246, 0)" },
@@ -536,21 +665,24 @@ const cpuOption = computed(() => {
 
 const memOption = computed(() => {
   const base = commonChartOption();
-  const range = getAxisRange('memoryUsage', true);
+  const range = getAxisRange("memoryUsage", true);
 
   return {
     ...base,
-    tooltip: { ...base.tooltip, formatter: getTooltipFormatter({ "Memory Usage": "%" }) },
+    tooltip: {
+      ...base.tooltip,
+      formatter: getTooltipFormatter({ "Memory Usage": "%" }),
+    },
     yAxis: {
       ...base.yAxis,
       min: range.min,
-      max: range.max
+      max: range.max,
     },
     series: [
       {
         name: "Memory Usage",
         type: "line",
-        encode: { x: 'timestamp', y: 'memoryUsage' },
+        encode: { x: "timestamp", y: "memoryUsage" },
         smooth: true,
         showSymbol: true,
         symbolSize: 3,
@@ -558,7 +690,10 @@ const memOption = computed(() => {
         areaStyle: {
           color: {
             type: "linear",
-            x: 0, y: 0, x2: 0, y2: 1,
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
             colorStops: [
               { offset: 0, color: "rgba(16, 185, 129, 0.3)" },
               { offset: 1, color: "rgba(16, 185, 129, 0)" },
@@ -577,12 +712,15 @@ const cpuTempFanOption = computed(() => {
     ? "rgba(255, 255, 255, 0.1)"
     : "rgba(0, 0, 0, 0.1)";
 
-  const tempRange = getAxisRange('cpuTemp', false);
-  const fanRange = getAxisRange('fanSpeed', false);
+  const tempRange = getAxisRange("cpuTemp", false);
+  const fanRange = getAxisRange("fanSpeed", false);
 
   return {
     ...base,
-    tooltip: { ...base.tooltip, formatter: getTooltipFormatter({ "CPU Temp": "°C", "Fan Speed": "RPM" }) },
+    tooltip: {
+      ...base.tooltip,
+      formatter: getTooltipFormatter({ "CPU Temp": "°C", "Fan Speed": "RPM" }),
+    },
     legend: {
       show: true,
       data: ["CPU Temp", "Fan Speed"],
@@ -592,7 +730,7 @@ const cpuTempFanOption = computed(() => {
       textStyle: { color: textColor, fontSize: 10 },
       itemGap: 10,
       itemWidth: 15,
-      itemHeight: 10
+      itemHeight: 10,
     },
     yAxis: [
       {
@@ -619,7 +757,7 @@ const cpuTempFanOption = computed(() => {
         name: "CPU Temp",
         type: "line",
         yAxisIndex: 0,
-        encode: { x: 'timestamp', y: 'cpuTemp' },
+        encode: { x: "timestamp", y: "cpuTemp" },
         smooth: true,
         showSymbol: true,
         symbolSize: 3,
@@ -629,7 +767,7 @@ const cpuTempFanOption = computed(() => {
         name: "Fan Speed",
         type: "line",
         yAxisIndex: 1,
-        encode: { x: 'timestamp', y: 'fanSpeed' },
+        encode: { x: "timestamp", y: "fanSpeed" },
         smooth: true,
         showSymbol: true,
         symbolSize: 3,
@@ -641,21 +779,24 @@ const cpuTempFanOption = computed(() => {
 
 const gpuOption = computed(() => {
   const base = commonChartOption();
-  const range = getAxisRange('gpuTemp', false);
+  const range = getAxisRange("gpuTemp", false);
 
   return {
     ...base,
-    tooltip: { ...base.tooltip, formatter: getTooltipFormatter({ "GPU Temp": "°C" }) },
+    tooltip: {
+      ...base.tooltip,
+      formatter: getTooltipFormatter({ "GPU Temp": "°C" }),
+    },
     yAxis: {
       ...base.yAxis,
       min: range.min,
-      max: range.max
+      max: range.max,
     },
     series: [
       {
         name: "GPU Temp",
         type: "line",
-        encode: { x: 'timestamp', y: 'gpuTemp' },
+        encode: { x: "timestamp", y: "gpuTemp" },
         smooth: true,
         showSymbol: true,
         symbolSize: 3,
@@ -663,7 +804,10 @@ const gpuOption = computed(() => {
         areaStyle: {
           color: {
             type: "linear",
-            x: 0, y: 0, x2: 0, y2: 1,
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
             colorStops: [
               { offset: 0, color: "rgba(239, 68, 68, 0.3)" },
               { offset: 1, color: "rgba(239, 68, 68, 0)" },
@@ -679,9 +823,9 @@ const gpuOption = computed(() => {
 const onChartInit = (chartKey: string, instance: any) => {
   chartInstances[chartKey] = instance;
   // [수정] 사용하지 않는 params 인자 제거
-  instance.on('dataZoom', () => {
+  instance.on("dataZoom", () => {
     const option = instance.getOption();
-    if(option.dataZoom && option.dataZoom[0]) {
+    if (option.dataZoom && option.dataZoom[0]) {
       const start = option.dataZoom[0].start;
       const end = option.dataZoom[0].end;
       if (start > 0 || end < 100) zoomStates[chartKey] = true;
@@ -692,8 +836,8 @@ const onChartInit = (chartKey: string, instance: any) => {
 
 const resetChartZoom = (chartKey: string) => {
   const instance = chartInstances[chartKey];
-  if(instance) {
-    instance.dispatchAction({ type: 'dataZoom', start: 0, end: 100 });
+  if (instance) {
+    instance.dispatchAction({ type: "dataZoom", start: 0, end: 100 });
     zoomStates[chartKey] = false;
   }
 };
@@ -729,7 +873,10 @@ onMounted(async () => {
       }
     });
   });
-  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
 });
 
 onUnmounted(() => {
@@ -746,7 +893,7 @@ const onSiteChange = async () => {
     localStorage.removeItem("dashboard_site"); // [추가]
     sdwts.value = [];
   }
-  
+
   // 하위 필터 초기화 & 로컬스토리지 삭제
   filterStore.selectedSdwt = "";
   localStorage.removeItem("dashboard_sdwt");
@@ -764,7 +911,7 @@ const onSdwtChange = async () => {
     localStorage.removeItem("dashboard_sdwt"); // [추가]
     eqpIds.value = [];
   }
-  
+
   // 하위 필터 초기화 & 로컬스토리지 삭제
   selectedEqpId.value = "";
   localStorage.removeItem("performance_eqpid");
@@ -780,7 +927,10 @@ const onEqpIdChange = () => {
 };
 
 const loadEqpIds = async () => {
-  eqpIds.value = await equipmentApi.getEqpIds(undefined, filterStore.selectedSdwt);
+  eqpIds.value = await equipmentApi.getEqpIds(
+    undefined,
+    filterStore.selectedSdwt
+  );
 };
 
 const toggleRealtime = () => {
@@ -812,28 +962,30 @@ const searchData = async (silent = false) => {
 
   try {
     const fixedStart = new Date(startDate.value);
-    fixedStart.setMinutes(0, 0, 0); 
+    fixedStart.setMinutes(0, 0, 0);
 
     const fixedEnd = new Date(endDate.value);
-    fixedEnd.setMinutes(59, 59, 999); 
+    fixedEnd.setMinutes(59, 59, 999);
 
     let fetchInterval = 60;
-    
+
     const diffMs = fixedEnd.getTime() - fixedStart.getTime();
     const diffDays = diffMs / (1000 * 3600 * 24);
 
     if (isRealtime.value) {
       fetchInterval = intervalSeconds.value;
     } else {
-      if (diffDays <= 1) fetchInterval = 5;       
-      else if (diffDays <= 3) fetchInterval = 10; 
-      else if (diffDays <= 7) fetchInterval = 60; 
-      else if (diffDays <= 30) fetchInterval = 600; 
-      else fetchInterval = 1800; 
+      if (diffDays <= 1) fetchInterval = 5;
+      else if (diffDays <= 3) fetchInterval = 10;
+      else if (diffDays <= 7) fetchInterval = 60;
+      else if (diffDays <= 30) fetchInterval = 600;
+      else fetchInterval = 1800;
     }
 
     const rawData = await performanceApi.getHistory(
-      isRealtime.value ? startDate.value.toISOString() : fixedStart.toISOString(),
+      isRealtime.value
+        ? startDate.value.toISOString()
+        : fixedStart.toISOString(),
       isRealtime.value ? endDate.value.toISOString() : fixedEnd.toISOString(),
       selectedEqpId.value,
       fetchInterval
@@ -902,10 +1054,10 @@ const calculateSummary = (data: PerformanceDataPointDto[]) => {
 
 const resetFilters = () => {
   if (isRealtime.value) return;
-  
+
   filterStore.reset();
   selectedEqpId.value = "";
-  
+
   // [추가] 로컬스토리지 전체 초기화
   localStorage.removeItem("dashboard_site");
   localStorage.removeItem("dashboard_sdwt");
@@ -922,12 +1074,18 @@ const resetFilters = () => {
 const formatDate = (dateStr: string | undefined) => {
   if (!dateStr) return "-";
   const d = new Date(dateStr);
-  return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+  return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(
+    d.getMinutes()
+  ).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
 };
 
 const fmt = (val: number | string | undefined, digits: number) => {
   const num = Number(val);
-  return !isNaN(num) && val !== undefined && val !== null ? num.toFixed(digits) : "-";
+  return !isNaN(num) && val !== undefined && val !== null
+    ? num.toFixed(digits)
+    : "-";
 };
 </script>
 
@@ -968,8 +1126,14 @@ const fmt = (val: number | string | undefined, digits: number) => {
   animation: fadeIn 0.4s ease-out forwards;
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 :deep(.p-select-filter-container) {
   @apply !p-2;
@@ -983,4 +1147,3 @@ const fmt = (val: number | string | undefined, digits: number) => {
   padding: 4px 8px !important;
 }
 </style>
-
