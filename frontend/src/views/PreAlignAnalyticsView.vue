@@ -300,7 +300,11 @@ const onSdwtChange = async () => {
   if (filter.sdwt) {
     localStorage.setItem("prealign_sdwt", filter.sdwt);
     // [수정] type: 'prealign' 전달
-    eqpIds.value = await equipmentApi.getEqpIds(undefined, filter.sdwt, 'prealign');
+    eqpIds.value = await equipmentApi.getEqpIds(
+     undefined,
+     filter.sdwt,
+     "prealign"
+    );
   } else {
     localStorage.removeItem("prealign_sdwt");
     eqpIds.value = [];
@@ -588,6 +592,7 @@ const chartOption = computed(() => {
   }
 }
 </style>
+
 
 
 
