@@ -99,7 +99,6 @@ export class WaferService {
     if (column === 'waferids') colName = 'waferid';
 
     let whereClause = `WHERE 1=1`;
-    // [수정] any[] 대신 구체적인 타입 지정
     const queryParams: (string | number | Date)[] = [];
 
     if (eqpId) {
@@ -131,7 +130,6 @@ export class WaferService {
         sql,
         ...queryParams,
       );
-      // [수정] r.val을 string | number 등으로 단언 후 String 변환
       return result
         .map((r) => {
           if (r.val === null || r.val === undefined) return '';
@@ -144,12 +142,10 @@ export class WaferService {
     }
   }
 
-  // [수정] Lot, RCP, Stage 조건에 맞는 실제 Point 목록 조회 (JOIN 적용)
+  // Lot, RCP, Stage 조건에 맞는 실제 Point 목록 조회 (JOIN 적용)
   async getDistinctPoints(params: WaferQueryParams): Promise<string[]> {
     const { eqpId, lotId, cassetteRcp, stageGroup, startDate, endDate } = params;
 
-    // plg_onto_spectrum(스펙트럼)과 plg_wf_flat(메타데이터)을 조인하여 조회
-    // Wafer ID와 Point가 일치하고, RCP/Stage 조건이 맞는 데이터만 추출
     let sql = `
       SELECT DISTINCT s.point
       FROM public.plg_onto_spectrum s
@@ -171,8 +167,6 @@ export class WaferService {
       sql += ` AND s.lotid = $${queryParams.length + 1}`;
       queryParams.push(lotId);
     }
-    
-    // [추가] Cassette RCP & Stage Group 필터 적용
     if (cassetteRcp) {
       sql += ` AND f.cassettercp = $${queryParams.length + 1}`;
       queryParams.push(cassetteRcp);
@@ -201,7 +195,7 @@ export class WaferService {
     }
   }
 
-  // [수정] 2. Spectrum Trend 데이터 조회 (실제 DB 연동)
+  // Spectrum Trend 데이터 조회
   async getSpectrumTrend(params: WaferQueryParams): Promise<any[]> {
     const { eqpId, lotId, pointId, waferIds, startDate, endDate } = params;
 
@@ -212,7 +206,6 @@ export class WaferService {
     const waferIdList = waferIds.split(',').map((w) => w.trim());
     if (waferIdList.length === 0) return [];
 
-    // [수정] 타입 명시
     const queryParams: (string | number | Date)[] = [];
     let sql = `
       SELECT waferid, wavelengths, values
@@ -377,7 +370,8 @@ export class WaferService {
   }
 
   async getPdfImage(params: WaferQueryParams): Promise<string> {
-    const { eqpId, dateTime, pointNumber } = params;
+    // [수정] lotId, waferId 파라미터 추가 추출
+    const { eqpId, lotId, waferId, dateTime, pointNumber } = params;
 
     if (!eqpId || !dateTime || pointNumber === undefined) {
       throw new InternalServerErrorException(
@@ -385,7 +379,13 @@ export class WaferService {
       );
     }
 
-    const pdfCheckResult = await this.checkPdf({ eqpId, servTs: dateTime });
+    // [수정] checkPdf에 lotId, waferId 전달
+    const pdfCheckResult = await this.checkPdf({
+      eqpId,
+      lotId,
+      waferId,
+      servTs: dateTime,
+    });
     if (!pdfCheckResult.exists || !pdfCheckResult.url) {
       throw new NotFoundException('PDF file URI not found in database.');
     }
@@ -431,17 +431,17 @@ export class WaferService {
         proxy: false,
       });
 
-      // ▼▼▼ [수정] ESLint unsafe-* 오류 해결: 타입을 unknown으로 받고 typeof로 체크 ▼▼▼
-      const contentType: unknown = response.headers['content-type'];
+      // 1. Content-Type 체크 (ESLint Safe Type Check)
+      const headers = response.headers as Record<string, unknown>;
+      const contentType = headers['content-type'];
       
       if (typeof contentType === 'string' && !contentType.toLowerCase().includes('pdf')) {
         writer.close();
         if (fs.existsSync(tempPdfPath)) fs.unlinkSync(tempPdfPath);
         throw new Error(
-          `Invalid content-type received: ${contentType}. Expected 'application/pdf'. The file server might be returning an error page.`,
+          `Invalid content-type: ${contentType}. Server did not return a PDF file.`,
         );
       }
-      // ▲▲▲ [수정 끝] ▲▲▲
 
       (response.data as Readable).pipe(writer);
 
@@ -449,6 +449,21 @@ export class WaferService {
         writer.on('finish', () => resolve());
         writer.on('error', reject);
       });
+
+      // 2. Magic Number 체크 (실제 파일 내용 검증)
+      try {
+        const fd = fs.openSync(tempPdfPath, 'r');
+        const headerBuffer = Buffer.alloc(5);
+        const bytesRead = fs.readSync(fd, headerBuffer, 0, 5, 0);
+        fs.closeSync(fd);
+
+        if (bytesRead < 4 || !headerBuffer.toString().startsWith('%PDF')) {
+            throw new Error('File signature mismatch. The downloaded file is not a valid PDF.');
+        }
+      } catch (checkErr) {
+        if (fs.existsSync(tempPdfPath)) fs.unlinkSync(tempPdfPath);
+        throw checkErr;
+      }
 
       const popplerBinPath =
         process.env.POPPLER_BIN_PATH ||
@@ -508,7 +523,7 @@ export class WaferService {
       const error = e as { code?: string; message?: string };
       console.error(`[ERROR] PDF Processing Failed. URL: ${encodedUrl}`, e);
       throw new InternalServerErrorException(
-        `Failed to process PDF image: ${error.message || 'Unknown error'}`,
+        `Failed to process PDF: ${error.message || 'Unknown error'}`,
       );
     }
   }
@@ -673,19 +688,26 @@ export class WaferService {
   }
 
   async checkPdf(params: WaferQueryParams) {
-    const { eqpId, servTs } = params;
+    // [수정] lotId, waferId 추가하여 정확한 파일 식별
+    const { eqpId, lotId, waferId, servTs } = params;
     if (!eqpId || !servTs) return { exists: false, url: null };
 
     try {
       const ts = typeof servTs === 'string' ? servTs : servTs.toISOString();
+      
+      // SQL 수정: lotid, waferid 조건 추가
       const result = await this.prisma.$queryRawUnsafe<PdfResult[]>(
         `SELECT file_uri FROM public.plg_wf_map 
          WHERE eqpid = $1 
-           AND datetime >= $2::timestamp - interval '24 hours'
-           AND datetime <= $2::timestamp + interval '24 hours'
+           AND lotid = $2
+           AND waferid = $3
+           AND datetime >= $4::timestamp - interval '24 hours'
+           AND datetime <= $4::timestamp + interval '24 hours'
          LIMIT 1`,
         eqpId,
-        ts,
+        lotId,            // $2
+        String(waferId),  // $3 (DB타입에 따라 String 변환)
+        ts                // $4
       );
 
       if (result && result.length > 0 && result[0].file_uri) {
