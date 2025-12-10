@@ -764,7 +764,7 @@ export class WaferService {
     return { exists: false, url: null };
   }
 
-async getResidualMap(params: WaferQueryParams): Promise<ResidualMapItem[]> {
+  async getResidualMap(params: WaferQueryParams): Promise<ResidualMapItem[]> {
     const { eqpId, lotId, waferId, ts } = params;
     if (!eqpId || !lotId || !waferId || !ts) return [];
 
