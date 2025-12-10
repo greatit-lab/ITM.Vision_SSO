@@ -276,7 +276,6 @@ export class WaferService {
     }
   }
 
-  // ... (이하 메서드들은 변경 사항 없음, 기존 코드 유지)
   async getFlatData(params: WaferQueryParams) {
     const {
       eqpId,
@@ -431,6 +430,18 @@ export class WaferService {
         responseType: 'stream',
         proxy: false,
       });
+
+      // ▼▼▼ [수정] ESLint unsafe-* 오류 해결: 타입을 unknown으로 받고 typeof로 체크 ▼▼▼
+      const contentType: unknown = response.headers['content-type'];
+      
+      if (typeof contentType === 'string' && !contentType.toLowerCase().includes('pdf')) {
+        writer.close();
+        if (fs.existsSync(tempPdfPath)) fs.unlinkSync(tempPdfPath);
+        throw new Error(
+          `Invalid content-type received: ${contentType}. Expected 'application/pdf'. The file server might be returning an error page.`,
+        );
+      }
+      // ▲▲▲ [수정 끝] ▲▲▲
 
       (response.data as Readable).pipe(writer);
 
