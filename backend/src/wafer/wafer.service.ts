@@ -370,7 +370,6 @@ export class WaferService {
   }
 
   async getPdfImage(params: WaferQueryParams): Promise<string> {
-    // [수정] lotId, waferId 파라미터 추가 추출
     const { eqpId, lotId, waferId, dateTime, pointNumber } = params;
 
     if (!eqpId || !dateTime || pointNumber === undefined) {
@@ -523,7 +522,7 @@ export class WaferService {
       const error = e as { code?: string; message?: string };
       console.error(`[ERROR] PDF Processing Failed. URL: ${encodedUrl}`, e);
       throw new InternalServerErrorException(
-        `Failed to process PDF: ${error.message || 'Unknown error'}`,
+        `Failed to process PDF image: ${error.message || 'Unknown error'}`,
       );
     }
   }
@@ -688,31 +687,58 @@ export class WaferService {
   }
 
   async checkPdf(params: WaferQueryParams) {
-    // [수정] lotId, waferId 추가하여 정확한 파일 식별
+    // [수정] lotId, waferId 파라미터는 사용하지만, DB 쿼리에서는 제거
     const { eqpId, lotId, waferId, servTs } = params;
     if (!eqpId || !servTs) return { exists: false, url: null };
 
     try {
       const ts = typeof servTs === 'string' ? servTs : servTs.toISOString();
       
-      // SQL 수정: lotid, waferid 조건 추가
-      const result = await this.prisma.$queryRawUnsafe<PdfResult[]>(
+      // [수정] SQL 오류 해결을 위해 lotid, waferid 조건 제거
+      // 대신 날짜 범위 내의 모든 후보를 가져와서 JavaScript로 필터링
+      const results = await this.prisma.$queryRawUnsafe<PdfResult[]>(
         `SELECT file_uri FROM public.plg_wf_map 
          WHERE eqpid = $1 
-           AND lotid = $2
-           AND waferid = $3
-           AND datetime >= $4::timestamp - interval '24 hours'
-           AND datetime <= $4::timestamp + interval '24 hours'
-         LIMIT 1`,
+           AND datetime >= $2::timestamp - interval '24 hours'
+           AND datetime <= $2::timestamp + interval '24 hours'
+         ORDER BY datetime DESC`,
         eqpId,
-        lotId,            // $2
-        String(waferId),  // $3 (DB타입에 따라 String 변환)
-        ts                // $4
+        ts
       );
 
-      if (result && result.length > 0 && result[0].file_uri) {
-        return { exists: true, url: result[0].file_uri };
+      if (!results || results.length === 0) {
+        return { exists: false, url: null };
       }
+
+      // [추가] 파일명(file_uri)을 기반으로 Lot ID와 Wafer ID 매칭 (메모리 필터링)
+      if (lotId) {
+        const targetLot = lotId.trim();
+        const targetLotUnderscore = targetLot.replace(/\./g, '_'); // "ABC.1" -> "ABC_1" 대응
+
+        const matched = results.find(r => {
+            if (!r.file_uri) return false;
+            const uri = r.file_uri;
+            
+            // Lot ID 포함 여부 확인
+            const hasLot = uri.includes(targetLot) || uri.includes(targetLotUnderscore);
+            
+            // Wafer ID 포함 여부 확인 (숫자로 존재하면 체크)
+            let hasWafer = true;
+            if (waferId) {
+                hasWafer = uri.includes(String(waferId));
+            }
+
+            return hasLot && hasWafer;
+        });
+
+        if (matched) {
+            return { exists: true, url: matched.file_uri };
+        }
+      } else {
+        // Lot ID 정보가 없으면 가장 최신 파일 반환 (Fallback)
+        return { exists: true, url: results[0].file_uri };
+      }
+
     } catch (e) {
       console.warn(`Failed to check PDF for ${String(eqpId)}:`, e);
     }
