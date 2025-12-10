@@ -64,6 +64,7 @@
           <Select
             v-model="selectedEqpId"
             :options="eqpIds"
+            :loading="isEqpIdLoading"
             filter
             placeholder="Select EQP"
             showClear
@@ -358,6 +359,8 @@ const processSeries = ref<any[]>([]);
 const processStats = ref<ProcessStat[]>([]); 
 const displayedProcessCount = ref(0);
 
+// EQP ID 로딩 상태 변수
+const isEqpIdLoading = ref(false);
 const isLoading = ref(false);
 const hasSearched = ref(false);
 const isZoomed = ref(false);
@@ -430,7 +433,8 @@ const onEqpIdChange = () => {
 };
 
 const loadEqpIds = async () => {
-  eqpIds.value = await equipmentApi.getEqpIds(undefined, filterStore.selectedSdwt);
+  // [수정] type: 'process' 전달 (backend service map 참조)
+  eqpIds.value = await equipmentApi.getEqpIds(undefined, filterStore.selectedSdwt, 'process');
 };
 
 const searchData = async () => {
@@ -680,4 +684,5 @@ const resetZoom = () => {
 .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>
+
 
