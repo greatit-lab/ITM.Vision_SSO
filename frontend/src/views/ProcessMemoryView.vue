@@ -359,9 +359,9 @@ const processSeries = ref<any[]>([]);
 const processStats = ref<ProcessStat[]>([]); 
 const displayedProcessCount = ref(0);
 
+const isLoading = ref(false);
 // EQP ID 로딩 상태 변수
 const isEqpIdLoading = ref(false);
-const isLoading = ref(false);
 const hasSearched = ref(false);
 const isZoomed = ref(false);
 let chartInstance: ECharts | null = null;
@@ -433,8 +433,18 @@ const onEqpIdChange = () => {
 };
 
 const loadEqpIds = async () => {
-  // [수정] type: 'process' 전달 (backend service map 참조)
-  eqpIds.value = await equipmentApi.getEqpIds(undefined, filterStore.selectedSdwt, 'process');
+  // [수정] 로딩 상태 관리 추가
+  isEqpIdLoading.value = true;
+  try {
+    // type: 'process' 전달
+    eqpIds.value = await equipmentApi.getEqpIds(
+      undefined,
+      filterStore.selectedSdwt,
+      "process"
+    );
+  } finally {
+    isEqpIdLoading.value = false;
+  }
 };
 
 const searchData = async () => {
@@ -684,5 +694,6 @@ const resetZoom = () => {
 .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>
+
 
 
