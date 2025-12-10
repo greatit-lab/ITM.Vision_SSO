@@ -263,7 +263,7 @@
       </div>
 
       <div
-        class="flex flex-col h-[450px] shrink-0 overflow-hidden bg-white border shadow-sm dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 rounded-xl"
+        class="flex flex-col h-[370px] shrink-0 overflow-hidden bg-white border shadow-sm dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 rounded-xl"
       >
         <div
           class="flex items-center justify-between px-4 py-2 border-b bg-slate-50 dark:bg-zinc-900/50 border-slate-100 dark:border-zinc-800 shrink-0"
@@ -921,6 +921,3 @@ const formatDate = (dateStr: string, short = false, twoDigitYear = false) => {
   }
 }
 </style>
-
-
-
