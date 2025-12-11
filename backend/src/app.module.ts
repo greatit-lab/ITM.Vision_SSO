@@ -6,6 +6,7 @@ import { PrismaService } from './prisma.service';
 import { EquipmentModule } from './equipment/equipment.module';
 import { PreAlignModule } from './prealign/prealign.module';
 import { LampLifeModule } from './lamplife/lamplife.module';
+import { HealthModule } from './health/health.module';
 
 // Controllers & Services
 import { DashboardController } from './dashboard/dashboard.controller';
@@ -20,7 +21,7 @@ import { WaferController } from './wafer/wafer.controller';
 import { WaferService } from './wafer/wafer.service';
 
 @Module({
-  imports: [EquipmentModule, PreAlignModule, LampLifeModule],
+  imports: [EquipmentModule, PreAlignModule, LampLifeModule, HealthModule],
   controllers: [
     DashboardController,
     PerformanceController,
