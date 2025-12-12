@@ -24,55 +24,71 @@
     </div>
 
     <div
-      class="mb-3 bg-white dark:bg-[#111111] p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-wrap gap-2 items-center justify-between shadow-sm shrink-0 transition-colors duration-300"
+      class="mb-5 bg-white dark:bg-[#111111] p-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-wrap gap-2 items-center justify-between shadow-sm shrink-0 transition-colors duration-300"
     >
       <div
         class="flex flex-wrap items-center flex-1 gap-2 px-1 py-1 overflow-x-auto scrollbar-hide"
       >
-        <Select
-          v-model="filterStore.selectedSite"
-          :options="sites"
-          placeholder="Site"
-          showClear
-          class="w-28 custom-dropdown small"
-          overlayClass="custom-dropdown-panel small"
-          @change="onSiteChange"
-        />
-        <Select
-          v-model="filterStore.selectedSdwt"
-          :options="sdwts"
-          placeholder="SDWT"
-          :disabled="!filterStore.selectedSite"
-          showClear
-          class="w-32 custom-dropdown small"
-          overlayClass="custom-dropdown-panel small"
-          @change="onSdwtChange"
-        />
-        <Select
-          v-model="filters.eqpId"
-          :options="eqpIds"
-          filter
-          placeholder="EQP ID"
-          :disabled="!filterStore.selectedSdwt"
-          showClear
-          class="w-32 custom-dropdown small"
-          overlayClass="custom-dropdown-panel small"
-          @change="onEqpChange"
-        />
-        <div class="w-px h-6 bg-slate-200 dark:bg-zinc-700 mx-1 shrink-0"></div>
-        <Select
-          v-model="filters.lotId"
-          :options="lotIds"
-          filter
-          placeholder="Lot ID"
-          :disabled="!filters.eqpId"
-          showClear
-          class="w-40 custom-dropdown small"
-          overlayClass="custom-dropdown-panel small"
-          @change="onLotChange"
-        />
+        <div class="min-w-[140px] shrink-0">
+          <Select
+            v-model="filterStore.selectedSite"
+            :options="sites"
+            placeholder="Site"
+            showClear
+            class="w-full custom-dropdown small"
+            overlayClass="custom-dropdown-panel small"
+            :class="{ '!text-slate-400': !filterStore.selectedSite }"
+            @change="onSiteChange"
+          />
+        </div>
 
-        <div class="min-w-[150px] shrink-0">
+        <div class="min-w-[160px] shrink-0">
+          <Select
+            v-model="filterStore.selectedSdwt"
+            :options="sdwts"
+            placeholder="SDWT"
+            :disabled="!filterStore.selectedSite"
+            showClear
+            class="w-full custom-dropdown small"
+            overlayClass="custom-dropdown-panel small"
+            :class="{ '!text-slate-400': !filterStore.selectedSdwt }"
+            @change="onSdwtChange"
+          />
+        </div>
+
+        <div class="min-w-[160px] shrink-0">
+          <Select
+            v-model="filters.eqpId"
+            :options="eqpIds"
+            filter
+            placeholder="EQP ID"
+            :disabled="!filterStore.selectedSdwt"
+            showClear
+            class="w-full custom-dropdown small"
+            overlayClass="custom-dropdown-panel small"
+            :class="{ '!text-slate-400': !filters.eqpId }"
+            @change="onEqpChange"
+          />
+        </div>
+
+        <div class="w-px h-6 bg-slate-200 dark:bg-zinc-700 mx-1 shrink-0"></div>
+
+        <div class="min-w-[160px] shrink-0">
+          <Select
+            v-model="filters.lotId"
+            :options="lotIds"
+            filter
+            placeholder="Lot ID"
+            :disabled="!filters.eqpId"
+            showClear
+            class="w-full custom-dropdown small"
+            overlayClass="custom-dropdown-panel small"
+            :class="{ '!text-slate-400': !filters.lotId }"
+            @change="onLotChange"
+          />
+        </div>
+
+        <div class="min-w-[140px] shrink-0">
           <DatePicker
             v-model="filters.startDate"
             showIcon
@@ -83,7 +99,8 @@
             @update:model-value="onDateChange"
           />
         </div>
-        <div class="min-w-[150px] shrink-0">
+
+        <div class="min-w-[140px] shrink-0">
           <DatePicker
             v-model="filters.endDate"
             showIcon
@@ -95,6 +112,7 @@
           />
         </div>
       </div>
+
       <div
         class="flex items-center gap-1 pl-2 ml-auto border-l border-slate-100 dark:border-zinc-800"
       >
@@ -1018,13 +1036,18 @@ const chartOption = computed(() => {
         width: 2,
         type: "dashed",
         color: "#ef4444",
+        opacity: 1, // [핵심 수정] 명시적으로 불투명도(1)를 설정하여 이전 상태(0)를 덮어씀
       },
+      itemStyle: {
+        color: "#ef4444", // [추가] 색상 명시
+        opacity: 1 
+      }
     });
   } else {
-    // [핵심] GEN 데이터가 없을 때도 빈 시리즈를 보내어 이전 잔상을 지움
+    // [기존 유지] 데이터가 없으면 투명하게 숨김
     series.push({
       id: "model-gen",
-      name: "Model", // 이름 고정 (범례에서 사라지지 않게 하려면 필요하지만, 보통은 사라져도 됨)
+      name: "Model", 
       type: "line",
       data: [],
       showSymbol: false,
