@@ -73,4 +73,14 @@ export class WaferController {
   getSpectrumGen(@Query() query: WaferQueryParams) {
     return this.waferService.getSpectrumGen(query);
   }
+
+  @Get('matching-eqps')
+  getMatchingEquipments(@Query() query: WaferQueryParams) {
+    return this.waferService.getMatchingEquipments(query);
+  }
+
+  @Get('comparison')
+  getComparisonData(@Query() query: WaferQueryParams & { targetEqps: string }) {
+    return this.waferService.getComparisonData(query);
+  }
 }
