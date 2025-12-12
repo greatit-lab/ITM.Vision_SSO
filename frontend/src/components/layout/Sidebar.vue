@@ -171,6 +171,11 @@ const menuGroups = [
         label: "Spectrum Analysis",
         icon: "pi pi-wave-pulse",
       },
+      {
+        to: "/process-matching",
+        label: "Process Matching",
+        icon: "pi pi-clone",
+      },
     ],
   },
   {
@@ -185,7 +190,7 @@ const menuGroups = [
       {
         to: "/performance-trend",
         label: "Performance",
-        icon: "pi pi-bolt", // [변경] wave-pulse(중복) -> bolt(성능)
+        icon: "pi pi-bolt",
       },
       {
         to: "/process-memory",
@@ -195,7 +200,7 @@ const menuGroups = [
       {
         to: "/lamp-life",
         label: "Lamp Lifetime",
-        icon: "pi pi-sun", // [변경] sun(빛)으로 명시적 설정
+        icon: "pi pi-sun",
       },
     ],
   },
@@ -211,7 +216,7 @@ const menuGroups = [
       {
         to: "/error-analytics",
         label: "Alert History",
-        icon: "pi pi-bell", // [변경] bell(알림)로 명시적 설정
+        icon: "pi pi-bell",
       },
       {
         to: "/health",
@@ -257,4 +262,5 @@ const toggleGroup = (group: string) => {
   scrollbar-width: none;
 }
 </style>
+
 
