@@ -337,20 +337,32 @@
                 </h3>
               </div>
 
-              <div
-                class="flex items-center gap-2 pl-3 ml-2 border-l border-slate-200 dark:border-zinc-700"
-              >
-                <span
-                  class="text-[10px] font-bold text-slate-500 dark:text-slate-400"
-                  >Analytics:</span
+              <div class="flex items-center gap-2 pl-3 ml-2 border-l border-slate-200 dark:border-zinc-700">
+                <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mr-1">Analytics:</span>
+                <div 
+                  class="flex items-center gap-1.5"
+                  :class="{ 'opacity-50 pointer-events-none': !hasSearched }"
                 >
-                <ToggleSwitch v-model="showAnalytics" class="scale-75" />
-                <i
-                  class="pi pi-info-circle text-[9px] text-slate-400 cursor-help"
-                  v-tooltip.top="
-                    'Shows Centroid, 95% Confidence Ellipse, and Regression Line'
-                  "
-                ></i>
+                  <div 
+                    v-for="opt in analyticsOptions" 
+                    :key="opt.code"
+                    @click="hasSearched && toggleAnalytics(opt.code)"
+                    v-tooltip.top="opt.desc"
+                    class="flex items-center gap-1.5 px-2 py-1 rounded-md border transition-all duration-200 select-none"
+                    :class="[
+                      !hasSearched ? 'cursor-not-allowed bg-slate-100 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-300' : 'cursor-pointer',
+                      selectedAnalytics.includes(opt.code) && hasSearched
+                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-500/50 dark:text-indigo-300 shadow-sm' 
+                        : hasSearched ? 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 dark:bg-zinc-800 dark:border-zinc-700 dark:text-slate-400 dark:hover:bg-zinc-700' : ''
+                    ]"
+                  >
+                    <i 
+                      class="pi text-[9px]" 
+                      :class="selectedAnalytics.includes(opt.code) && hasSearched ? 'pi-check-circle' : 'pi-circle'"
+                    ></i>
+                    <span class="text-[10px] font-bold">{{ opt.name }}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -387,7 +399,13 @@
               <i class="mb-2 text-3xl pi pi-chart-scatter opacity-30"></i>
               <span class="text-xs">Scatter plot will appear here.</span>
             </div>
-            <EChart v-else :key="String(showAnalytics)" :option="scatterOption" class="w-full h-full" />
+            
+            <EChart 
+              v-else 
+              :key="selectedAnalytics.sort().join(',')" 
+              :option="scatterOption" 
+              class="w-full h-full" 
+            />
           </div>
         </div>
       </div>
@@ -407,7 +425,6 @@ import EChart from "@/components/common/EChart.vue";
 import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import Button from "primevue/button";
-import ToggleSwitch from "primevue/toggleswitch";
 
 // Type Definitions
 interface ComparisonRow {
@@ -431,7 +448,14 @@ const filterStore = useFilterStore();
 const isEqpLoading = ref(false);
 const isDataLoading = ref(false);
 const hasSearched = ref(false);
-const showAnalytics = ref(false);
+
+// [수정] Analytics State & Options (한글 툴팁 설명 추가)
+const selectedAnalytics = ref<string[]>([]); 
+const analyticsOptions = ref([
+  { name: 'Centroid', code: 'centroid', desc: '군집의 중심점(평균) 표시' },
+  { name: '95% Ellipse', code: 'ellipse', desc: '데이터 95% 포함되는 신뢰구간 표시' },
+  { name: 'Regression', code: 'regression', desc: '데이터 경향성. 선형 회귀선 표시' }
+]);
 
 const sites = ref<string[]>([]);
 const sdwts = ref<string[]>([]);
@@ -481,7 +505,6 @@ const isListVisible = computed(() => {
 onMounted(async () => {
   sites.value = await dashboardApi.getSites();
   
-  // LocalStorage Restore Logic
   const savedSite = localStorage.getItem("pm_site");
   const savedSdwt = localStorage.getItem("pm_sdwt");
   
@@ -491,7 +514,7 @@ onMounted(async () => {
     
     if (savedSdwt) {
       filterStore.selectedSdwt = savedSdwt;
-      await loadRefEqpList(); // Load Equipment List for Ref
+      await loadRefEqpList();
     }
   }
 
@@ -529,7 +552,7 @@ const onSiteChange = async () => {
 const onSdwtChange = async () => {
   if (filterStore.selectedSdwt) {
     localStorage.setItem("pm_sdwt", filterStore.selectedSdwt);
-    await loadRefEqpList(); // Load equipments when SDWT changes
+    await loadRefEqpList();
   } else {
     localStorage.removeItem("pm_sdwt");
     refEqpList.value = [];
@@ -540,7 +563,6 @@ const onSdwtChange = async () => {
 
 const loadRefEqpList = async () => {
   if (filterStore.selectedSdwt) {
-    // Type 'wafer' ensures we get equipments that actually produce data
     refEqpList.value = await equipmentApi.getEqpIds(undefined, filterStore.selectedSdwt, 'wafer');
   }
 };
@@ -548,7 +570,7 @@ const loadRefEqpList = async () => {
 const onRefEqpChange = async () => {
   resetConditions();
   if (refEqpId.value) {
-    await loadOptions(); // Load Recipes based on Ref EQP
+    await loadOptions();
   }
 };
 
@@ -573,7 +595,7 @@ const resetConditions = () => {
 const getBaseParams = () => ({
   site: filterStore.selectedSite || "",
   sdwt: filterStore.selectedSdwt || "",
-  eqpId: refEqpId.value || "", // Filter by Reference EQP
+  eqpId: refEqpId.value || "",
   startDate: filters.startDate ? new Date(filters.startDate).toISOString() : "",
   endDate: filters.endDate ? new Date(filters.endDate).toISOString() : "",
 });
@@ -607,7 +629,6 @@ const onConditionChange = async () => {
     };
     films.value = await waferApi.getDistinctValues("films", params);
   }
-  // Search for matching equipments whenever conditions change
   loadEquipments();
 };
 
@@ -617,16 +638,14 @@ const loadEquipments = async () => {
   isEqpLoading.value = true;
   try {
     const params = {
-      ...getBaseParams(), // Includes start/end date
+      ...getBaseParams(), 
       cassetteRcp: filters.cassetteRcp ?? "",
       stageGroup: filters.stageGroup ?? "",
       film: filters.film ?? "",
     };
     
-    // API returns ALL equipments that processed this condition in the time range
     targetEqps.value = await waferApi.getMatchingEquipments(params);
     
-    // Auto-select Reference EQP if it exists in the result
     if (refEqpId.value && targetEqps.value.includes(refEqpId.value)) {
         selectedEqps.value = [refEqpId.value];
     } else {
@@ -649,6 +668,18 @@ const toggleAllEquipments = () => {
   if (selectedEqps.value.length === targetEqps.value.length)
     selectedEqps.value = [];
   else selectedEqps.value = [...targetEqps.value];
+};
+
+const toggleAnalytics = (code: string) => {
+  // [추가] 차트가 그려지지 않은 상태에서는 동작하지 않음
+  if (!hasSearched.value) return; 
+  
+  const index = selectedAnalytics.value.indexOf(code);
+  if (index > -1) {
+    selectedAnalytics.value.splice(index, 1);
+  } else {
+    selectedAnalytics.value.push(code);
+  }
 };
 
 const loadComparisonData = async () => {
@@ -703,6 +734,7 @@ const resetFilters = () => {
   refEqpList.value = [];
   resetConditions();
   hasSearched.value = false;
+  selectedAnalytics.value = [];
   localStorage.removeItem("pm_site");
   localStorage.removeItem("pm_sdwt");
 };
@@ -900,6 +932,11 @@ const scatterOption = computed(() => {
   const textColor = isDarkMode.value ? "#cbd5e1" : "#475569";
   const gridColor = isDarkMode.value ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
 
+  // Check Analytics State
+  const showCentroid = selectedAnalytics.value.includes('centroid');
+  const showEllipse = selectedAnalytics.value.includes('ellipse');
+  const showRegression = selectedAnalytics.value.includes('regression');
+
   const series: any[] = [];
 
   selectedEqps.value.forEach((eqp, idx) => {
@@ -919,66 +956,70 @@ const scatterOption = computed(() => {
         r.waferid,
       ]);
 
+    // Main Scatter Series
     series.push({
       name: eqp,
       type: "scatter",
       symbolSize: 6,
-      itemStyle: { color: color, opacity: showAnalytics.value ? 0.3 : 0.8 },
+      itemStyle: { color: color, opacity: selectedAnalytics.value.length > 0 ? 0.3 : 0.8 },
       data: points,
       emphasis: { focus: "series" },
     });
 
-    if (showAnalytics.value && points.length > 2) {
+    if (points.length > 2) {
       const numPoints = points.map((p) => [Number(p[0]), Number(p[1])]);
       const stats = getBasicStats(numPoints);
 
       if (stats) {
-        // A. Centroid
-        series.push({
-          name: `${eqp} Center`,
-          type: "scatter",
-          symbol: "diamond",
-          symbolSize: 12,
-          itemStyle: {
-            color: color,
-            borderColor: isDarkMode.value ? "#fff" : "#000",
-            borderWidth: 1,
-            opacity: 1,
-          },
-          data: [[stats.meanX, stats.meanY]],
-          tooltip: {
-            formatter: `${eqp} Center<br/>X: ${stats.meanX.toFixed(3)}<br/>Y: ${stats.meanY.toFixed(3)}`,
-          },
-          z: 100,
-        });
-
-        // B. Confidence Ellipse
-        const ellipsePoints = getEllipsePoints(
-          stats.meanX, stats.meanY, stats.covXX, stats.covYY, stats.covXY
-        );
-        series.push({
-          name: `${eqp} 95% Conf.`,
-          type: "line",
-          symbol: "none",
-          smooth: true,
-          data: ellipsePoints,
-          lineStyle: { width: 1, type: "dashed", color: color },
-          itemStyle: { color: color },
-          z: 50,
-        });
-
-        // C. Regression Line
-        const regLine = getRegressionLine(numPoints);
-        if (regLine) {
+        if (showCentroid) {
           series.push({
-            name: `${eqp} Regression`,
+            name: `${eqp} Center`,
+            type: "scatter",
+            symbol: "diamond",
+            symbolSize: 12,
+            itemStyle: {
+              color: color,
+              borderColor: isDarkMode.value ? "#fff" : "#000",
+              borderWidth: 1,
+              opacity: 1,
+            },
+            data: [[stats.meanX, stats.meanY]],
+            tooltip: {
+              formatter: `${eqp} Center<br/>X: ${stats.meanX.toFixed(3)}<br/>Y: ${stats.meanY.toFixed(3)}`,
+            },
+            z: 100,
+          });
+        }
+
+        if (showEllipse) {
+          const ellipsePoints = getEllipsePoints(
+            stats.meanX, stats.meanY, stats.covXX, stats.covYY, stats.covXY
+          );
+          series.push({
+            name: `${eqp} 95% Conf.`,
             type: "line",
             symbol: "none",
-            data: regLine,
-            lineStyle: { width: 2, type: "solid", color: color },
+            smooth: true,
+            data: ellipsePoints,
+            lineStyle: { width: 1, type: "dashed", color: color },
             itemStyle: { color: color },
-            z: 60,
+            z: 50,
           });
+        }
+
+        if (showRegression) {
+          const regLine = getRegressionLine(numPoints);
+          if (regLine) {
+            series.push({
+              name: `${eqp} Regression`,
+              type: "line",
+              symbol: "none",
+              data: regLine,
+              lineStyle: { width: 2, type: "solid", color: color },
+              itemStyle: { color: color },
+              z: 60,
+            });
+          }
         }
       }
     }
