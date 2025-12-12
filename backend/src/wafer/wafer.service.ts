@@ -356,32 +356,53 @@ export class WaferService {
     }
   }
 
-  // [수정됨] Model Fit Analysis용 GEN Spectrum 조회
+  // [수정] Model Fit Analysis용 GEN Spectrum 조회 (시간 범위 검색 및 동적 테이블 적용)
   async getSpectrumGen(params: WaferQueryParams) {
     const { lotId, waferId, pointId, eqpId, ts } = params;
 
-    // 필수 파라미터 확인 (ts 포함)
+    // 필수 파라미터 확인
     if (!lotId || !waferId || !pointId || !eqpId || !ts) return null;
 
     try {
-      // [중요] Date 객체로 변환하여 Prisma에 전달 (DB Driver가 Timestamp 포맷으로 매핑)
-      const tsParam = typeof ts === 'string' ? new Date(ts) : ts;
+      const targetDate = typeof ts === 'string' ? new Date(ts) : ts;
+      const now = new Date();
 
+      // 1. 테이블 동적 선택 로직 (당월이 아니면 월별 테이블 사용)
+      // ts가 '2025-12-11'이고 현재가 '2025-12'라면 public.plg_onto_spectrum 사용
+      // 만약 과거 데이터라면 public.plg_onto_spectrum_y2025mXX 사용
+      const tYear = targetDate.getFullYear();
+      const tMonth = targetDate.getMonth();
+      const cYear = now.getFullYear();
+      const cMonth = now.getMonth();
+
+      let tableName = 'public.plg_onto_spectrum';
+
+      if (tYear !== cYear || tMonth !== cMonth) {
+        const mm = String(tMonth + 1).padStart(2, '0');
+        tableName = `public.plg_onto_spectrum_y${tYear}m${mm}`;
+      }
+
+      // [중요] 타임스탬프 포맷 (Prisma용)
+      const tsRaw = targetDate.toISOString();
+
+      // 2. 쿼리 실행: Timestamp Exact Match(=) 대신 범위 검색(interval '2 second') 사용
       const results = await this.prisma.$queryRawUnsafe<SpectrumRawResult[]>(
         `SELECT "wavelengths", "values" 
-         FROM public.plg_onto_spectrum
+         FROM ${tableName}
          WHERE "lotid" = $1 
-           AND "waferid" = $2  -- String comparison ("1" vs "1")
-           AND "point" = $3    -- Number comparison
-           AND "eqpid" = $4    -- EQP ID Match
-           AND "ts" = $5       -- Timestamp Exact Match (Prisma handles Date -> Timestamp)
+           AND "waferid" = $2  
+           AND "point" = $3    
+           AND "eqpid" = $4    
+           AND "ts" >= $5::timestamp - interval '2 second' -- [변경] 2초 전부터
+           AND "ts" <= $5::timestamp + interval '2 second' -- [변경] 2초 후까지 검색
            AND "class" = 'GEN'
+         ORDER BY ABS(EXTRACT(EPOCH FROM ("ts" - $5::timestamp))) ASC -- 가장 가까운 시간 순 정렬
          LIMIT 1`,
         lotId,
         String(waferId),
         Number(pointId),
         eqpId,
-        tsParam,
+        tsRaw, // Date 객체 대신 ISO 문자열 전달 후 SQL에서 캐스팅
       );
 
       if (!results || results.length === 0) return null;
@@ -393,10 +414,11 @@ export class WaferService {
           dataPoints.push([row.wavelengths[i], row.values[i] * 100]);
         }
       }
+
       return {
         name: `Model (W${waferId})`,
         type: 'line',
-        lineStyle: { type: 'dashed', width: 2, color: '#ef4444' },
+        lineStyle: { type: 'dashed', width: 2, color: '#ef4444' }, // 빨간 점선
         data: dataPoints,
         symbol: 'none',
       };
