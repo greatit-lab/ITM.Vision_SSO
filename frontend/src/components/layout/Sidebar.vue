@@ -262,5 +262,3 @@ const toggleGroup = (group: string) => {
   scrollbar-width: none;
 }
 </style>
-
-
