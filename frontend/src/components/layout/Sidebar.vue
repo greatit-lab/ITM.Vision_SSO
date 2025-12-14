@@ -23,9 +23,9 @@
             >ITM Dash</span
           >
           <span
-            class="text-[9px] text-slate-500 dark:text-slate-400 font-bold tracking-wider uppercase whitespace-nowrap mt-0.5"
-            >Enterprise</span
-          >
+            class="text-[11px] scale-[0.85] origin-left text-slate-500 dark:text-slate-400 font-bold tracking-wider uppercase whitespace-nowrap mt-0.5"
+          >Enterprise
+          </span>
         </div>
       </div>
 
@@ -262,3 +262,4 @@ const toggleGroup = (group: string) => {
   scrollbar-width: none;
 }
 </style>
+
