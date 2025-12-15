@@ -568,7 +568,9 @@ onMounted(async () => {
     sdwts.value = await dashboardApi.getSdwts(savedSite);
     if (savedSdwt && sdwts.value.includes(savedSdwt)) {
       filterStore.selectedSdwt = savedSdwt;
-      eqpIds.value = await equipmentApi.getEqpIds(undefined, savedSdwt);
+      // [수정] Agent가 설치된 장비만 조회하도록 'agent' 타입 사용
+      eqpIds.value = await equipmentApi.getEqpIds(undefined, savedSdwt, 'agent');
+
       if (savedEqp && eqpIds.value.includes(savedEqp)) {
         filters.eqpId = savedEqp;
         await loadLotIds();
