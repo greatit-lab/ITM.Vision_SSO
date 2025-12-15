@@ -2,24 +2,25 @@
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import basicSsl from "@vitejs/plugin-basic-ssl"; // [신규 추가] HTTPS 플러그인
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    basicSsl() // [신규 추가] 이 플러그인이 자동으로 인증서를 생성하고 https를 활성화합니다.
+  ],
   server: {
-    host: "0.0.0.0", // 모든 IP에서의 접속을 허용
-    port: 7263, // 7263 포트 고정
-    strictPort: true, 
-    // ▼▼▼ [추가] 개발 서버용 프록시 설정 ▼▼▼
+    host: "0.0.0.0",
+    port: 8082, // 개발 포트
+    strictPort: true,
+    // https: true, // basicSsl 플러그인이 자동으로 true로 설정하므로 주석 처리해도 됨
     proxy: {
       "/api": {
-        target: "http://localhost:3000", // 백엔드 주소
+        target: "http://localhost:3000", // 백엔드는 여전히 HTTP (3000) 유지 (Vite가 SSL 종료 후 전달)
         changeOrigin: true,
-        secure: false,
-        // 백엔드 Controller가 @Controller('api/...')로 설정되어 있으므로 rewrite 불필요
+        secure: false, // 백엔드가 HTTP이므로 보안 검증 무시
       },
     },
-    // ▲▲▲ [추가 종료] ▲▲▲
   },
   resolve: {
     alias: {
