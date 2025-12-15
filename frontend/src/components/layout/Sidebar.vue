@@ -9,7 +9,7 @@
       :class="isOpen ? 'px-5 justify-start' : 'px-0 justify-center'"
     >
       <div class="flex items-center gap-3 overflow-hidden">
-        <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center">
+        <div class="w-11 h-11 flex-shrink-0 flex items-center justify-center">
            <img 
              :src="logoUrl" 
              alt="ITM Vision Logo" 
@@ -269,5 +269,6 @@ const toggleGroup = (group: string) => {
   scrollbar-width: none;
 }
 </style>
+
 
 
