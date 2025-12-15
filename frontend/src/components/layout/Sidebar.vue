@@ -9,22 +9,28 @@
       :class="isOpen ? 'px-5 justify-start' : 'px-0 justify-center'"
     >
       <div class="flex items-center gap-3 overflow-hidden">
-        <div
-          class="w-8 h-8 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white flex-shrink-0"
-        >
-          <i class="pi pi-bolt text-sm"></i>
+        <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center">
+           <img 
+             :src="logoUrl" 
+             alt="ITM Vision Logo" 
+             class="w-full h-full object-contain drop-shadow-md filter transition-all duration-300 hover:scale-110" 
+           />
         </div>
+
         <div
           class="flex flex-col transition-opacity duration-300"
           :class="isOpen ? 'opacity-100' : 'opacity-0 w-0 hidden'"
         >
           <span
             class="text-base font-extrabold tracking-tight text-slate-800 dark:text-slate-100 whitespace-nowrap leading-none"
-            >ITM Dash</span
-          >
+            >
+              ITM Vision
+          </span>
+
           <span
-            class="text-[11px] scale-[0.85] origin-left text-slate-500 dark:text-slate-400 font-bold tracking-wider uppercase whitespace-nowrap mt-0.5"
-          >Enterprise
+            class="text-[10px] scale-[0.9] origin-left text-indigo-500 dark:text-indigo-400 font-bold tracking-widest uppercase whitespace-nowrap mt-0.5"
+          >
+            Smart Factory
           </span>
         </div>
       </div>
@@ -148,6 +154,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from "vue";
+import logoUrl from "@/assets/ITM_Vision.png";
 
 const isOpen = ref(true);
 
@@ -262,4 +269,5 @@ const toggleGroup = (group: string) => {
   scrollbar-width: none;
 }
 </style>
+
 
