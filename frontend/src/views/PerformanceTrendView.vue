@@ -925,9 +925,11 @@ const onEqpIdChange = () => {
 };
 
 const loadEqpIds = async () => {
+  // [수정] type: 'performance' 전달 (성능 데이터가 있는 장비만 조회)
   eqpIds.value = await equipmentApi.getEqpIds(
     undefined,
-    filterStore.selectedSdwt
+    filterStore.selectedSdwt,
+    "performance"
   );
 };
 
@@ -1145,3 +1147,4 @@ const fmt = (val: number | string | undefined, digits: number) => {
   padding: 4px 8px !important;
 }
 </style>
+
