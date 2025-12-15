@@ -447,14 +447,14 @@ const onEqpIdChange = () => {
 };
 
 const loadEqpIds = async () => {
-  // [수정] 로딩 상태 관리 추가
+  // [수정] 로딩 상태 관리 추가 및 type 변경
   isEqpIdLoading.value = true;
   try {
-    // type: 'process' 전달
+    // [수정] type: 'agent' 전달 (Process Table 대신 Agent Info 사용으로 속도 개선)
     eqpIds.value = await equipmentApi.getEqpIds(
       undefined,
       filterStore.selectedSdwt,
-      "process"
+      "agent"
     );
   } finally {
     isEqpIdLoading.value = false;
@@ -801,3 +801,4 @@ const resetZoom = () => {
   background: #94a3b8;
 }
 </style>
+
