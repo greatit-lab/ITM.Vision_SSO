@@ -5,6 +5,7 @@ export interface User {
   name: string;
   groups: string | string[];
   sessionIndex?: string;
+  department: string;
 }
 
 export interface LoginResult {
