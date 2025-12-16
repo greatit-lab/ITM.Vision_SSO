@@ -1,5 +1,8 @@
 // frontend/src/router/index.ts
 import { createRouter, createWebHistory } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+
+// View Components
 import HomeView from "../views/HomeView.vue";
 import LoginView from "../views/LoginView.vue";
 import WaferFlatDataView from "../views/WaferFlatDataView.vue";
@@ -95,24 +98,37 @@ const router = createRouter({
       component: ProcessMatchingAnalyticsView,
       meta: { requiresAuth: true },
     },
+    // 관리자 전용 라우트 예시 (필요시 추가)
+    /*
+    {
+      path: "/admin/settings",
+      name: "admin-settings",
+      component: () => import("../views/admin/SettingsView.vue"),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    */
   ],
 });
 
-// [네비게이션 가드] 페이지 이동 전 인증 상태 확인
-// [수정] from -> _from 으로 변경하여 미사용 변수 경고 해결
+// [네비게이션 가드] 페이지 이동 전 인증 및 권한 확인
 router.beforeEach((to, _from, next) => {
-  // 로컬 스토리지에서 토큰 확인
-  const isAuthenticated = !!localStorage.getItem("jwt_token");
+  const authStore = useAuthStore();
+  const isAuthenticated = authStore.isAuthenticated;
 
-  // 1. 인증이 필요한 페이지에 접속하려는데 로그인이 안 되어 있다면 -> 로그인 페이지로 이동
+  // 1. 인증이 필요한 페이지에 접속 시도 시
   if (to.meta.requiresAuth && !isAuthenticated) {
     next({ name: "login" });
   }
-  // 2. 이미 로그인 상태인데 로그인 페이지로 진입하려 하면 -> 홈으로 이동
+  // 2. 관리자 권한이 필요한 페이지 접속 시도 시
+  else if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    alert("Access Denied: Administrator privileges are required.");
+    next({ name: "home" }); // 홈으로 리다이렉트
+  }
+  // 3. 이미 로그인 상태에서 로그인 페이지 접속 시도 시
   else if (to.path === "/login" && isAuthenticated) {
     next({ name: "home" });
   }
-  // 3. 그 외에는 정상 허용
+  // 4. 정상 허용
   else {
     next();
   }
