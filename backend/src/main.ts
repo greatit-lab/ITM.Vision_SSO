@@ -9,7 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     // CORS 설정: 프론트엔드(8082)에서의 요청 및 인증 정보(쿠키 등) 허용
     cors: {
-      origin: true, 
+      origin: true,
       credentials: true,
     },
   });
