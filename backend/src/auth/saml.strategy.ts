@@ -28,7 +28,7 @@ export class SamlStrategy extends PassportStrategy(Strategy, 'saml') {
       issuer: process.env.SAML_ISSUER || '',
       callbackUrl: process.env.SAML_CALLBACK_URL || '',
       idpCert: process.env.SAML_IDP_CERT || '',
-      
+
       identifierFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified',
       disableRequestedAuthnContext: true,
       signatureAlgorithm: 'sha256',
@@ -38,13 +38,18 @@ export class SamlStrategy extends PassportStrategy(Strategy, 'saml') {
       authnRequestBinding: 'HTTP-Redirect',
       logoutUrl: process.env.SAML_LOGOUT_URL || '',
       logoutCallbackUrl: process.env.SAML_CALLBACK_URL || '',
-      
+
       // 개인키 설정 (서명용)
       privateKey: process.env.SAML_SP_PRIVATE_KEY || undefined,
     };
 
     // [런타임 검사] 필수 설정값이 실제로 비어있으면 에러를 발생시켜 디버깅 유도
-    if (!samlConfig.entryPoint || !samlConfig.idpCert || !samlConfig.callbackUrl || !samlConfig.issuer) {
+    if (
+      !samlConfig.entryPoint ||
+      !samlConfig.idpCert ||
+      !samlConfig.callbackUrl ||
+      !samlConfig.issuer
+    ) {
       throw new Error(
         '[SamlStrategy] Critical SAML configuration is missing. Please check your .env.development or .env.production file.',
       );
@@ -61,28 +66,33 @@ export class SamlStrategy extends PassportStrategy(Strategy, 'saml') {
       throw new UnauthorizedException('SAML Authentication Failed: No Profile');
     }
 
-    const userId = 
-      profile['http://schemas.sec.com/2018/05/identity/claims/LoginId'] || 
+    const userId =
+      profile['http://schemas.sec.com/2018/05/identity/claims/LoginId'] ||
       profile['http://schemas.sec.com/2018/05/identity/claims/UserId'] ||
-      profile.nameID || 
-      profile.sAMAccountName || 
+      profile.nameID ||
+      profile.sAMAccountName ||
       '';
 
-    const email = 
-      profile['http://schemas.sec.com/2018/05/identity/claims/Mail'] || 
-      profile.mail || 
-      profile.email || 
+    const email =
+      profile['http://schemas.sec.com/2018/05/identity/claims/Mail'] ||
+      profile.mail ||
+      profile.email ||
       '';
 
-    const name = 
-      profile['http://schemas.sec.com/2018/05/identity/claims/Username'] || 
-      profile.displayName || 
-      profile.cn || 
+    const name =
+      profile['http://schemas.sec.com/2018/05/identity/claims/Username'] ||
+      profile.displayName ||
+      profile.cn ||
       '';
 
-    const deptName = profile['http://schemas.sec.com/2018/05/identity/claims/DeptName'] || '';
+    const deptName =
+      profile['http://schemas.sec.com/2018/05/identity/claims/DeptName'] || '';
 
-    const groups = profile.memberOf ? (Array.isArray(profile.memberOf) ? profile.memberOf : [profile.memberOf]) : [];
+    const groups = profile.memberOf
+      ? Array.isArray(profile.memberOf)
+         ? profile.memberOf
+         : [profile.memberOf]
+        : [];
 
     const user: User = {
       userId: typeof userId === 'string' ? userId : '',
@@ -103,7 +113,7 @@ export class SamlStrategy extends PassportStrategy(Strategy, 'saml') {
   getServiceProviderMetadata(): string {
     // .env에서 공개키를 가져옵니다.
     let signingCert = process.env.SAML_SP_PUBLIC_CERT || null;
-    
+
     if (signingCert) {
       // 줄바꿈 문자(\n) 처리
       signingCert = signingCert.replace(/\\n/g, '\n');
