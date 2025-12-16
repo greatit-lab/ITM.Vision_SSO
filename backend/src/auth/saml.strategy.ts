@@ -1,9 +1,8 @@
 // backend/src/auth/saml.strategy.ts
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, SamlConfig, Profile } from '@node-saml/passport-saml';
 import { User } from './auth.interface';
-// [수정] 사용하지 않는 'fs' 임포트 제거
 
 interface AdProfile extends Profile {
   'http://schemas.sec.com/2018/05/identity/claims/LoginId'?: string;
@@ -20,12 +19,16 @@ interface AdProfile extends Profile {
 
 @Injectable()
 export class SamlStrategy extends PassportStrategy(Strategy, 'saml') {
+  private readonly logger = new Logger(SamlStrategy.name);
+
   constructor() {
+    // [수정] process.env 값이 undefined일 경우 빈 문자열('')을 할당하여 타입 오류 방지
     const samlConfig: SamlConfig = {
-      entryPoint: process.env.SAML_ENTRY_POINT || 'https://stsds.secsso.net/adfs/ls/',
-      issuer: process.env.SAML_ISSUER || 'https://localhost:44364',
-      callbackUrl: process.env.SAML_CALLBACK_URL || 'http://localhost:3000/api/auth/callback',
+      entryPoint: process.env.SAML_ENTRY_POINT || '',
+      issuer: process.env.SAML_ISSUER || '',
+      callbackUrl: process.env.SAML_CALLBACK_URL || '',
       idpCert: process.env.SAML_IDP_CERT || '',
+      
       identifierFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified',
       disableRequestedAuthnContext: true,
       signatureAlgorithm: 'sha256',
@@ -40,6 +43,13 @@ export class SamlStrategy extends PassportStrategy(Strategy, 'saml') {
       privateKey: process.env.SAML_SP_PRIVATE_KEY || undefined,
     };
 
+    // [런타임 검사] 필수 설정값이 실제로 비어있으면 에러를 발생시켜 디버깅 유도
+    if (!samlConfig.entryPoint || !samlConfig.idpCert || !samlConfig.callbackUrl || !samlConfig.issuer) {
+      throw new Error(
+        '[SamlStrategy] Critical SAML configuration is missing. Please check your .env.development or .env.production file.',
+      );
+    }
+
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     super(samlConfig);
@@ -47,6 +57,7 @@ export class SamlStrategy extends PassportStrategy(Strategy, 'saml') {
 
   validate(profile: AdProfile): User {
     if (!profile) {
+      this.logger.error('SAML Authentication Failed: No Profile received');
       throw new UnauthorizedException('SAML Authentication Failed: No Profile');
     }
 
@@ -81,6 +92,9 @@ export class SamlStrategy extends PassportStrategy(Strategy, 'saml') {
       groups: groups,
       sessionIndex: profile.sessionIndex,
     };
+
+    // 로그인 성공 로그
+    this.logger.log(`SAML Login Successful: ${user.userId} (${user.name})`);
 
     return user;
   }
