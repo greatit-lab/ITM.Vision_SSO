@@ -26,7 +26,6 @@
             >
               ITM Vision
           </span>
-
           <span
             class="text-[10px] scale-[0.9] origin-left text-indigo-500 dark:text-indigo-400 font-bold tracking-widest uppercase whitespace-nowrap mt-0.5"
           >
@@ -48,7 +47,11 @@
     </div>
 
     <nav class="flex-1 overflow-y-auto py-2 px-3 scrollbar-hide">
-      <div class="mb-3">
+      <div v-if="isLoading" class="flex flex-col items-center justify-center h-20 text-slate-400 text-xs">
+        <i class="pi pi-spin pi-spinner mb-2"></i> Loading Menus...
+      </div>
+
+      <div v-else class="mb-3">
         <div
           class="mb-1 px-2 text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-all duration-300 whitespace-nowrap"
           :class="{ 'opacity-0 h-0 overflow-hidden': !isOpen }"
@@ -92,7 +95,7 @@
         <div
           class="overflow-hidden transition-all duration-300 ease-in-out space-y-0.5"
           :class="
-            openGroups[group.id] ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
+            openGroups[group.id] ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
           "
         >
           <router-link
@@ -131,12 +134,12 @@
         <div
           class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold transition-all duration-300 text-xs shrink-0 relative"
           :class="roleAvatarClass"
-          :title="mockRole"
+          :title="authStore.user?.role || 'User'"
         >
-          {{ roleInitial }}
+          {{ authStore.userInitial }}
           
           <span 
-            v-if="mockRole === 'Admin'"
+            v-if="authStore.user?.role === 'ADMIN'"
             class="absolute inset-0 rounded-full animate-ping opacity-20 bg-rose-500"
           ></span>
         </div>
@@ -145,11 +148,11 @@
           class="overflow-hidden transition-all duration-300 flex-1 min-w-0 flex flex-col justify-center"
           :class="isOpen ? 'w-auto opacity-100' : 'w-0 opacity-0 hidden'"
         >
-          <p
-            class="text-sm font-extrabold text-slate-700 dark:text-slate-200 truncate leading-tight"
-            :title="mockSiteInfo"
-          >
-            {{ mockSiteInfo }}
+          <p class="text-sm font-extrabold text-slate-700 dark:text-slate-200 truncate leading-tight">
+            {{ authStore.user?.name || 'Guest' }}
+          </p>
+          <p class="text-[10px] text-slate-400 truncate" :title="authStore.user?.department">
+            {{ authStore.user?.department || 'No Dept' }}
           </p>
         </div>
       </div>
@@ -158,31 +161,42 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from "vue";
-// import { useAuthStore } from "@/stores/auth"; // [수정] 실제 데이터 연동 시 주석 해제하세요
+import { ref, reactive, computed, onMounted } from "vue";
+import { useAuthStore } from "@/stores/auth";
+import { menuApi, type MenuDto } from "@/api/menu";
 import logoUrl from "@/assets/ITM_Vision.png";
 
-// const authStore = useAuthStore(); // [수정] 현재 목업 사용으로 미사용 처리
+const authStore = useAuthStore();
 const isOpen = ref(true);
+const isLoading = ref(false);
 
-// --- 목업 데이터 (Mock Data) ---
-const mockRole = ref("Admin"); 
-const mockSiteInfo = ref("P3-Ph2 / SDWT-Gr1");
+// 프론트엔드 메뉴 그룹 타입 정의
+interface MenuItem {
+  to: string;
+  label: string;
+  icon: string;
+}
+interface MenuGroup {
+  id: string;
+  label: string;
+  items: MenuItem[];
+}
 
-// 권한 이니셜 추출 (A, M, U)
-const roleInitial = computed(() => mockRole.value.charAt(0).toUpperCase());
+const menuGroups = ref<MenuGroup[]>([]);
+const openGroups = reactive<Record<string, boolean>>({});
 
-// [디자인 로직] 권한에 따른 Border & Glow 스타일 클래스 정의
+// 권한별 아바타 스타일 (Auth Store 연동)
 const roleAvatarClass = computed(() => {
-  switch (mockRole.value) {
-    case 'Admin': 
+  const role = authStore.user?.role;
+  switch (role) {
+    case 'ADMIN': 
       return [
         'bg-rose-500', 
         'shadow-[0_0_12px_rgba(244,63,94,0.6)]', 
         'ring-2 ring-white dark:ring-zinc-800',  
         'border border-rose-400'
       ];
-    case 'Manager': 
+    case 'MANAGER': 
       return [
         'bg-amber-500', 
         'ring-2 ring-amber-300/80 dark:ring-amber-600', 
@@ -198,88 +212,6 @@ const roleAvatarClass = computed(() => {
   }
 });
 
-const menuGroups = [
-  {
-    id: "wafer",
-    label: "Wafer Metrology",
-    items: [
-      {
-        to: "/waferflatdata",
-        label: "Wafer Flat Data",
-        icon: "pi pi-chart-pie",
-      },
-      {
-        to: "/lot-uniformity-trend",
-        label: "Lot Uniformity",
-        icon: "pi pi-chart-line",
-      },
-      {
-        to: "/spectrum-analytics",
-        label: "Spectrum Analysis",
-        icon: "pi pi-wave-pulse",
-      },
-      {
-        to: "/process-matching",
-        label: "Process Matching",
-        icon: "pi pi-clone",
-      },
-    ],
-  },
-  {
-    id: "itm",
-    label: "ITM Monitoring",
-    items: [
-      {
-        to: "/equipment-explorer",
-        label: "ITM Equip Specs",
-        icon: "pi pi-desktop",
-      },
-      {
-        to: "/performance-trend",
-        label: "Performance",
-        icon: "pi pi-bolt",
-      },
-      {
-        to: "/process-memory",
-        label: "Process Memory",
-        icon: "pi pi-microchip",
-      },
-      {
-        to: "/lamp-life",
-        label: "Lamp Lifetime",
-        icon: "pi pi-sun",
-      },
-    ],
-  },
-  {
-    id: "advanced",
-    label: "Advanced Analytics",
-    items: [
-      {
-        to: "/prealign-analytics",
-        label: "PreAlign Data",
-        icon: "pi pi-compass",
-      },
-      {
-        to: "/error-analytics",
-        label: "Alert History",
-        icon: "pi pi-bell",
-      },
-      {
-        to: "/health",
-        label: "Equipment Health",
-        icon: "pi pi-heart-pulse",
-      },
-    ],
-  },
-];
-
-const openGroups = reactive<Record<string, boolean>>({
-  wafer: true,
-  itm: true,
-  advanced: true,
-});
-
 const toggleSidebar = () => {
   isOpen.value = !isOpen.value;
   window.dispatchEvent(
@@ -287,20 +219,55 @@ const toggleSidebar = () => {
   );
 };
 
-const toggleGroup = (group: string) => {
+const toggleGroup = (groupId: string) => {
   if (isOpen.value) {
-    openGroups[group] = !openGroups[group];
+    openGroups[groupId] = !openGroups[groupId];
   } else {
+    // 닫혀있을 때 그룹을 클릭하면 사이드바를 염
     isOpen.value = true;
     setTimeout(() => {
-      openGroups[group] = true;
+      openGroups[groupId] = true;
     }, 100);
   }
 };
+
+// 백엔드 API를 통해 메뉴 로드
+const fetchMenus = async () => {
+  isLoading.value = true;
+  try {
+    const rawMenus = await menuApi.getMyMenus();
+    
+    // 백엔드 트리 구조(MenuDto) -> 프론트 그룹 구조(MenuGroup) 변환
+    // 상위 메뉴(parentId=null)는 그룹 헤더가 되고, 그 자식(children)은 아이템이 됩니다.
+    menuGroups.value = rawMenus.map((parentMenu) => {
+      const groupId = `group-${parentMenu.menuId}`;
+      
+      // 기본적으로 모든 그룹을 열어둠
+      openGroups[groupId] = true;
+
+      return {
+        id: groupId,
+        label: parentMenu.label,
+        items: (parentMenu.children || []).map((child) => ({
+          to: child.routerPath || '#',
+          label: child.label,
+          icon: child.icon || 'pi pi-circle', // 아이콘 없으면 기본값
+        })),
+      };
+    });
+  } catch (error) {
+    console.error("Failed to fetch menus:", error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchMenus();
+});
 </script>
 
 <style scoped>
-/* 스크롤바 숨기기 (표준 CSS) */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
