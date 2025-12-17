@@ -9,6 +9,7 @@ import { PreAlignModule } from './prealign/prealign.module';
 import { LampLifeModule } from './lamplife/lamplife.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
+import { MenuModule } from './menu/menu.module'; // [추가]
 
 // Controllers & Services
 import { DashboardController } from './dashboard/dashboard.controller';
@@ -38,6 +39,7 @@ import { WaferService } from './wafer/wafer.service';
     LampLifeModule,
     HealthModule,
     AuthModule,
+    MenuModule,
   ],
   controllers: [
     DashboardController,
