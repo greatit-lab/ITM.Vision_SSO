@@ -3,7 +3,8 @@ import axios from "axios";
 
 // 백엔드 포트 3000번으로 설정
 const apiClient = axios.create({
-  baseURL: "http://localhost:3000/api",
+  // 환경 변수(VITE_API_BASE_URL)를 사용하거나, 없으면 상대 경로 '/api'를 사용하도록 수정
+  baseURL: (import.meta.env.VITE_API_BASE_URL || "") + "/api",
   headers: { "Content-Type": "application/json" },
 });
 
@@ -249,4 +250,5 @@ export const waferApi = {
     return data;
   },
 };
+
 
