@@ -4,7 +4,7 @@ export interface User {
   email: string;
   name: string;
   department: string;
-  companyCode: string; // [추가] 회사 코드
+  companyCode: string; // [필수] 이 줄이 꼭 있어야 합니다!
   groups: string | string[];
   sessionIndex?: string;
 }
