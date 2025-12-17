@@ -1,8 +1,5 @@
-import axios from "axios";
-
-const apiClient = axios.create({
-  baseURL: "http://localhost:3000/api",
-});
+// frontend/src/api/error.ts
+import http from "./http";
 
 export interface ErrorAnalyticsSummaryDto {
   totalErrorCount: number;
@@ -30,21 +27,24 @@ export interface ErrorLogDto {
 
 export const errorApi = {
   getSummary: async (params: any) => {
-    const { data } = await apiClient.get<ErrorAnalyticsSummaryDto>(
+    // [수정] apiClient -> http
+    const { data } = await http.get<ErrorAnalyticsSummaryDto>(
       "/ErrorAnalytics/summary",
       { params }
     );
     return data;
   },
   getTrend: async (params: any) => {
-    const { data } = await apiClient.get<ErrorTrendDataPointDto[]>(
+    // [수정] apiClient -> http
+    const { data } = await http.get<ErrorTrendDataPointDto[]>(
       "/ErrorAnalytics/trend",
       { params }
     );
     return data;
   },
   getLogs: async (params: any) => {
-    const { data } = await apiClient.get<{
+    // [수정] apiClient -> http
+    const { data } = await http.get<{
       items: ErrorLogDto[];
       totalItems: number;
     }>("/ErrorAnalytics/logs", { params });
