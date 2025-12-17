@@ -196,8 +196,8 @@ import Button from "primevue/button";
 
 const filterStore = useFilterStore();
 const isLoading = ref(false);
-const isTopLoading = ref(false); // [추가] 상단 검색 로딩 상태
-const hasTopSearched = ref(false); // [추가] 상단 검색 완료 여부
+const isTopLoading = ref(false);
+const hasTopSearched = ref(false);
 const hasSearched = ref(false);
 const mapMode = ref<'point' | 'heatmap'>('point');
 const selectedWaferId = ref<number | null>(null);
@@ -211,7 +211,6 @@ const stageGroups = ref<string[]>([]);
 const films = ref<string[]>([]);
 const metrics = ref<string[]>([]);
 
-// [추가] 로딩 상태 관리 변수
 const isMetricLoading = ref(false);
 
 const filters = reactive({
@@ -223,7 +222,6 @@ const chartSeries = ref<LotUniformitySeriesDto[]>([]);
 const isDarkMode = ref(document.documentElement.classList.contains("dark"));
 let themeObserver: MutationObserver | null = null;
 
-// [수정] Steps Computed: 로딩 상태와 데이터 유무에 따라 emptyMsg 동적 처리
 const steps = computed(() => [
   { 
     title: 'Cassette RCP', 
@@ -231,7 +229,7 @@ const steps = computed(() => [
     selected: filters.cassetteRcp, 
     action: selectCassette, 
     disabled: false, 
-    loading: false, // 이미 로드됨 (상단 검색 시)
+    loading: false, 
     emptyMsg: 'No Data' 
   },
   { 
@@ -257,8 +255,8 @@ const steps = computed(() => [
     list: metrics.value, 
     selected: filters.metric, 
     action: (v: string) => filters.metric = v, 
-    disabled: !filters.stageGroup, // Film 선택 전엔 비활성
-    loading: isMetricLoading.value, // 로딩 상태 반영
+    disabled: !filters.stageGroup, 
+    loading: isMetricLoading.value, 
     emptyMsg: isMetricLoading.value ? 'Loading...' : (filters.film ? 'No Metrics Found' : 'Select Film First') 
   }
 ]);
@@ -306,8 +304,6 @@ const clearStepsFrom = (stepIndex: number) => {
   hasSearched.value = false; chartSeries.value = []; selectedWaferId.value = null;
 };
 
-// --- Handlers ---
-
 const onSiteChange = async () => { 
   if(filterStore.selectedSite) { localStorage.setItem("lot_site", filterStore.selectedSite); sdwts.value = await dashboardApi.getSdwts(filterStore.selectedSite); } 
   else { sdwts.value=[]; } 
@@ -326,24 +322,19 @@ const onEqpChange = () => {
   else { clearStepsFrom(0); } 
 };
 
-// [변경] Lot 변경 시에는 하위 데이터 초기화만 수행 (자동 로딩 X)
 const onLotChange = () => { 
   clearStepsFrom(1);
-  hasTopSearched.value = false; // Lot이 바뀌면 상세 옵션창 닫기
+  hasTopSearched.value = false;
 };
 
 const onDateChange = () => { if(filters.eqpId) loadLotIds(); };
 
-// [추가] 상단 검색 버튼 핸들러
 const onTopSearch = async () => {
   if (!filters.lotId) return;
   isTopLoading.value = true;
   try {
-    // 1. 하위 데이터 초기화
     clearStepsFrom(1);
-    // 2. Cassette 목록 로드
     await loadCassettes();
-    // 3. 하단 영역 표시
     hasTopSearched.value = true;
   } finally {
     isTopLoading.value = false;
@@ -366,26 +357,20 @@ const selectStageGroup = async (val: string) => {
   films.value = await waferApi.getDistinctValues("films", { ...getBaseParams(), lotId: filters.lotId, cassetteRcp: filters.cassetteRcp, stageGroup: val });
 };
 
-// [변경] Metric 로딩 상태 처리 추가
 const selectFilm = async (val: string) => {
   filters.film = val; filters.metric = ""; metrics.value = []; 
-  isMetricLoading.value = true; // 로딩 시작
-  
+  isMetricLoading.value = true;
   try {
     const p = { ...getBaseParams(), lotId: filters.lotId, cassetteRcp: filters.cassetteRcp, stageGroup: filters.stageGroup, film: val };
     const m = await waferApi.getAvailableMetrics(p);
-    
-    // 알파벳순 정렬 (T1 우선)
     metrics.value = m.sort((a, b) => { 
       if (a.toLowerCase() === 't1') return -1; 
       if (b.toLowerCase() === 't1') return 1; 
       return a.localeCompare(b); 
     });
-    
-    // 첫 번째 메트릭 자동 선택
     if (metrics.value.length > 0) { filters.metric = metrics.value[0] ?? ""; }
   } finally {
-    isMetricLoading.value = false; // 로딩 종료
+    isMetricLoading.value = false;
   }
 };
 
@@ -418,7 +403,6 @@ const resetFilters = () => {
   clearStepsFrom(0); 
 };
 
-// --- 이하 차트 렌더링 로직 등은 기존 유지 (MapMode, ECharts Option 등) ---
 const setMapMode = (mode: 'point' | 'heatmap') => { mapMode.value = mode; if (mode === 'point') { selectedWaferId.value = null; } };
 const selectWafer = (id: number) => { selectedWaferId.value = id; mapMode.value = 'heatmap'; };
 const onLineChartClick = (params: any) => { if (params.seriesName) { const id = parseInt(params.seriesName.replace('W', '')); if (!isNaN(id)) { selectedWaferId.value = id; mapMode.value = 'heatmap'; } } };
@@ -437,16 +421,38 @@ const getHeatmapColor = (value: number, min: number, max: number) => {
   return `rgb(${r},${g},${b})`;
 };
 
+// [핵심 변경] 데이터 보간 로직 개선 (Spotlight 현상 제거 & 부드러운 그라데이션)
 const interpolateData = (targetPoints: {x:number, y:number, value:number}[]) => {
-  const RESOLUTION = 80; const LIMIT = 150; const STEP = (LIMIT * 2) / RESOLUTION; const result = [];
+  const RESOLUTION = 180; // [변경] 해상도 상향 (더 부드러운 입자)
+  const LIMIT = 150; 
+  const STEP = (LIMIT * 2) / RESOLUTION; 
+  const result = [];
+  
   for (let x = -LIMIT; x <= LIMIT; x += STEP) {
     for (let y = -LIMIT; y <= LIMIT; y += STEP) {
+      // 원형 마스크 처리
       if (x*x + y*y > LIMIT*LIMIT) continue; 
-      let numerator = 0; let denominator = 0;
+      
+      let numerator = 0; 
+      let denominator = 0;
+      
       for (const p of targetPoints) {
-        const d = Math.sqrt((x - p.x)**2 + (y - p.y)**2); const w = 1 / Math.pow(d + 0.5, 2.5); numerator += p.value * w; denominator += w;
+        const d = Math.sqrt((x - p.x)**2 + (y - p.y)**2); 
+        
+        // [튜닝 포인트]
+        // 1. Smoothing Offset (d + 80): 
+        //    기존 10 -> 80~100으로 증가시켜, 포인트 바로 위만 진한 현상을 막고 색상을 넓게 퍼뜨립니다.
+        // 2. Power (2): 
+        //    거리 제곱에 반비례하도록 하여 물리적으로 자연스러운 확산을 유도합니다.
+        const w = 1 / Math.pow(d + 35, 2); 
+        
+        numerator += p.value * w; 
+        denominator += w;
       }
-      if (denominator > 0) { result.push({ x, y, value: numerator / denominator }); }
+      
+      if (denominator > 0) { 
+        result.push({ x, y, value: numerator / denominator }); 
+      }
     }
   }
   return result;
@@ -507,6 +513,7 @@ const mapChartOption = computed(() => {
   if (isHeatMode) {
     const targetWafer = chartSeries.value.find(s => s.waferId === selectedWaferId.value);
     if (targetWafer) {
+      // 보간 데이터 생성 (해상도 150, 부드러운 가중치 적용)
       const interpolated = interpolateData(targetWafer.dataPoints);
       const minVal = globalStats.value.min;
       const maxVal = globalStats.value.max;
@@ -527,7 +534,10 @@ const mapChartOption = computed(() => {
            const ctx = canvas.getContext('2d')!;
            const points = interpolated; const min = minVal; const max = maxVal;
            const p1 = api.coord([0, 0]); const p2 = api.coord([3.75, 0]);
-           const pixelSize = Math.abs(p2[0] - p1[0]); const drawSize = Math.ceil(pixelSize) + 1; 
+           
+           // 픽셀 크기 약간 넉넉하게 하여 빈틈 없앰
+           const pixelSize = Math.abs(p2[0] - p1[0]); 
+           const drawSize = Math.ceil(pixelSize) + 1; 
 
            points.forEach(p => {
               const coord = api.coord([p.x, p.y]);
