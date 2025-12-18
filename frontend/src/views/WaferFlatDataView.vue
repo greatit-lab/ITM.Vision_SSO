@@ -819,6 +819,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, onUnmounted } from "vue";
 import { useFilterStore } from "@/stores/filter";
+import { useAuthStore } from "@/stores/auth"; // [추가] Auth Store
 import { dashboardApi } from "@/api/dashboard";
 import {
   waferApi,
@@ -839,6 +840,7 @@ import Column from "primevue/column";
 import ProgressSpinner from "primevue/progressspinner";
 
 const filterStore = useFilterStore();
+const authStore = useAuthStore(); // [추가]
 const showAdvanced = ref(false);
 const isLoading = ref(false);
 const hasSearched = ref(false);
@@ -895,20 +897,33 @@ const isDarkMode = ref(document.documentElement.classList.contains("dark"));
 let themeObserver: MutationObserver | null = null;
 
 onMounted(async () => {
+  // 1. Site 목록 로드
   sites.value = await dashboardApi.getSites();
 
-  const savedSite = localStorage.getItem("dashboard_site");
-  const savedSdwt = localStorage.getItem("dashboard_sdwt");
+  // 2. 기본 필터 결정 (우선순위: DB 사용자 설정 -> 로컬 스토리지)
+  let defaultSite = authStore.user?.site;
+  let defaultSdwt = authStore.user?.sdwt;
 
-  if (savedSite && sites.value.includes(savedSite)) {
-    filterStore.selectedSite = savedSite;
-    sdwts.value = await dashboardApi.getSdwts(savedSite);
+  // DB에 없으면 로컬 스토리지 확인 (페이지 전용 키 사용: wafer_site, wafer_sdwt)
+  if (!defaultSite) {
+    defaultSite = localStorage.getItem("wafer_site") || undefined;
+    if (defaultSite) {
+      defaultSdwt = localStorage.getItem("wafer_sdwt") || undefined;
+    }
+  }
 
-    if (savedSdwt) {
-      filterStore.selectedSdwt = savedSdwt;
+  // 3. 결정된 Site가 유효하면 적용 및 SDWT 로드
+  if (defaultSite && sites.value.includes(defaultSite)) {
+    filterStore.selectedSite = defaultSite;
+    sdwts.value = await dashboardApi.getSdwts(defaultSite);
+
+    // 4. SDWT 적용 및 EqpID 로드
+    if (defaultSdwt) {
+      filterStore.selectedSdwt = defaultSdwt;
       await loadEqpIds();
 
-      const savedEqpId = localStorage.getItem("dashboard_eqpid");
+      // 5. EqpID 복원 (마지막 선택 장비)
+      const savedEqpId = localStorage.getItem("wafer_eqpid");
       if (savedEqpId && eqpIds.value.includes(savedEqpId)) {
         filters.eqpId = savedEqpId;
         await loadFilterOptions();
@@ -916,6 +931,7 @@ onMounted(async () => {
     }
   }
 
+  // Theme Observer (Dark Mode)
   themeObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.attributeName === "class") {
@@ -956,29 +972,22 @@ const resetZoom = () => {
   }
 };
 
-// 예시: computed(() => { ... }) 내부
-
-// [수정] 변수명을 chartOption -> spectrumOption으로 변경
 const spectrumOption = computed(() => {
-  // 데이터가 없으면 빈 객체 반환
   if (!spectrumData.value || spectrumData.value.length === 0) return {};
 
-  // X축 범위 계산 (Smart Range)
   const xValues = spectrumData.value.map((d) => d.wavelength);
   const minVal = Math.min(...xValues);
   const maxVal = Math.max(...xValues);
   const xMin = Math.floor(minVal / 10) * 10;
   const xMax = Math.ceil(maxVal / 10) * 10;
 
-  // 디자인 시스템 적용 (다크/라이트 모드 대응)
-  const textColor = isDarkMode.value ? "#cbd5e1" : "#334155"; // Slate-300 / Slate-700
+  const textColor = isDarkMode.value ? "#cbd5e1" : "#334155";
   const gridColor = isDarkMode.value
     ? "rgba(255, 255, 255, 0.15)"
     : "rgba(0, 0, 0, 0.15)";
 
   return {
     backgroundColor: "transparent",
-    // 줌 기능 활성화
     dataZoom: [
       {
         type: "inside",
@@ -986,7 +995,6 @@ const spectrumOption = computed(() => {
         filterMode: "filter",
       },
     ],
-    // 툴팁 디자인 (Modern 스타일 적용)
     tooltip: {
       trigger: "axis",
       backgroundColor: isDarkMode.value
@@ -1001,7 +1009,6 @@ const spectrumOption = computed(() => {
         const xVal = item.wavelength;
         let html = `<div class="font-bold mb-1">${xVal} nm</div>`;
         params.forEach((p: any) => {
-          // 시리즈 이름에 따라 키 매핑 (EXP -> exp, GEN -> gen)
           const yKey = p.seriesName === "EXP" ? "exp" : "gen";
           const val = p.value[yKey];
           if (val !== null && val !== undefined) {
@@ -1014,7 +1021,6 @@ const spectrumOption = computed(() => {
         return html;
       },
     },
-    // 범례 스타일
     legend: {
       data: ["EXP", "GEN"],
       top: 5,
@@ -1036,7 +1042,6 @@ const spectrumOption = computed(() => {
     dataset: {
       source: spectrumData.value,
     },
-    // X축 설정
     xAxis: {
       type: "value",
       name: "Wavelength (nm)",
@@ -1056,7 +1061,6 @@ const spectrumOption = computed(() => {
       },
       axisLine: { lineStyle: { color: gridColor } },
     },
-    // Y축 설정
     yAxis: {
       type: "value",
       name: "TE-Reflectance (%)",
@@ -1073,7 +1077,6 @@ const spectrumOption = computed(() => {
       axisLabel: { color: textColor, fontSize: 10 },
       splitLine: { show: true, lineStyle: { color: gridColor } },
     },
-    // 시리즈 데이터 매핑
     series: [
       {
         name: "EXP",
@@ -1082,7 +1085,7 @@ const spectrumOption = computed(() => {
         showSymbol: false,
         smooth: true,
         lineStyle: { width: 2 },
-        itemStyle: { color: "#F43F5E" }, // Rose-500 (강조색)
+        itemStyle: { color: "#F43F5E" },
       },
       {
         name: "GEN",
@@ -1091,40 +1094,43 @@ const spectrumOption = computed(() => {
         showSymbol: false,
         smooth: true,
         lineStyle: { width: 2 },
-        itemStyle: { color: "#6366F1" }, // Indigo-500 (보조색)
+        itemStyle: { color: "#6366F1" },
       },
     ],
   };
 });
 
+// [수정] Site 변경 핸들러
 const onSiteChange = async () => {
   if (filterStore.selectedSite) {
-    localStorage.setItem("dashboard_site", filterStore.selectedSite);
+    localStorage.setItem("wafer_site", filterStore.selectedSite);
     sdwts.value = await dashboardApi.getSdwts(filterStore.selectedSite);
   } else {
-    localStorage.removeItem("dashboard_site");
+    localStorage.removeItem("wafer_site");
     sdwts.value = [];
   }
 
+  // 하위 필터 초기화
   filterStore.selectedSdwt = "";
-  localStorage.removeItem("dashboard_sdwt");
-  localStorage.removeItem("dashboard_eqpid");
+  localStorage.removeItem("wafer_sdwt");
+  localStorage.removeItem("wafer_eqpid");
 
   filters.eqpId = "";
   filters.lotId = "";
   filters.waferId = "";
 };
 
+// [수정] SDWT 변경 핸들러
 const onSdwtChange = () => {
   if (filterStore.selectedSdwt) {
-    localStorage.setItem("dashboard_sdwt", filterStore.selectedSdwt);
+    localStorage.setItem("wafer_sdwt", filterStore.selectedSdwt);
     loadEqpIds();
   } else {
-    localStorage.removeItem("dashboard_sdwt");
+    localStorage.removeItem("wafer_sdwt");
     eqpIds.value = [];
   }
 
-  localStorage.removeItem("dashboard_eqpid");
+  localStorage.removeItem("wafer_eqpid");
   filters.eqpId = "";
   filters.lotId = "";
   filters.waferId = "";
@@ -1132,7 +1138,6 @@ const onSdwtChange = () => {
 
 const loadEqpIds = async () => {
   if (filterStore.selectedSdwt)
-    // [수정] Wafer 페이지이므로 type: 'wafer' 전달
     eqpIds.value = await equipmentApi.getEqpIds(
       undefined,
       filterStore.selectedSdwt,
@@ -1140,14 +1145,15 @@ const loadEqpIds = async () => {
     );
 };
 
+// [수정] EqpID 변경 핸들러
 const onEqpChange = () => {
   if (filters.eqpId) {
-    localStorage.setItem("dashboard_eqpid", filters.eqpId);
+    localStorage.setItem("wafer_eqpid", filters.eqpId);
     filters.lotId = "";
     filters.waferId = "";
     loadFilterOptions();
   } else {
-    localStorage.removeItem("dashboard_eqpid");
+    localStorage.removeItem("wafer_eqpid");
     filters.lotId = "";
     filters.waferId = "";
   }
@@ -1265,7 +1271,6 @@ const onRowSelect = async (event: any) => {
     const [stats, pts, pdfCheck] = await Promise.all([
       waferApi.getStatistics(params),
       waferApi.getPointData(params),
-      // [수정] lotId, waferId 전달
       waferApi.checkPdf(row.eqpId, row.lotId, row.waferId, row.servTs),
     ]);
     statistics.value = stats;
@@ -1285,11 +1290,10 @@ const loadPointImage = async (pointValue: number) => {
   pdfImageUrl.value = null;
 
   try {
-    // [수정] selectedRow에서 lotId, waferId 추출
     const base64 = await waferApi.getPdfImageBase64(
       selectedRow.value.eqpId,
-      selectedRow.value.lotId, // [추가]
-      selectedRow.value.waferId, // [추가]
+      selectedRow.value.lotId,
+      selectedRow.value.waferId,
       selectedRow.value.dateTime,
       pointValue
     );
@@ -1386,12 +1390,13 @@ const onPointClick = async (idx: number) => {
   }
 };
 
+// [수정] 초기화 시 로컬 스토리지 키도 함께 삭제
 const resetFilters = () => {
   filterStore.selectedSite = "";
   filterStore.selectedSdwt = "";
-  localStorage.removeItem("dashboard_site");
-  localStorage.removeItem("dashboard_sdwt");
-  localStorage.removeItem("dashboard_eqpid");
+  localStorage.removeItem("wafer_site");
+  localStorage.removeItem("wafer_sdwt");
+  localStorage.removeItem("wafer_eqpid");
 
   sdwts.value = [];
   eqpIds.value = [];
@@ -1463,7 +1468,6 @@ const fmt = (num: number | null | undefined, prec: number = 3) =>
   @apply !bg-slate-200 dark:!bg-zinc-800;
 }
 
-/* 드롭다운 화살표 아이콘 및 버튼 스타일 수정 */
 :deep(.p-select-dropdown),
 :deep(.p-autocomplete-dropdown) {
   @apply text-slate-400 dark:text-zinc-500 w-6 !bg-transparent !border-0 !shadow-none;
