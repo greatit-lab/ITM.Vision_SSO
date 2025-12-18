@@ -1,6 +1,6 @@
 // backend/src/app.module.ts
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config'; // [추가]
+import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from './prisma.service';
 
 // Modules
@@ -9,26 +9,25 @@ import { PreAlignModule } from './prealign/prealign.module';
 import { LampLifeModule } from './lamplife/lamplife.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
-import { MenuModule } from './menu/menu.module'; // [추가]
+import { MenuModule } from './menu/menu.module';
+import { PerformanceModule } from './performance/performance.module';
+// [추가] WaferModule import
+import { WaferModule } from './wafer/wafer.module';
 
 // Controllers & Services
 import { DashboardController } from './dashboard/dashboard.controller';
 import { DashboardService } from './dashboard/dashboard.service';
-import { PerformanceController } from './performance/performance.controller';
-import { PerformanceService } from './performance/performance.service';
 import { ErrorController } from './error/error.controller';
 import { ErrorService } from './error/error.service';
 import { FiltersController } from './filters/filters.controller';
 import { FiltersService } from './filters/filters.service';
-import { WaferController } from './wafer/wafer.controller';
-import { WaferService } from './wafer/wafer.service';
+// Wafer 관련 Controller/Service는 제거됨 (Module로 이동)
 
 @Module({
   imports: [
-    // [추가] 환경 변수 설정 모듈
+    // 환경 변수 설정 모듈
     ConfigModule.forRoot({
-      isGlobal: true, // 모든 모듈에서 접근 가능하게 설정
-      // NODE_ENV가 'production'이면 .env.production, 아니면 .env.development 로드
+      isGlobal: true,
       envFilePath:
         process.env.NODE_ENV === 'production'
           ? '.env.production'
@@ -40,21 +39,21 @@ import { WaferService } from './wafer/wafer.service';
     HealthModule,
     AuthModule,
     MenuModule,
+    PerformanceModule,
+    WaferModule, // [추가] 여기에 모듈 등록
   ],
   controllers: [
     DashboardController,
-    PerformanceController,
     ErrorController,
     FiltersController,
-    WaferController,
+    // WaferController 제거됨
   ],
   providers: [
     PrismaService,
     DashboardService,
-    PerformanceService,
     ErrorService,
     FiltersService,
-    WaferService,
+    // WaferService 제거됨
   ],
 })
 export class AppModule {}
