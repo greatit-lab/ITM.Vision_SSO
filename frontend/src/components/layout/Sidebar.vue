@@ -92,12 +92,12 @@
         >
           <div v-if="hasContext">
             <p
-              class="text-sm font-extrabold leading-tight truncate text-slate-700 dark:text-slate-200"
+              class="text-base font-extrabold leading-tight truncate text-slate-700 dark:text-slate-200"
               :title="contextInfo"
             >
               {{ contextInfo }}
             </p>
-            <p class="text-[8px] text-slate-400 truncate mt-0.5 font-medium uppercase tracking-wide">
+            <p class="text-[12px] text-slate-400 truncate mt-0.5 font-medium uppercase tracking-wide">
               {{ userRole }}
             </p>
           </div>
@@ -181,3 +181,4 @@ onMounted(async () => {
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
+
