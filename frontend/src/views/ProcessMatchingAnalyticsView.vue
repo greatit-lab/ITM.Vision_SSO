@@ -7,7 +7,9 @@
       <div
         class="flex items-center justify-center w-8 h-8 bg-white border rounded-lg shadow-sm dark:bg-zinc-900 border-slate-100 dark:border-zinc-800"
       >
-        <i class="text-lg text-sky-500 pi pi-clone dark:text-sky-400"></i>
+        <i
+          class="text-lg text-emerald-500 pi pi-arrows-h dark:text-emerald-400"
+        ></i>
       </div>
       <div class="flex items-baseline gap-2">
         <h1
@@ -15,11 +17,9 @@
         >
           Process Matching Analytics
         </h1>
-        <span
-          class="text-slate-400 dark:text-slate-500 font-medium text-[11px]"
+        <span class="text-slate-400 dark:text-slate-500 font-medium text-[11px]"
+          >Equipment-to-Equipment Correlation Analysis.</span
         >
-          Multi-chamber comparison & cluster analysis.
-        </span>
       </div>
     </div>
 
@@ -80,6 +80,7 @@
             dateFormat="yy-mm-dd"
             placeholder="Start"
             class="w-full custom-dropdown small date-picker"
+            :disabled="!refEqpId"
             @update:model-value="onDateChange"
           />
         </div>
@@ -90,6 +91,7 @@
             dateFormat="yy-mm-dd"
             placeholder="End"
             class="w-full custom-dropdown small date-picker"
+            :disabled="!refEqpId"
             @update:model-value="onDateChange"
           />
         </div>
@@ -281,7 +283,6 @@
       </div>
 
       <div class="flex flex-col flex-1 h-full gap-3 overflow-hidden">
-        
         <div
           class="flex-[3] min-h-0 bg-white border shadow-sm rounded-xl dark:bg-[#111111] border-slate-200 dark:border-zinc-800 flex flex-col relative"
         >
@@ -426,6 +427,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, onUnmounted } from "vue";
 import { useFilterStore } from "@/stores/filter";
+import { useAuthStore } from "@/stores/auth"; // [추가]
 import { dashboardApi } from "@/api/dashboard";
 import { waferApi } from "@/api/wafer";
 import { equipmentApi } from "@/api/equipment"; 
@@ -455,6 +457,7 @@ interface FilterState {
 
 // Stores & State
 const filterStore = useFilterStore();
+const authStore = useAuthStore(); // [추가]
 const isEqpLoading = ref(false);
 const isDataLoading = ref(false);
 const hasSearched = ref(false);
@@ -513,18 +516,38 @@ const isListVisible = computed(() => {
 
 // Lifecycle Hooks
 onMounted(async () => {
+  // 1. Site 목록 로드
   sites.value = await dashboardApi.getSites();
   
-  const savedSite = localStorage.getItem("pm_site");
-  const savedSdwt = localStorage.getItem("pm_sdwt");
+  // 2. 기본 필터 결정 (우선순위: DB 사용자 설정 -> 페이지 전용 로컬 스토리지)
+  let defaultSite = authStore.user?.site;
+  let defaultSdwt = authStore.user?.sdwt;
   
-  if (savedSite && sites.value.includes(savedSite)) {
-    filterStore.selectedSite = savedSite;
-    sdwts.value = await dashboardApi.getSdwts(savedSite);
+  // DB에 없으면 로컬 스토리지 확인 (페이지 전용 키: match_site, match_sdwt)
+  if (!defaultSite) {
+    defaultSite = localStorage.getItem("match_site") || undefined;
+    if (defaultSite) {
+      defaultSdwt = localStorage.getItem("match_sdwt") || undefined;
+    }
+  }
+  
+  // 3. 결정된 Site가 유효하면 적용 및 SDWT 로드
+  if (defaultSite && sites.value.includes(defaultSite)) {
+    filterStore.selectedSite = defaultSite;
+    sdwts.value = await dashboardApi.getSdwts(defaultSite);
     
-    if (savedSdwt) {
-      filterStore.selectedSdwt = savedSdwt;
+    // 4. SDWT 적용 및 Ref EQP 목록 로드
+    if (defaultSdwt && sdwts.value.includes(defaultSdwt)) {
+      filterStore.selectedSdwt = defaultSdwt;
+      // Agent가 설치된 장비만 조회
       await loadRefEqpList();
+
+      // 5. Ref EQP 복원 (페이지 전용 키: match_eqp)
+      const savedEqp = localStorage.getItem("match_eqp");
+      if (savedEqp && refEqpList.value.includes(savedEqp)) {
+        refEqpId.value = savedEqp;
+        await loadOptions();
+      }
     }
   }
 
@@ -543,44 +566,52 @@ onMounted(async () => {
 onUnmounted(() => themeObserver?.disconnect());
 
 // Handlers
+// [수정] Site 변경 시 로컬 스토리지(match_site) 업데이트
 const onSiteChange = async () => {
   if (filterStore.selectedSite) {
-    localStorage.setItem("pm_site", filterStore.selectedSite);
+    localStorage.setItem("match_site", filterStore.selectedSite);
     sdwts.value = await dashboardApi.getSdwts(filterStore.selectedSite);
   } else {
-    localStorage.removeItem("pm_site");
+    localStorage.removeItem("match_site");
     sdwts.value = [];
   }
   filterStore.selectedSdwt = "";
-  localStorage.removeItem("pm_sdwt");
+  localStorage.removeItem("match_sdwt");
   
   refEqpId.value = "";
+  localStorage.removeItem("match_eqp");
   refEqpList.value = [];
   resetConditions();
 };
 
+// [수정] SDWT 변경 시 로컬 스토리지(match_sdwt) 업데이트
 const onSdwtChange = async () => {
   if (filterStore.selectedSdwt) {
-    localStorage.setItem("pm_sdwt", filterStore.selectedSdwt);
+    localStorage.setItem("match_sdwt", filterStore.selectedSdwt);
     await loadRefEqpList();
   } else {
-    localStorage.removeItem("pm_sdwt");
+    localStorage.removeItem("match_sdwt");
     refEqpList.value = [];
   }
   refEqpId.value = "";
+  localStorage.removeItem("match_eqp");
   resetConditions();
 };
 
 const loadRefEqpList = async () => {
   if (filterStore.selectedSdwt) {
-    refEqpList.value = await equipmentApi.getEqpIds(undefined, filterStore.selectedSdwt, 'wafer');
+    refEqpList.value = await equipmentApi.getEqpIds(undefined, filterStore.selectedSdwt, 'agent');
   }
 };
 
+// [수정] Ref EQP 변경 시 로컬 스토리지(match_eqp) 업데이트
 const onRefEqpChange = async () => {
   resetConditions();
   if (refEqpId.value) {
+    localStorage.setItem("match_eqp", refEqpId.value);
     await loadOptions();
+  } else {
+    localStorage.removeItem("match_eqp");
   }
 };
 
@@ -772,6 +803,7 @@ const loadComparisonData = async () => {
   }
 };
 
+// [수정] 초기화 시 로컬 스토리지 키 삭제
 const resetFilters = () => {
   filterStore.reset();
   refEqpId.value = "";
@@ -779,8 +811,9 @@ const resetFilters = () => {
   resetConditions();
   hasSearched.value = false;
   selectedAnalytics.value = [];
-  localStorage.removeItem("pm_site");
-  localStorage.removeItem("pm_sdwt");
+  localStorage.removeItem("match_site");
+  localStorage.removeItem("match_sdwt");
+  localStorage.removeItem("match_eqp");
 };
 
 // --- Math Helpers for Advanced Analytics ---
