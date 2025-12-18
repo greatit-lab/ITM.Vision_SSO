@@ -464,7 +464,7 @@
               :class="getStatusBarClass(agent)"
             ></div>
 
-            <div class="flex flex-col h-full gap-2 p-3 pt-4">
+            <div class="flex flex-col h-full gap-1 p-2 pt-3">
               <div class="flex items-start justify-between">
                 <div>
                   <h4
@@ -472,13 +472,13 @@
                   >
                     {{ agent.eqpId }}
                     <span
-                      class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-zinc-700"
+                      class="px-1 py-[1px] rounded text-[10px] scale-90 origin-left font-bold bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-zinc-700"
                     >
                       {{ agent.type || "Unknown" }}
                     </span>
                   </h4>
                   <div
-                    class="flex items-center gap-1 mt-0.5 text-[10px] text-slate-400 font-mono cursor-pointer hover:text-slate-600 dark:hover:text-slate-300"
+                    class="flex items-center gap-1 mt-0.5 text-[10px] scale-90 origin-left text-slate-400 font-mono cursor-pointer hover:text-slate-600 dark:hover:text-slate-300"
                     title="Click to copy IP"
                     @click="copyToClipboard(agent.ipAddress)"
                   >
@@ -486,16 +486,16 @@
                   </div>
                 </div>
 
-                <div class="flex flex-col items-end gap-1">
+                <div class="flex flex-col items-end gap-0.5">
                   <span
-                    class="px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1 border shadow-sm"
+                    class="px-1.5 py-[1px] text-[10px] scale-90 origin-right font-bold rounded-full uppercase tracking-wider flex items-center gap-1 border shadow-sm"
                     :class="getStatusBadgeClass(agent)"
                   >
-                    <i :class="getStatusIcon(agent)" class="text-[8px]"></i>
+                    <i :class="getStatusIcon(agent)" class="text-[9px]"></i>
                     {{ getStatusLabel(agent) }}
                   </span>
                   <span
-                    class="text-[10px] font-mono font-bold flex items-center gap-1 transition-colors"
+                    class="text-[10px] scale-90 origin-right font-mono font-bold flex items-center gap-1 transition-colors"
                     :class="getAgentVerStyle(agent.appVersion)"
                   >
                     {{ agent.appVersion }}
@@ -503,13 +503,15 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-5 gap-2 text-[10px]">
+              <div
+                class="grid grid-cols-5 gap-1.5 text-[10px] scale-95 origin-left w-[105%]"
+              >
                 <div
-                  class="flex items-center justify-between col-span-5 p-1.5 border rounded bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-800"
+                  class="flex items-center justify-between col-span-5 p-1 border rounded bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-800"
                 >
                   <span
                     class="flex items-center gap-1 font-semibold text-slate-400"
-                    ><i class="pi pi-microsoft"></i> OS</span
+                    ><i class="text-[9px] pi pi-microsoft"></i> OS</span
                   >
                   <span
                     class="font-medium truncate text-slate-600 dark:text-slate-300 max-w-[180px]"
@@ -520,7 +522,7 @@
                 </div>
 
                 <div
-                  class="flex items-center justify-between col-span-3 p-1.5 overflow-hidden border rounded bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-800"
+                  class="flex items-center justify-between col-span-3 p-1 overflow-hidden border rounded bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-800"
                 >
                   <span
                     class="font-semibold text-slate-400 text-[9px] whitespace-nowrap flex items-center gap-1"
@@ -528,14 +530,14 @@
                     <i class="pi pi-desktop text-[9px]"></i> PC
                   </span>
                   <span
-                    class="ml-2 font-medium text-right truncate text-slate-600 dark:text-slate-300"
+                    class="ml-1 font-medium text-right truncate text-slate-600 dark:text-slate-300"
                     :title="agent.pcName"
                     >{{ agent.pcName }}</span
                   >
                 </div>
 
                 <div
-                  class="flex items-center justify-between col-span-2 p-1.5 overflow-hidden border rounded bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-800"
+                  class="flex items-center justify-between col-span-2 p-1 overflow-hidden border rounded bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-800"
                 >
                   <span
                     v-tooltip.top="'+: Agent Fast, -: Agent Slow'"
@@ -544,7 +546,7 @@
                     <i class="text-[9px] pi pi-clock"></i>
                   </span>
                   <span
-                    class="ml-2 font-mono font-bold text-right truncate"
+                    class="ml-1 font-mono font-bold text-right truncate"
                     :class="getClockDriftColor(agent.clockDrift)"
                   >
                     {{ formatTimeDifference(agent.clockDrift) }}
@@ -553,10 +555,10 @@
               </div>
 
               <div
-                class="pt-2 mt-auto border-t border-dashed border-slate-200 dark:border-zinc-800 cursor-pointer group/chart"
+                class="pt-1.5 mt-auto border-t border-dashed border-slate-200 dark:border-zinc-800 cursor-pointer group/chart scale-95 origin-left w-[105%]"
                 @click="openChart(agent)"
               >
-                <div class="flex items-center gap-2 mb-1.5">
+                <div class="flex items-center gap-1 mb-1">
                   <span class="text-[9px] font-bold text-slate-400 w-6"
                     >CPU</span
                   >
@@ -574,7 +576,7 @@
                   >
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1">
                   <span class="text-[9px] font-bold text-slate-400 w-6"
                     >MEM</span
                   >
@@ -595,7 +597,9 @@
                 </div>
               </div>
 
-              <div class="flex items-center justify-between pt-1 text-[9px]">
+              <div
+                class="flex items-center justify-between pt-1 text-[9px] scale-95 origin-left w-[105%]"
+              >
                 <span class="text-slate-400">Last Contact</span>
                 <span
                   class="font-mono font-medium"
@@ -668,21 +672,21 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useFilterStore } from "@/stores/filter";
-import { useAuthStore } from "@/stores/auth"; // [추가]
+import { useAuthStore } from "@/stores/auth";
 import {
   dashboardApi,
   type DashboardSummaryDto,
   type AgentStatusDto,
 } from "@/api/dashboard";
 import { performanceApi } from "@/api/performance";
-import EChart from "@/components/common/EChart.vue"; // ECharts 컴포넌트 사용
+import EChart from "@/components/common/EChart.vue";
 import Select from "primevue/select";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import ProgressSpinner from "primevue/progressspinner";
 
 const filterStore = useFilterStore();
-const authStore = useAuthStore(); // [추가]
+const authStore = useAuthStore();
 
 const isSummaryLoading = ref(false);
 const isTableLoading = ref(false);
@@ -711,45 +715,33 @@ const chartData = ref<any[]>([]);
 const refreshCount = ref(30);
 let refreshTimer: number | null = null;
 
-// 다크 모드 감지 상태
 const isDarkMode = ref(document.documentElement.classList.contains("dark"));
 let themeObserver: MutationObserver | null = null;
 
 onMounted(async () => {
   try {
-    // 1. 사이트 목록 로드
     sites.value = await dashboardApi.getSites();
 
-    // 2. 기본 필터 값 결정 (우선순위: DB 저장값 > 로컬 스토리지)
     let defaultSite = authStore.user?.site;
     let defaultSdwt = authStore.user?.sdwt;
 
-    // DB에 저장된 값이 없으면 로컬 스토리지 확인 (기존 편의성 유지)
     if (!defaultSite) {
       defaultSite = localStorage.getItem("dashboard_site") || undefined;
-      // 로컬 스토리지의 경우에만 SDWT도 로컬에서 가져옴 (DB 사용 시에는 Site에 종속되므로 아래에서 처리)
       if (defaultSite) {
         defaultSdwt = localStorage.getItem("dashboard_sdwt") || undefined;
       }
-    } else {
-        // DB 값 사용 시 SDWT도 DB 값 사용 (위에서 이미 할당됨)
     }
 
-    // 3. 결정된 필터 적용 및 데이터 로드
     if (defaultSite && sites.value.includes(defaultSite)) {
       filterStore.selectedSite = defaultSite;
-      
-      // 해당 Site의 SDWT 목록 로드
       sdwts.value = await dashboardApi.getSdwts(defaultSite);
 
       if (defaultSdwt) {
         filterStore.selectedSdwt = defaultSdwt;
-        // 데이터 자동 조회
         await loadData(true);
       }
     }
 
-    // 다크 모드 변경 감지 옵저버 등록
     themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.attributeName === "class") {
@@ -768,7 +760,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopAutoRefresh();
-  // 옵저버 해제
   if (themeObserver) themeObserver.disconnect();
 });
 
@@ -877,7 +868,6 @@ const openChart = async (agent: AgentStatusDto) => {
   }
 };
 
-// ECharts 옵션 계산 (chartData 또는 isDarkMode가 변경되면 자동 업데이트)
 const chartOption = computed(() => {
   if (!chartData.value || chartData.value.length === 0) return {};
 
@@ -885,8 +875,7 @@ const chartOption = computed(() => {
   const cpuValues = chartData.value.map((d) => d.cpuUsage);
   const memValues = chartData.value.map((d) => d.memoryUsage);
 
-  // 테마별 색상 정의
-  const textColor = isDarkMode.value ? "#cbd5e1" : "#475569"; // Slate-300 : Slate-600
+  const textColor = isDarkMode.value ? "#cbd5e1" : "#475569";
   const gridColor = isDarkMode.value
     ? "rgba(255, 255, 255, 0.1)"
     : "rgba(0, 0, 0, 0.1)";
@@ -920,7 +909,7 @@ const chartOption = computed(() => {
     legend: {
       data: ["CPU Usage", "Memory Usage"],
       bottom: 0,
-      textStyle: { color: textColor }, // 테마별 색상 적용
+      textStyle: { color: textColor },
     },
     grid: {
       left: "3%",
@@ -940,7 +929,7 @@ const chartOption = computed(() => {
           d.getMinutes()
         ).padStart(2, "0")}`;
       }),
-      axisLabel: { color: textColor }, // 테마별 색상 적용
+      axisLabel: { color: textColor },
       axisLine: { lineStyle: { color: gridColor } },
     },
     yAxis: {
@@ -948,9 +937,9 @@ const chartOption = computed(() => {
       name: "Usage (%)",
       min: 0,
       max: 100,
-      axisLabel: { color: textColor }, // 테마별 색상 적용
-      nameTextStyle: { color: textColor, padding: [0, 0, 0, 20] }, // 테마별 색상 적용
-      splitLine: { show: true, lineStyle: { color: gridColor } }, // 테마별 색상 적용
+      axisLabel: { color: textColor },
+      nameTextStyle: { color: textColor, padding: [0, 0, 0, 20] },
+      splitLine: { show: true, lineStyle: { color: gridColor } },
     },
     series: [
       {
@@ -999,7 +988,6 @@ const chartOption = computed(() => {
   };
 });
 
-// [수정] 기본 rowsPerPage: 20
 const first = ref(0);
 const rowsPerPage = ref(20);
 
