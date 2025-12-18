@@ -1,16 +1,5 @@
 // frontend/src/api/performance.ts
-import http from "./http"; // [수정] axios 직접 생성 대신 공통 http 모듈 사용
-
-// DTO 인터페이스 정의 (기존 유지)
-export interface PerformanceDataPointDto {
-  eqpId: string;
-  timestamp: string;
-  cpuUsage: number;
-  memoryUsage: number;
-  cpuTemp: number;
-  gpuTemp: number;
-  fanSpeed: number;
-}
+import http from "./http";
 
 export interface ProcessMemoryDataDto {
   timestamp: string;
@@ -18,35 +7,66 @@ export interface ProcessMemoryDataDto {
   memoryUsageMB: number;
 }
 
-// API 호출 객체
+// [추가] ITM Agent 데이터 DTO
+export interface ItmAgentDataDto {
+  timestamp: string;
+  eqpId: string;
+  memoryUsageMB: number;
+}
+
 export const performanceApi = {
-  // Performance Trend 차트 데이터
+  // [기존] 장비 성능 히스토리 조회
   getHistory: async (
     startDate: string,
     endDate: string,
-    eqpids: string,
-    intervalSeconds: number
+    eqpids: string[],
+    intervalSeconds = 300
   ) => {
-    const params = { startDate, endDate, eqpids, intervalSeconds };
-    // [수정] apiClient -> http 로 변경
-    const { data } = await http.get<PerformanceDataPointDto[]>(
-      "/PerformanceAnalytics/history",
-      { params }
-    );
+    const params = {
+      startDate,
+      endDate,
+      eqpids: eqpids.join(","),
+      interval: intervalSeconds,
+    };
+    const { data } = await http.get("/Performance/history", { params });
     return data;
   },
 
-  // Process Memory 데이터
+  // [기존] 프로세스별 메모리 히스토리 조회
   getProcessHistory: async (
     startDate: string,
     endDate: string,
     eqpId: string,
     intervalSeconds?: number
   ) => {
-    const params = { startDate, endDate, eqpid: eqpId, intervalSeconds };
-    // [수정] apiClient -> http 로 변경
+    const params = { startDate, endDate, eqpId, interval: intervalSeconds };
     const { data } = await http.get<ProcessMemoryDataDto[]>(
-      "/PerformanceAnalytics/process-history",
+      "/Performance/process/history",
+      { params }
+    );
+    return data;
+  },
+
+  // [추가] ITM Agent Trend API 호출
+  getItmAgentTrend: async (
+    site: string,
+    sdwt: string,
+    eqpId: string,
+    startDate: string,
+    endDate: string,
+    intervalSeconds?: number
+  ) => {
+    // eqpId는 선택값이므로 없으면 빈 문자열이나 null로 전달될 수 있음
+    const params = { 
+      site, 
+      sdwt, 
+      eqpid: eqpId, 
+      startDate, 
+      endDate, 
+      interval: intervalSeconds 
+    };
+    const { data } = await http.get<ItmAgentDataDto[]>(
+      "/Performance/itm-agent-trend",
       { params }
     );
     return data;
