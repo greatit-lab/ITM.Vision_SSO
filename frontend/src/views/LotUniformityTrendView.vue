@@ -186,6 +186,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, onUnmounted } from "vue";
 import { useFilterStore } from "@/stores/filter";
+import { useAuthStore } from "@/stores/auth"; // [추가] Auth Store
 import { dashboardApi } from "@/api/dashboard";
 import { equipmentApi } from "@/api/equipment";
 import { waferApi, type LotUniformitySeriesDto } from "@/api/wafer";
@@ -195,6 +196,7 @@ import DatePicker from "primevue/datepicker";
 import Button from "primevue/button";
 
 const filterStore = useFilterStore();
+const authStore = useAuthStore(); // [추가]
 const isLoading = ref(false);
 const isTopLoading = ref(false);
 const hasTopSearched = ref(false);
@@ -274,26 +276,47 @@ const globalStats = computed(() => {
 });
 
 onMounted(async () => {
+  // 1. Site 목록 로드
   sites.value = await dashboardApi.getSites();
-  const savedSite = localStorage.getItem("lot_site");
-  const savedSdwt = localStorage.getItem("lot_sdwt");
-  const savedEqpId = localStorage.getItem("lot_eqpid");
 
-  if (savedSite && sites.value.includes(savedSite)) {
-    filterStore.selectedSite = savedSite;
-    sdwts.value = await dashboardApi.getSdwts(savedSite);
-    if (savedSdwt) {
-      filterStore.selectedSdwt = savedSdwt;
-      eqpIds.value = await equipmentApi.getEqpIds(undefined, savedSdwt);
+  // 2. 기본 필터 결정 (우선순위: DB 사용자 설정 > 페이지 전용 로컬 스토리지)
+  let defaultSite = authStore.user?.site;
+  let defaultSdwt = authStore.user?.sdwt;
+
+  // DB에 없으면 로컬 스토리지 확인 (페이지 전용 키 사용: lot_site, lot_sdwt)
+  if (!defaultSite) {
+    defaultSite = localStorage.getItem("lot_site") || undefined;
+    if (defaultSite) {
+      defaultSdwt = localStorage.getItem("lot_sdwt") || undefined;
+    }
+  }
+
+  // 3. 결정된 Site가 유효하면 적용 및 SDWT 로드
+  if (defaultSite && sites.value.includes(defaultSite)) {
+    filterStore.selectedSite = defaultSite;
+    sdwts.value = await dashboardApi.getSdwts(defaultSite);
+
+    // 4. SDWT 적용 및 EqpID 로드
+    if (defaultSdwt) {
+      filterStore.selectedSdwt = defaultSdwt;
+      // [참고] 여기서는 type='wafer'를 명시하지 않고 모든 장비를 가져옵니다 (기존 유지)
+      // 필요하다면 type='wafer' 추가 가능
+      eqpIds.value = await equipmentApi.getEqpIds(undefined, defaultSdwt);
+
+      // 5. EqpID 복원 (마지막 선택 장비, 페이지 전용 키: lot_eqpid)
+      const savedEqpId = localStorage.getItem("lot_eqpid");
       if (savedEqpId && eqpIds.value.includes(savedEqpId)) {
         filters.eqpId = savedEqpId;
         await loadLotIds(); 
       }
     }
   }
+
+  // 테마 감지
   themeObserver = new MutationObserver((m) => { m.forEach((mu) => { if (mu.attributeName === "class") isDarkMode.value = document.documentElement.classList.contains("dark"); }); });
   themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
 });
+
 onUnmounted(() => themeObserver?.disconnect());
 
 const clearStepsFrom = (stepIndex: number) => {
@@ -304,22 +327,48 @@ const clearStepsFrom = (stepIndex: number) => {
   hasSearched.value = false; chartSeries.value = []; selectedWaferId.value = null;
 };
 
+// [수정] Site 변경 시 로컬 스토리지 업데이트 (lot_site)
 const onSiteChange = async () => { 
-  if(filterStore.selectedSite) { localStorage.setItem("lot_site", filterStore.selectedSite); sdwts.value = await dashboardApi.getSdwts(filterStore.selectedSite); } 
-  else { sdwts.value=[]; } 
-  filterStore.selectedSdwt = ""; localStorage.removeItem("lot_sdwt"); 
-  filters.eqpId = ""; localStorage.removeItem("lot_eqpid");
+  if(filterStore.selectedSite) { 
+    localStorage.setItem("lot_site", filterStore.selectedSite); 
+    sdwts.value = await dashboardApi.getSdwts(filterStore.selectedSite); 
+  } else { 
+    localStorage.removeItem("lot_site");
+    sdwts.value=[]; 
+  } 
+  
+  filterStore.selectedSdwt = ""; 
+  localStorage.removeItem("lot_sdwt"); 
+  localStorage.removeItem("lot_eqpid");
+  
+  filters.eqpId = ""; 
   clearStepsFrom(0); 
 };
+
+// [수정] SDWT 변경 시 로컬 스토리지 업데이트 (lot_sdwt)
 const onSdwtChange = async () => { 
-  if(filterStore.selectedSdwt) { localStorage.setItem("lot_sdwt", filterStore.selectedSdwt); eqpIds.value = await equipmentApi.getEqpIds(undefined, filterStore.selectedSdwt); } 
-  else { eqpIds.value=[]; } 
-  filters.eqpId = ""; localStorage.removeItem("lot_eqpid");
+  if(filterStore.selectedSdwt) { 
+    localStorage.setItem("lot_sdwt", filterStore.selectedSdwt); 
+    eqpIds.value = await equipmentApi.getEqpIds(undefined, filterStore.selectedSdwt); 
+  } else { 
+    localStorage.removeItem("lot_sdwt");
+    eqpIds.value=[]; 
+  } 
+  
+  filters.eqpId = ""; 
+  localStorage.removeItem("lot_eqpid");
   clearStepsFrom(0); 
 };
+
+// [수정] EqpID 변경 시 로컬 스토리지 업데이트 (lot_eqpid)
 const onEqpChange = () => { 
-  if (filters.eqpId) { localStorage.setItem("lot_eqpid", filters.eqpId); loadLotIds(); } 
-  else { clearStepsFrom(0); } 
+  if (filters.eqpId) { 
+    localStorage.setItem("lot_eqpid", filters.eqpId); 
+    loadLotIds(); 
+  } else { 
+    localStorage.removeItem("lot_eqpid");
+    clearStepsFrom(0); 
+  } 
 };
 
 const onLotChange = () => { 
@@ -421,16 +470,14 @@ const getHeatmapColor = (value: number, min: number, max: number) => {
   return `rgb(${r},${g},${b})`;
 };
 
-// [핵심 변경] 데이터 보간 로직 개선 (Spotlight 현상 제거 & 부드러운 그라데이션)
 const interpolateData = (targetPoints: {x:number, y:number, value:number}[]) => {
-  const RESOLUTION = 180; // [변경] 해상도 상향 (더 부드러운 입자)
+  const RESOLUTION = 180; 
   const LIMIT = 150; 
   const STEP = (LIMIT * 2) / RESOLUTION; 
   const result = [];
   
   for (let x = -LIMIT; x <= LIMIT; x += STEP) {
     for (let y = -LIMIT; y <= LIMIT; y += STEP) {
-      // 원형 마스크 처리
       if (x*x + y*y > LIMIT*LIMIT) continue; 
       
       let numerator = 0; 
@@ -438,12 +485,6 @@ const interpolateData = (targetPoints: {x:number, y:number, value:number}[]) => 
       
       for (const p of targetPoints) {
         const d = Math.sqrt((x - p.x)**2 + (y - p.y)**2); 
-        
-        // [튜닝 포인트]
-        // 1. Smoothing Offset (d + 80): 
-        //    기존 10 -> 80~100으로 증가시켜, 포인트 바로 위만 진한 현상을 막고 색상을 넓게 퍼뜨립니다.
-        // 2. Power (2): 
-        //    거리 제곱에 반비례하도록 하여 물리적으로 자연스러운 확산을 유도합니다.
         const w = 1 / Math.pow(d + 35, 2); 
         
         numerator += p.value * w; 
@@ -513,7 +554,6 @@ const mapChartOption = computed(() => {
   if (isHeatMode) {
     const targetWafer = chartSeries.value.find(s => s.waferId === selectedWaferId.value);
     if (targetWafer) {
-      // 보간 데이터 생성 (해상도 150, 부드러운 가중치 적용)
       const interpolated = interpolateData(targetWafer.dataPoints);
       const minVal = globalStats.value.min;
       const maxVal = globalStats.value.max;
@@ -535,7 +575,6 @@ const mapChartOption = computed(() => {
            const points = interpolated; const min = minVal; const max = maxVal;
            const p1 = api.coord([0, 0]); const p2 = api.coord([3.75, 0]);
            
-           // 픽셀 크기 약간 넉넉하게 하여 빈틈 없앰
            const pixelSize = Math.abs(p2[0] - p1[0]); 
            const drawSize = Math.ceil(pixelSize) + 1; 
 
