@@ -5,14 +5,14 @@
     :class="isOpen ? 'w-60' : 'w-[70px]'"
   >
     <div
-      class="relative flex items-center transition-all duration-300 border-b h-16 border-slate-100 dark:border-slate-800/50"
+      class="relative flex items-center h-16 transition-all duration-300 border-b border-slate-100 dark:border-slate-800/50"
       :class="isOpen ? 'px-5 justify-start' : 'px-0 justify-center'"
     >
       <div class="flex items-center gap-3 overflow-hidden">
         <img
           :src="logoUrl"
           alt="ITM Vision Logo"
-          class="object-contain w-auto h-8 transition-all duration-300 drop-shadow-md filter hover:scale-110"
+          class="object-contain w-auto transition-all duration-300 h-9 drop-shadow-md filter hover:scale-110"
         />
 
         <div
@@ -20,7 +20,7 @@
           :class="isOpen ? 'opacity-100' : 'opacity-0 w-0 hidden'"
         >
           <span
-            class="text-lg font-extrabold leading-none tracking-tight text-slate-800 dark:text-slate-100 whitespace-nowrap"
+            class="text-xl font-extrabold leading-none tracking-tight text-slate-800 dark:text-slate-100 whitespace-nowrap"
           >
             ITM Vision
           </span>
@@ -44,7 +44,7 @@
       </button>
     </div>
 
-    <nav class="flex-1 px-3 py-2 overflow-y-auto scrollbar-hide">
+    <nav class="flex-1 px-2 py-3 overflow-y-auto scrollbar-hide">
       <div v-if="menuStore.isLoading" class="flex justify-center py-10">
         <i class="text-xl text-indigo-500 pi pi-spin pi-spinner"></i>
       </div>
@@ -67,9 +67,9 @@
         class="flex items-center gap-3 p-1.5 rounded-lg transition-all border shadow-sm group"
         :class="[
           isOpen ? 'w-full' : 'justify-center w-auto',
-          hasContext 
-            ? 'bg-white dark:bg-slate-700/30 border-transparent hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md cursor-pointer' 
-            : 'bg-transparent border-dashed border-slate-300 dark:border-slate-700'
+          hasContext
+            ? 'bg-white dark:bg-slate-700/30 border-transparent hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md cursor-pointer'
+            : 'bg-transparent border-dashed border-slate-300 dark:border-slate-700',
         ]"
       >
         <div
@@ -95,13 +95,17 @@
             >
               {{ contextInfo }}
             </p>
-            <p class="text-[12px] text-slate-400 truncate mt-0.5 font-medium uppercase tracking-wide">
+            <p
+              class="text-[12px] text-slate-400 truncate mt-0.5 font-medium uppercase tracking-wide"
+            >
               {{ userRole }}
             </p>
           </div>
-          
+
           <div v-else class="flex flex-col">
-            <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 italic truncate">
+            <p
+              class="text-[10px] font-bold text-slate-400 dark:text-slate-500 italic truncate"
+            >
               No Context Selected
             </p>
             <p class="text-[9px] text-slate-300 dark:text-slate-600">
@@ -109,9 +113,9 @@
             </p>
           </div>
         </div>
-        
+
         <div v-if="!hasContext && isOpen" class="text-amber-400">
-             <i class="pi pi-exclamation-circle text-xs"></i>
+          <i class="text-xs pi pi-exclamation-circle"></i>
         </div>
       </div>
     </div>
@@ -129,16 +133,18 @@ const menuStore = useMenuStore();
 const authStore = useAuthStore();
 const isOpen = ref(true);
 
-const userRole = computed(() => authStore.user?.role || 'USER');
+const userRole = computed(() => authStore.user?.role || "USER");
 const roleInitial = computed(() => userRole.value.charAt(0).toUpperCase());
 
-const hasContext = computed(() => !!authStore.user?.site && !!authStore.user?.sdwt);
+const hasContext = computed(
+  () => !!authStore.user?.site && !!authStore.user?.sdwt
+);
 
 const contextInfo = computed(() => {
   if (hasContext.value) {
     return `${authStore.user?.site} / ${authStore.user?.sdwt}`;
   }
-  return '';
+  return "";
 });
 
 const roleAvatarClass = computed(() => {
@@ -176,7 +182,11 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 </style>
-
