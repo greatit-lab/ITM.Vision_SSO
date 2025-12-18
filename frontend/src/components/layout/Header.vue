@@ -1,7 +1,7 @@
 <!-- frontend/src/components/layout/Header.vue -->
 <template>
   <header
-    class="sticky top-0 z-40 w-full h-14 transition-all duration-300 border-b shadow-sm bg-white/80 dark:bg-[#09090b]/90 backdrop-blur-xl border-slate-200 dark:border-zinc-800"
+    class="sticky top-0 z-40 w-full h-12 transition-all duration-300 border-b shadow-sm bg-white/80 dark:bg-[#09090b]/90 backdrop-blur-xl border-slate-200 dark:border-zinc-800"
   >
     <div class="flex items-center justify-between h-full px-6">
       <div class="flex items-center gap-4">
