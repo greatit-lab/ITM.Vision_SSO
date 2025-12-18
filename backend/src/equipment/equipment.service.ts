@@ -52,6 +52,9 @@ export interface EquipmentDto {
 export class EquipmentService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * 장비 상세 정보 조회 (Agent 정보 포함)
+   */
   async getDetails(
     site?: string,
     sdwt?: string,
@@ -70,7 +73,6 @@ export class EquipmentService {
       WHERE 1=1
     `;
 
-    // [수정] 타입을 'string[]'으로 명시하여 spread 연산 시 안전하게 처리
     const params: string[] = [];
     let paramIndex = 1;
 
@@ -87,7 +89,6 @@ export class EquipmentService {
 
     sql += ' ORDER BY a.eqpid';
 
-    // [수정] unknown[]으로 캐스팅하여 Prisma 쿼리에 전달하거나, any[] 오류를 피하기 위해 타입 정의 활용
     const rawData = await this.prisma.$queryRawUnsafe<EquipmentRaw[]>(
       sql,
       ...params,
@@ -117,17 +118,33 @@ export class EquipmentService {
     }));
   }
 
-  async getEqpIds(site?: string, sdwt?: string): Promise<string[]> {
+  /**
+   * 장비 ID 목록 조회
+   * @param type 'agent' | 'wafer' 등 필터링 타입 (선택)
+   */
+  async getEqpIds(
+    site?: string,
+    sdwt?: string,
+    type?: string,
+  ): Promise<string[]> {
     if (!site && !sdwt) {
       return [];
     }
 
     let sql = 'SELECT r.eqpid FROM public.ref_equipment r';
-
-    // [수정] 타입을 'string[]'으로 명시
     const params: string[] = [];
     let paramIndex = 1;
     const whereClauses: string[] = [];
+
+    // [추가] 장비 타입 필터링
+    if (type) {
+      if (type.toLowerCase() === 'agent') {
+        // Agent가 설치된 장비만 조회 (Inner Join)
+        sql += ' JOIN public.agent_info a ON r.eqpid = a.eqpid';
+      }
+      // 추후 'wafer' 등 다른 타입 조건이 필요하면 여기에 추가
+      // else if (type.toLowerCase() === 'wafer') { ... }
+    }
 
     if (sdwt) {
       whereClauses.push(`r.sdwt = $${paramIndex++}`);
