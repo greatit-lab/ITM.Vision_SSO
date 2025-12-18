@@ -3,15 +3,15 @@
   <div
     class="min-h-screen bg-gray-50 dark:bg-[#09090B] flex font-sans text-gray-900 dark:text-gray-100 transition-colors duration-500"
   >
-    <Sidebar v-if="!isLoginPage" />
+    <Sidebar v-if="showSidebar" />
 
     <main
       class="flex-1 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)]"
-      :class="!isLoginPage ? (isSidebarOpen ? 'ml-60' : 'ml-[70px]') : 'w-full'"
+      :class="showSidebar ? (isSidebarOpen ? 'ml-60' : 'ml-[70px]') : 'w-full'"
     >
-      <Header v-if="!isLoginPage" />
+      <Header v-if="showSidebar" />
 
-      <div class="relative flex-1" :class="{ 'px-5 pt-2 pb-0': !isLoginPage }">
+      <div class="relative flex-1" :class="{ 'px-5 pt-2 pb-0': showSidebar }">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
             <component :is="Component" />
@@ -25,14 +25,19 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
+import { useAuthStore } from "@/stores/auth"; // [추가]
 import Sidebar from "@/components/layout/Sidebar.vue";
 import Header from "@/components/layout/Header.vue";
 
 const route = useRoute();
+const authStore = useAuthStore(); // [추가]
 const isSidebarOpen = ref(true);
 
-// 현재 경로가 '/login'인지 확인하는 계산 속성
 const isLoginPage = computed(() => route.path === "/login");
+
+// [추가] 사이드바와 헤더를 보여줄지 결정하는 통합 조건
+// 로그인 페이지가 아니면서 && 인증이 완료된 상태여야 함
+const showSidebar = computed(() => !isLoginPage.value && authStore.isAuthenticated);
 
 const handleSidebarToggle = (event: Event) => {
   const customEvent = event as CustomEvent;
