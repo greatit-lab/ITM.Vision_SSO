@@ -21,7 +21,17 @@ export class MenuService {
    * 사용자 역할(Role)에 기반한 메뉴 트리 조회
    */
   async getMyMenus(role: string): Promise<MenuNode[]> {
-    // 1. 해당 Role이 접근 가능한 메뉴 ID 목록 조회
+    // [수정] ADMIN 권한은 모든 메뉴 접근 가능 (Super User Bypass)
+    // DB 매핑 여부와 관계없이 'isVisible'인 모든 메뉴를 가져옵니다.
+    if (role === 'ADMIN') {
+      const allMenus = await this.prisma.refMenu.findMany({
+        where: { isVisible: 'Y' },
+        orderBy: { sortOrder: 'asc' },
+      });
+      return this.buildMenuTree(allMenus);
+    }
+
+    // [일반 사용자] 해당 Role이 접근 가능한 메뉴 ID 목록 조회
     const accessibleMenuIds = await this.prisma.cfgMenuRole.findMany({
       where: { role: role },
       select: { menuId: true },
@@ -29,18 +39,15 @@ export class MenuService {
 
     const menuIds = accessibleMenuIds.map((item) => item.menuId);
 
-    // 2. 메뉴 마스터에서 실제 메뉴 정보 조회
+    // 메뉴 마스터에서 실제 메뉴 정보 조회
     const menus = await this.prisma.refMenu.findMany({
       where: {
-        OR: [
-          { menuId: { in: menuIds } },
-        ],
+        menuId: { in: menuIds },
         isVisible: 'Y',
       },
       orderBy: { sortOrder: 'asc' },
     });
 
-    // 3. Flat Data -> Tree Structure 변환
     return this.buildMenuTree(menus);
   }
 
