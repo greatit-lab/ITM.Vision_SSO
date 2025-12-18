@@ -34,6 +34,9 @@ async function bootstrap() {
     httpsOptions,
   });
 
+  // [중요] Frontend 요청 경로(/api/...)와 일치시키기 위해 Global Prefix 설정
+  app.setGlobalPrefix('api');
+
   app.enableCors({
     origin: true,
     credentials: true,
@@ -42,8 +45,9 @@ async function bootstrap() {
   // .env.development에 설정된 포트(44364) 사용
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');
-  // 로그 출력 시 localhost로 명시
-  console.log(`Application is running on: https://localhost:${port}`);
+  
+  // 로그 출력 시 실제 접속 경로(api 포함) 명시
+  console.log(`Application is running on: https://localhost:${port}/api`);
 }
 
 void bootstrap();
