@@ -9,23 +9,30 @@
       :class="isOpen ? 'px-5 justify-start' : 'px-0 justify-center'"
     >
       <div class="flex items-center gap-3 overflow-hidden">
-        <img
-          :src="logoUrl"
-          alt="ITM Vision Logo"
-          class="object-contain w-auto transition-all duration-300 h-9 drop-shadow-md filter hover:scale-110"
-        />
+        <div class="relative group">
+          <div
+            class="absolute transition-opacity duration-500 rounded-full opacity-0 -inset-2 blur-lg group-hover:opacity-100"
+          ></div>
+          <img
+            :src="logoUrl"
+            alt="Logo"
+            class="object-contain w-auto transition-all duration-300 h-9 drop-shadow-md filter hover:scale-110"
+          />
+        </div>
 
         <div
-          class="flex flex-col transition-opacity duration-300"
-          :class="isOpen ? 'opacity-100' : 'opacity-0 w-0 hidden'"
+          class="flex flex-col transition-all duration-300 origin-left"
+          :class="
+            isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-90 w-0 hidden'
+          "
         >
           <span
-            class="text-xl font-extrabold leading-none tracking-tight text-slate-800 dark:text-slate-100 whitespace-nowrap"
+            class="font-sans text-lg font-black leading-none tracking-tight text-slate-800 dark:text-slate-100 whitespace-nowrap"
           >
             ITM Vision
           </span>
           <span
-            class="text-[9px] scale-[0.9] origin-left text-indigo-500 dark:text-indigo-400 font-bold tracking-widest uppercase whitespace-nowrap mt-0.5"
+            class="text-[6px] font-bold tracking-[0.25em] text-indigo-500 uppercase mt-1 whitespace-nowrap"
           >
             Smart Factory
           </span>
@@ -34,24 +41,25 @@
 
       <button
         @click="toggleSidebar"
-        class="absolute z-50 flex items-center justify-center w-5 h-5 transition-all duration-200 transform -translate-y-1/2 bg-white border rounded-full shadow-sm cursor-pointer -right-3 top-1/2 dark:bg-zinc-800 border-slate-200 dark:border-zinc-700 text-slate-400 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 hover:scale-110 hover:border-indigo-200 dark:hover:border-indigo-500/50"
-        :title="isOpen ? 'Collapse Sidebar' : 'Expand Sidebar'"
+        class="absolute -right-3.5 top-1/2 -translate-y-1/2 z-50 flex items-center justify-center w-7 h-7 bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-full shadow-lg text-slate-400 hover:text-indigo-600 hover:border-indigo-100 dark:hover:border-indigo-500/50 transition-all duration-300 hover:scale-110 focus:outline-none group"
       >
         <i
-          class="pi text-[8px]"
+          class="pi text-[10px] transition-transform duration-300 group-hover:text-indigo-500"
           :class="isOpen ? 'pi-chevron-left' : 'pi-chevron-right'"
         ></i>
       </button>
     </div>
 
-    <nav class="flex-1 px-2 py-3 overflow-y-auto scrollbar-hide">
+    <nav
+      class="flex-1 px-3 py-2 space-y-6 overflow-x-hidden overflow-y-auto scrollbar-hide"
+    >
       <div v-if="menuStore.isLoading" class="flex justify-center py-10">
-        <i class="text-xl text-indigo-500 pi pi-spin pi-spinner"></i>
+        <i class="text-2xl text-indigo-500 pi pi-spin pi-spinner-dotted"></i>
       </div>
 
       <ul v-else class="space-y-1">
         <SidebarItem
-          v-for="menu in menuStore.menus"
+          v-for="menu in visibleMenus"
           :key="menu.menuId"
           :item="menu"
           :is-sidebar-open="isOpen"
@@ -60,62 +68,47 @@
     </nav>
 
     <div
-      class="p-3 transition-all duration-300 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm"
+      class="p-4 mt-auto transition-all duration-300 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 backdrop-blur-sm"
       :class="isOpen ? '' : 'flex justify-center px-0'"
     >
       <div
-        class="flex items-center gap-3 p-1.5 rounded-lg transition-all border shadow-sm group"
-        :class="[
-          isOpen ? 'w-full' : 'justify-center w-auto',
-          hasContext
-            ? 'bg-white dark:bg-slate-700/30 border-transparent hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md cursor-pointer'
-            : 'bg-transparent border-dashed border-slate-300 dark:border-slate-700',
-        ]"
+        class="flex items-center gap-3.5 p-2.5 rounded-xl transition-all duration-300 cursor-pointer group hover:bg-white dark:hover:bg-white/10 hover:shadow-md hover:shadow-slate-200/50 dark:hover:shadow-none border border-transparent hover:border-slate-100 dark:hover:border-white/5"
+        :class="isOpen ? 'w-full' : 'justify-center w-auto aspect-square'"
       >
         <div
-          class="relative flex items-center justify-center w-8 h-8 text-xs font-bold text-white transition-all duration-300 rounded-full shrink-0"
+          class="relative flex items-center justify-center text-base font-bold text-white transition-transform duration-300 shadow-lg w-9 h-9 rounded-xl shrink-0 group-hover:scale-105 group-hover:rotate-3"
           :class="roleAvatarClass"
-          :title="userRole"
         >
           {{ roleInitial }}
           <span
             v-if="userRole === 'ADMIN'"
-            class="absolute inset-0 rounded-full animate-ping opacity-20 bg-rose-500"
-          ></span>
+            class="absolute flex w-3 h-3 -top-1 -right-1"
+          >
+            <span
+              class="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping bg-emerald-400"
+            ></span>
+            <span
+              class="relative inline-flex w-3 h-3 border-2 border-white rounded-full bg-emerald-500 dark:border-zinc-900"
+            ></span>
+          </span>
         </div>
 
         <div
-          class="flex flex-col justify-center flex-1 min-w-0 overflow-hidden transition-all duration-300"
-          :class="isOpen ? 'w-auto opacity-100' : 'w-0 opacity-0 hidden'"
+          class="flex flex-col min-w-0 overflow-hidden transition-all duration-300"
+          :class="
+            isOpen
+              ? 'opacity-100 translate-x-0'
+              : 'w-0 opacity-0 -translate-x-4 hidden'
+          "
         >
-          <div v-if="hasContext">
-            <p
-              class="text-base font-extrabold leading-tight truncate text-slate-700 dark:text-slate-200"
-              :title="contextInfo"
-            >
-              {{ contextInfo }}
-            </p>
-            <p
-              class="text-[12px] text-slate-400 truncate mt-0.5 font-medium uppercase tracking-wide"
-            >
-              {{ userRole }}
-            </p>
-          </div>
-
-          <div v-else class="flex flex-col">
-            <p
-              class="text-[10px] font-bold text-slate-400 dark:text-slate-500 italic truncate"
-            >
-              No Context Selected
-            </p>
-            <p class="text-[9px] text-slate-300 dark:text-slate-600">
-              {{ userRole }}
-            </p>
-          </div>
-        </div>
-
-        <div v-if="!hasContext && isOpen" class="text-amber-400">
-          <i class="text-xs pi pi-exclamation-circle"></i>
+          <p
+            class="text-base font-bold leading-tight truncate transition-colors text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+          >
+            {{ contextInfo || userRole }}
+          </p>
+          <p class="text-[11px] text-slate-400 font-medium truncate mt-0.5">
+            {{ hasContext ? userRole : "No Context" }}
+          </p>
         </div>
       </div>
     </div>
@@ -128,6 +121,7 @@ import logoUrl from "@/assets/ITM_Vision.png";
 import SidebarItem from "./SidebarItem.vue";
 import { useMenuStore } from "@/stores/menu";
 import { useAuthStore } from "@/stores/auth";
+import type { MenuNode } from "@/api/menu"; // Type Import 추가
 
 const menuStore = useMenuStore();
 const authStore = useAuthStore();
@@ -148,21 +142,35 @@ const contextInfo = computed(() => {
 });
 
 const roleAvatarClass = computed(() => {
-  switch (userRole.value) {
-    case "ADMIN":
-    case "MANAGER":
-      return [
-        "bg-rose-500",
-        "shadow-[0_0_12px_rgba(244,63,94,0.6)]",
-        "ring-2 ring-white dark:ring-zinc-800",
-        "border border-rose-400",
-      ];
-    default:
-      return [
-        "bg-slate-500",
-        "border border-slate-300 dark:border-slate-600",
-        "shadow-sm",
-      ];
+  return userRole.value === "ADMIN" || userRole.value === "MANAGER"
+    ? "bg-gradient-to-br from-rose-500 to-pink-600 shadow-rose-500/30"
+    : "bg-gradient-to-br from-slate-500 to-slate-600 shadow-slate-500/30";
+});
+
+// [Core Logic] 닫힘 상태일 때 메뉴 평탄화(Flattening)
+// 재귀적으로 자식 노드(실제 페이지)만 추출하여 1차원 배열로 반환
+const flattenMenus = (nodes: MenuNode[]): MenuNode[] => {
+  let result: MenuNode[] = [];
+  for (const node of nodes) {
+    if (node.children && node.children.length > 0) {
+      // 그룹(폴더)인 경우: 자신은 제외하고 자식들만 추출하여 추가
+      result = result.concat(flattenMenus(node.children));
+    } else {
+      // 리프(페이지)인 경우: 결과 리스트에 추가
+      result.push(node);
+    }
+  }
+  return result;
+};
+
+// [Core Logic] 화면에 표시할 메뉴 리스트 계산
+const visibleMenus = computed(() => {
+  if (isOpen.value) {
+    // 사이드바가 열려있으면 원래의 트리 구조(계층형) 유지
+    return menuStore.menus;
+  } else {
+    // 사이드바가 닫혀있으면 평탄화된 리스트 사용 (그룹명 숨김, 하위 아이콘 노출)
+    return flattenMenus(menuStore.menus);
   }
 });
 
@@ -174,8 +182,7 @@ const toggleSidebar = () => {
 };
 
 onMounted(async () => {
-  if (!authStore.isAuthenticated) return;
-  if (menuStore.menus.length === 0) {
+  if (authStore.isAuthenticated && menuStore.menus.length === 0) {
     await menuStore.loadMenus();
   }
 });
