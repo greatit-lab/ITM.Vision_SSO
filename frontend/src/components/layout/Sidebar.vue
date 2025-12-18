@@ -51,7 +51,7 @@
     </div>
 
     <nav
-      class="flex-1 px-3 py-2 space-y-6 overflow-x-hidden overflow-y-auto scrollbar-hide"
+      class="flex-1 px-2 py-2 space-y-6 overflow-x-hidden overflow-y-auto scrollbar-hide"
     >
       <div v-if="menuStore.isLoading" class="flex justify-center py-10">
         <i class="text-2xl text-indigo-500 pi pi-spin pi-spinner-dotted"></i>
@@ -79,18 +79,12 @@
           class="relative flex items-center justify-center text-base font-bold text-white transition-transform duration-300 shadow-lg w-9 h-9 rounded-xl shrink-0 group-hover:scale-105 group-hover:rotate-3"
           :class="roleAvatarClass"
         >
-          {{ roleInitial }}
           <span
             v-if="userRole === 'ADMIN'"
-            class="absolute flex w-3 h-3 -top-1 -right-1"
-          >
-            <span
-              class="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping bg-emerald-400"
-            ></span>
-            <span
-              class="relative inline-flex w-3 h-3 border-2 border-white rounded-full bg-emerald-500 dark:border-zinc-900"
-            ></span>
-          </span>
+            class="absolute -inset-1.5 rounded-xl bg-rose-500/60 blur-md animate-pulse"
+          ></span>
+
+          <span class="relative z-10 drop-shadow-sm">{{ roleInitial }}</span>
         </div>
 
         <div
@@ -121,7 +115,7 @@ import logoUrl from "@/assets/ITM_Vision.png";
 import SidebarItem from "./SidebarItem.vue";
 import { useMenuStore } from "@/stores/menu";
 import { useAuthStore } from "@/stores/auth";
-import type { MenuNode } from "@/api/menu"; // Type Import 추가
+import type { MenuNode } from "@/api/menu";
 
 const menuStore = useMenuStore();
 const authStore = useAuthStore();
@@ -147,29 +141,24 @@ const roleAvatarClass = computed(() => {
     : "bg-gradient-to-br from-slate-500 to-slate-600 shadow-slate-500/30";
 });
 
-// [Core Logic] 닫힘 상태일 때 메뉴 평탄화(Flattening)
-// 재귀적으로 자식 노드(실제 페이지)만 추출하여 1차원 배열로 반환
+// [Core Logic] Flatten Menus for Collapsed State
 const flattenMenus = (nodes: MenuNode[]): MenuNode[] => {
   let result: MenuNode[] = [];
   for (const node of nodes) {
     if (node.children && node.children.length > 0) {
-      // 그룹(폴더)인 경우: 자신은 제외하고 자식들만 추출하여 추가
       result = result.concat(flattenMenus(node.children));
     } else {
-      // 리프(페이지)인 경우: 결과 리스트에 추가
       result.push(node);
     }
   }
   return result;
 };
 
-// [Core Logic] 화면에 표시할 메뉴 리스트 계산
+// [Core Logic] Visible Menus Calculation
 const visibleMenus = computed(() => {
   if (isOpen.value) {
-    // 사이드바가 열려있으면 원래의 트리 구조(계층형) 유지
     return menuStore.menus;
   } else {
-    // 사이드바가 닫혀있으면 평탄화된 리스트 사용 (그룹명 숨김, 하위 아이콘 노출)
     return flattenMenus(menuStore.menus);
   }
 });
