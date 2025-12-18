@@ -20,26 +20,26 @@
       <div class="flex flex-wrap items-center flex-1 gap-2 px-1 py-1">
         <div class="min-w-[120px] shrink-0">
           <Select
-            v-model="filterStore.selectedSite"
+            v-model="filter.site"
             :options="sites"
             placeholder="Site"
             showClear
             class="w-full custom-dropdown small"
             overlayClass="custom-dropdown-panel small"
-            :class="{ '!text-slate-400': !filterStore.selectedSite }"
+            :class="{ '!text-slate-400': !filter.site }"
             @change="onSiteChange"
           />
         </div>
         <div class="min-w-[140px] shrink-0">
           <Select
-            v-model="filterStore.selectedSdwt"
+            v-model="filter.sdwt"
             :options="sdwts"
             placeholder="SDWT"
-            :disabled="!filterStore.selectedSite"
+            :disabled="!filter.site"
             showClear
             class="w-full custom-dropdown small"
             overlayClass="custom-dropdown-panel small"
-            :class="{ '!text-slate-400': !filterStore.selectedSdwt }"
+            :class="{ '!text-slate-400': !filter.sdwt }"
             @change="onSdwtChange"
           />
         </div>
@@ -51,7 +51,7 @@
           label="Analyze"
           class="!px-4 !py-1.5 !text-xs !font-bold !rounded-lg !bg-slate-900 dark:!bg-white !text-white dark:!text-slate-900 hover:!opacity-90 transition-opacity"
           :loading="isLoading"
-          :disabled="!filterStore.selectedSite"
+          :disabled="!filter.site"
           @click="fetchData"
         />
       </div>
@@ -165,7 +165,6 @@
         <div v-if="selectedEqp" class="flex-1 flex flex-col gap-3 min-w-0 overflow-y-auto custom-scrollbar pr-1">
           
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 h-[320px] shrink-0">
-            
             <div class="col-span-1 bg-white dark:bg-[#111111] rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm p-4 relative flex flex-col items-center justify-center">
                <div class="absolute top-4 left-4 flex items-center gap-2">
                  <div class="w-1 h-3 rounded-full" :class="getStatusColor(selectedEqp.status)"></div>
@@ -306,15 +305,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from "vue";
-import { useFilterStore } from "@/stores/filter";
+import { ref, onMounted, computed, onUnmounted, reactive, watch } from "vue";
+import { useAuthStore } from "@/stores/auth"; // [Add] Auth Store import
 import { dashboardApi } from "@/api/dashboard";
 import { healthApi, type EquipmentHealthDto } from "@/api/health";
 import EChart from "@/components/common/EChart.vue";
 import Select from "primevue/select";
 import Button from "primevue/button";
 
-const filterStore = useFilterStore();
+// --- Store & Constants ---
+const authStore = useAuthStore();
+// [New] Page-specific LocalStorage Keys
+const LS_KEYS = {
+  SITE: "health-view-site",
+  SDWT: "health-view-sdwt",
+};
+
+// --- State ---
+const filter = reactive({
+  site: "",
+  sdwt: "",
+});
+
 const sites = ref<string[]>([]);
 const sdwts = ref<string[]>([]);
 const healthData = ref<EquipmentHealthDto[]>([]);
@@ -333,8 +345,40 @@ const criticalCount = computed(() => healthData.value.filter(i => i.status === '
 const warningCount = computed(() => healthData.value.filter(i => i.status === 'Warning').length);
 const goodCount = computed(() => healthData.value.filter(i => i.status === 'Good').length);
 
+// --- Lifecycle ---
 onMounted(async () => {
   sites.value = await dashboardApi.getSites();
+
+  // [Logic] Initialize Filters with Priority: Auth Store > LocalStorage > Default
+  let initSite = authStore.user?.site || localStorage.getItem(LS_KEYS.SITE) || "";
+
+  // Validate site existence
+  if (initSite && !sites.value.includes(initSite)) {
+    initSite = "";
+  }
+
+  if (initSite) {
+    filter.site = initSite;
+    try {
+      sdwts.value = await dashboardApi.getSdwts(initSite);
+
+      let initSdwt = authStore.user?.sdwt || localStorage.getItem(LS_KEYS.SDWT) || "";
+
+      // Validate SDWT existence
+      if (initSdwt && !sdwts.value.includes(initSdwt)) {
+        initSdwt = "";
+      }
+
+      if (initSdwt) {
+        filter.sdwt = initSdwt;
+        // Auto Search
+        fetchData();
+      }
+    } catch (e) {
+      console.error("Failed to restore filter state:", e);
+    }
+  }
+
   // Theme Observer
   themeObserver = new MutationObserver((m) => {
     m.forEach((mu) => {
@@ -349,23 +393,45 @@ onUnmounted(() => {
   if (themeObserver) themeObserver.disconnect();
 });
 
+// --- Watchers for Persistence ---
+watch(
+  () => filter.site,
+  (newVal) => {
+    if (newVal) localStorage.setItem(LS_KEYS.SITE, newVal);
+    else localStorage.removeItem(LS_KEYS.SITE);
+  }
+);
+
+watch(
+  () => filter.sdwt,
+  (newVal) => {
+    if (newVal) localStorage.setItem(LS_KEYS.SDWT, newVal);
+    else localStorage.removeItem(LS_KEYS.SDWT);
+  }
+);
+
+// --- Handlers ---
 const onSiteChange = async () => {
-  if (filterStore.selectedSite) {
-    sdwts.value = await dashboardApi.getSdwts(filterStore.selectedSite);
+  if (filter.site) {
+    sdwts.value = await dashboardApi.getSdwts(filter.site);
   } else {
     sdwts.value = [];
   }
-  filterStore.selectedSdwt = "";
+  // Reset child filter
+  filter.sdwt = "";
+  // Persistence handled by watchers
 };
 
-const onSdwtChange = () => { /* Optional auto-fetch logic */ };
+const onSdwtChange = () => { 
+  // Persistence handled by watchers
+};
 
 const fetchData = async () => {
-  if (!filterStore.selectedSite) return;
+  if (!filter.site) return;
   isLoading.value = true;
   selectedEqp.value = null;
   try {
-    healthData.value = await healthApi.getSummary(filterStore.selectedSite, filterStore.selectedSdwt);
+    healthData.value = await healthApi.getSummary(filter.site, filter.sdwt);
     if (healthData.value.length > 0) {
       selectedEqp.value = healthData.value[0] ?? null;
     }
