@@ -1,5 +1,5 @@
 // backend/src/auth/auth.controller.ts
-import { Controller, Get, Post, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { SamlStrategy } from './saml.strategy';
@@ -10,7 +10,7 @@ interface RequestWithUser extends Request {
   user: User;
 }
 
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
@@ -21,14 +21,15 @@ export class AuthController {
   @Get('login')
   @UseGuards(AuthGuard('saml'))
   async login() {
-    // Passport가 자동으로 처리
+    // Passport 처리
   }
 
   // 2. SSO 콜백
   @Post('callback')
   @UseGuards(AuthGuard('saml'))
   async callback(@Req() req: RequestWithUser, @Res() res: Response) {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:8082/login';
+    // .env.FRONTEND_URL이 설정되어 있지 않으면 기본값 사용
+    const frontendUrl = process.env.FRONTEND_URL || 'https://localhost:8082/login';
 
     if (!req.user) {
       return res.redirect(`${frontendUrl}?error=NoUser`);
@@ -44,7 +45,7 @@ export class AuthController {
     return res.redirect(redirectUrl);
   }
 
-  // 3. 메타데이터 제공 (수정: async 제거)
+  // 3. 메타데이터 제공
   @Get('metadata')
   getMetadata(@Res() res: Response) {
     try {
@@ -55,5 +56,16 @@ export class AuthController {
       console.error('Metadata generation failed', e);
       res.status(500).send('Failed to generate metadata');
     }
+  }
+
+  // [추가] 4. 사용자 Context (Site/SDWT) 저장
+  @Post('context')
+  @UseGuards(AuthGuard('jwt'))
+  async saveContext(
+    @Req() req: RequestWithUser,
+    @Body() body: { site: string; sdwt: string }
+  ) {
+    // req.user는 JWT Strategy에 의해 디코딩된 정보
+    return await this.authService.saveUserContext(req.user.userId, body.site, body.sdwt);
   }
 }
