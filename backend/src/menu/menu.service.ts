@@ -1,7 +1,8 @@
 // backend/src/menu/menu.service.ts
 import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { RefMenu } from '@prisma/client'; // [수정] Prisma 모델 타입 Import
+import { RefMenu, CfgMenuRole } from '@prisma/client';
 
 export interface MenuNode {
   menuId: number;
@@ -55,8 +56,37 @@ export class MenuService {
   }
 
   /**
+   * [Admin] 특정 Role에 대한 메뉴 접근 권한을 일괄 업데이트 (Transaction)
+   */
+  async updateRolePermissions(role: string, menuIds: number[]): Promise<void> {
+    // 트랜잭션을 사용하여 기존 권한 삭제 -> 새 권한 부여를 원자적으로 처리
+    await this.prisma.$transaction(async (tx) => {
+      // 1. 해당 Role의 기존 매핑 제거
+      await tx.cfgMenuRole.deleteMany({
+        where: { role },
+      });
+
+      // 2. 새로운 매핑 생성
+      if (menuIds.length > 0) {
+        await tx.cfgMenuRole.createMany({
+          data: menuIds.map((menuId) => ({
+            role,
+            menuId,
+          })),
+        });
+      }
+    });
+  }
+
+  /**
+   * [Admin] 모든 Role별 권한 매핑 정보 조회
+   */
+  async getAllRolePermissions(): Promise<CfgMenuRole[]> {
+    return this.prisma.cfgMenuRole.findMany();
+  }
+
+  /**
    * 재귀적으로 메뉴 트리 구성
-   * [수정] 매개변수 타입을 any[] -> RefMenu[] 로 변경하여 Unsafe access 오류 해결
    */
   private buildMenuTree(menus: RefMenu[]): MenuNode[] {
     const map = new Map<number, MenuNode>();
@@ -77,13 +107,10 @@ export class MenuService {
 
     // 2. 부모-자식 관계 연결
     menus.forEach((menu) => {
-      // menu.parentId가 null일 수 있으므로 체크
       if (menu.parentId && map.has(menu.parentId)) {
         const parent = map.get(menu.parentId);
-        // map.get 결과가 undefined가 아님을 확신할 때 ! 사용 (Non-null assertion)
         parent?.children.push(map.get(menu.menuId)!);
       } else {
-        // 부모가 없거나 Root인 경우
         roots.push(map.get(menu.menuId)!);
       }
     });
