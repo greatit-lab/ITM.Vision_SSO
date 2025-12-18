@@ -5,7 +5,7 @@
     :class="isOpen ? 'w-60' : 'w-[70px]'"
   >
     <div
-      class="relative flex items-center transition-all duration-300 border-b h-14 border-slate-100 dark:border-slate-800/50"
+      class="relative flex items-center transition-all duration-300 border-b h-12 border-slate-100 dark:border-slate-800/50"
       :class="isOpen ? 'px-5 justify-start' : 'px-0 justify-center'"
     >
       <div class="flex items-center gap-3 overflow-hidden">
@@ -92,12 +92,12 @@
         >
           <div v-if="hasContext">
             <p
-              class="text-xs font-extrabold leading-tight truncate text-slate-700 dark:text-slate-200"
+              class="text-sm font-extrabold leading-tight truncate text-slate-700 dark:text-slate-200"
               :title="contextInfo"
             >
               {{ contextInfo }}
             </p>
-            <p class="text-[9px] text-slate-400 truncate mt-0.5 font-medium">
+            <p class="text-[8px] text-slate-400 truncate mt-0.5 font-medium uppercase tracking-wide">
               {{ userRole }}
             </p>
           </div>
