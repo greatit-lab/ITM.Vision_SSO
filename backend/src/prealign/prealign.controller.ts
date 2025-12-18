@@ -2,7 +2,10 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { PreAlignService } from './prealign.service';
 
-@Controller('api/PreAlignAnalytics')
+// [수정] main.ts에서 setGlobalPrefix('api')를 사용하므로, 여기서 'api/'를 제거해야 합니다.
+// 변경 전: @Controller('api/PreAlignAnalytics')
+// 변경 후: @Controller('PreAlignAnalytics')
+@Controller('PreAlignAnalytics') 
 export class PreAlignController {
   constructor(private readonly preAlignService: PreAlignService) {}
 
