@@ -437,6 +437,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, reactive } from "vue";
 import { useFilterStore } from "@/stores/filter";
+import { useAuthStore } from "@/stores/auth"; // [추가] Auth Store
 import { dashboardApi } from "@/api/dashboard";
 import { equipmentApi } from "@/api/equipment";
 import {
@@ -464,6 +465,7 @@ interface PerformanceSummary {
 }
 
 const filterStore = useFilterStore();
+const authStore = useAuthStore(); // [추가]
 const selectedEqpId = ref("");
 const startDate = ref(new Date(Date.now() - 24 * 60 * 60 * 1000));
 const endDate = ref(new Date());
@@ -503,6 +505,132 @@ const intervalOptions = [
   { label: "5 Min", value: 300 },
 ];
 
+// --- Lifecycle ---
+onMounted(async () => {
+  // 1. Site 목록 로드
+  sites.value = await dashboardApi.getSites();
+
+  // 2. 기본 필터 결정 (우선순위: DB 사용자 설정 -> 페이지 전용 로컬 스토리지)
+  let defaultSite = authStore.user?.site;
+  let defaultSdwt = authStore.user?.sdwt;
+
+  // DB에 없으면 로컬 스토리지 확인 (페이지 전용 키: performance_site, performance_sdwt)
+  if (!defaultSite) {
+    defaultSite = localStorage.getItem("performance_site") || undefined;
+    if (defaultSite) {
+      defaultSdwt = localStorage.getItem("performance_sdwt") || undefined;
+    }
+  }
+
+  // 3. 결정된 Site가 유효하면 적용 및 SDWT 로드
+  if (defaultSite && sites.value.includes(defaultSite)) {
+    filterStore.selectedSite = defaultSite;
+    sdwts.value = await dashboardApi.getSdwts(defaultSite);
+
+    // 4. SDWT 적용 및 EqpID 로드
+    if (defaultSdwt) {
+      filterStore.selectedSdwt = defaultSdwt;
+      // Agent가 설치된 장비만 조회 (performance 데이터는 Agent 장비에만 있음)
+      await loadEqpIds();
+
+      // 5. EqpID 복원 (마지막 선택 장비, 페이지 전용 키: performance_eqpid)
+      const savedEqpId = localStorage.getItem("performance_eqpid");
+      if (savedEqpId && eqpIds.value.includes(savedEqpId)) {
+        selectedEqpId.value = savedEqpId;
+      }
+    }
+  }
+
+  themeObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === "class") {
+        isDarkMode.value = document.documentElement.classList.contains("dark");
+      }
+    });
+  });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+});
+
+onUnmounted(() => {
+  if (refreshTimer) clearInterval(refreshTimer);
+  if (themeObserver) themeObserver.disconnect();
+});
+
+// --- Handlers ---
+// [수정] Site 변경 시 로컬 스토리지 업데이트 (performance_site)
+const onSiteChange = async () => {
+  if (filterStore.selectedSite) {
+    localStorage.setItem("performance_site", filterStore.selectedSite);
+    sdwts.value = await dashboardApi.getSdwts(filterStore.selectedSite);
+  } else {
+    localStorage.removeItem("performance_site");
+    sdwts.value = [];
+  }
+
+  // 하위 필터 초기화 & 로컬스토리지 삭제
+  filterStore.selectedSdwt = "";
+  localStorage.removeItem("performance_sdwt");
+  selectedEqpId.value = "";
+  localStorage.removeItem("performance_eqpid");
+  eqpIds.value = [];
+  hasSearched.value = false;
+};
+
+// [수정] SDWT 변경 시 로컬 스토리지 업데이트 (performance_sdwt)
+const onSdwtChange = async () => {
+  if (filterStore.selectedSdwt) {
+    localStorage.setItem("performance_sdwt", filterStore.selectedSdwt);
+    await loadEqpIds();
+  } else {
+    localStorage.removeItem("performance_sdwt");
+    eqpIds.value = [];
+  }
+
+  // 하위 필터 초기화 & 로컬스토리지 삭제
+  selectedEqpId.value = "";
+  localStorage.removeItem("performance_eqpid");
+};
+
+// [수정] EqpID 변경 시 로컬 스토리지 업데이트 (performance_eqpid)
+const onEqpIdChange = () => {
+  if (selectedEqpId.value) {
+    localStorage.setItem("performance_eqpid", selectedEqpId.value);
+  } else {
+    localStorage.removeItem("performance_eqpid");
+  }
+};
+
+// [수정] 초기화 시 로컬 스토리지 키 삭제
+const resetFilters = () => {
+  if (isRealtime.value) return;
+
+  filterStore.reset();
+  selectedEqpId.value = "";
+
+  localStorage.removeItem("performance_site");
+  localStorage.removeItem("performance_sdwt");
+  localStorage.removeItem("performance_eqpid");
+
+  sdwts.value = [];
+  eqpIds.value = [];
+  chartData.value = [];
+  summaryData.value = [];
+  hasSearched.value = false;
+  intervalSeconds.value = 0;
+};
+
+const loadEqpIds = async () => {
+  eqpIds.value = await equipmentApi.getEqpIds(
+    undefined,
+    filterStore.selectedSdwt,
+    "performance"
+  );
+};
+
+// --- Chart Options & Helpers (기존 유지) ---
 const getTooltipFormatter = (unitMap: Record<string, string>) => {
   return (params: any) => {
     if (!params || !params[0]) return "";
@@ -817,10 +945,8 @@ const gpuOption = computed(() => {
   };
 });
 
-// --- Chart Events (Zoom) ---
 const onChartInit = (chartKey: string, instance: any) => {
   chartInstances[chartKey] = instance;
-  // [수정] 사용하지 않는 params 인자 제거
   instance.on("dataZoom", () => {
     const option = instance.getOption();
     if (option.dataZoom && option.dataZoom[0]) {
@@ -838,99 +964,6 @@ const resetChartZoom = (chartKey: string) => {
     instance.dispatchAction({ type: "dataZoom", start: 0, end: 100 });
     zoomStates[chartKey] = false;
   }
-};
-
-// --- Lifecycle ---
-onMounted(async () => {
-  sites.value = await dashboardApi.getSites();
-
-  // [추가] 1. Site 복원
-  const savedSite = localStorage.getItem("dashboard_site");
-  if (savedSite && sites.value.includes(savedSite)) {
-    filterStore.setSite(savedSite);
-    sdwts.value = await dashboardApi.getSdwts(savedSite);
-
-    // [추가] 2. SDWT 복원
-    const savedSdwt = localStorage.getItem("dashboard_sdwt");
-    if (savedSdwt) {
-      filterStore.setSdwt(savedSdwt);
-      await loadEqpIds();
-
-      // [추가] 3. EQP ID 복원
-      const savedEqpId = localStorage.getItem("performance_eqpid");
-      if (savedEqpId && eqpIds.value.includes(savedEqpId)) {
-        selectedEqpId.value = savedEqpId;
-      }
-    }
-  }
-
-  themeObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.attributeName === "class") {
-        isDarkMode.value = document.documentElement.classList.contains("dark");
-      }
-    });
-  });
-  themeObserver.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["class"],
-  });
-});
-
-onUnmounted(() => {
-  if (refreshTimer) clearInterval(refreshTimer);
-  if (themeObserver) themeObserver.disconnect();
-});
-
-// --- Methods ---
-const onSiteChange = async () => {
-  if (filterStore.selectedSite) {
-    localStorage.setItem("dashboard_site", filterStore.selectedSite); // [추가]
-    sdwts.value = await dashboardApi.getSdwts(filterStore.selectedSite);
-  } else {
-    localStorage.removeItem("dashboard_site"); // [추가]
-    sdwts.value = [];
-  }
-
-  // 하위 필터 초기화 & 로컬스토리지 삭제
-  filterStore.selectedSdwt = "";
-  localStorage.removeItem("dashboard_sdwt");
-  selectedEqpId.value = "";
-  localStorage.removeItem("performance_eqpid");
-  eqpIds.value = [];
-  hasSearched.value = false;
-};
-
-const onSdwtChange = async () => {
-  if (filterStore.selectedSdwt) {
-    localStorage.setItem("dashboard_sdwt", filterStore.selectedSdwt); // [추가]
-    await loadEqpIds();
-  } else {
-    localStorage.removeItem("dashboard_sdwt"); // [추가]
-    eqpIds.value = [];
-  }
-
-  // 하위 필터 초기화 & 로컬스토리지 삭제
-  selectedEqpId.value = "";
-  localStorage.removeItem("performance_eqpid");
-};
-
-// [추가] EQP ID 변경 시 저장
-const onEqpIdChange = () => {
-  if (selectedEqpId.value) {
-    localStorage.setItem("performance_eqpid", selectedEqpId.value);
-  } else {
-    localStorage.removeItem("performance_eqpid");
-  }
-};
-
-const loadEqpIds = async () => {
-  // [수정] type: 'performance' 전달 (성능 데이터가 있는 장비만 조회)
-  eqpIds.value = await equipmentApi.getEqpIds(
-    undefined,
-    filterStore.selectedSdwt,
-    "performance"
-  );
 };
 
 const toggleRealtime = () => {
@@ -994,7 +1027,6 @@ const searchData = async (silent = false) => {
     chartData.value = rawData
       .filter((d) => d.timestamp)
       .map((d) => {
-        // timestamp 변환 시 안전하게 string 보장
         let ts = String(d.timestamp || "");
         if (ts.includes(".")) {
           ts = ts.split(".")[0] ?? ts;
@@ -1052,25 +1084,6 @@ const calculateSummary = (data: PerformanceDataPointDto[]) => {
   ];
 };
 
-const resetFilters = () => {
-  if (isRealtime.value) return;
-
-  filterStore.reset();
-  selectedEqpId.value = "";
-
-  // [추가] 로컬스토리지 전체 초기화
-  localStorage.removeItem("dashboard_site");
-  localStorage.removeItem("dashboard_sdwt");
-  localStorage.removeItem("performance_eqpid");
-
-  sdwts.value = [];
-  eqpIds.value = [];
-  chartData.value = [];
-  summaryData.value = [];
-  hasSearched.value = false;
-  intervalSeconds.value = 0;
-};
-
 const formatDate = (dateStr: string | undefined) => {
   if (!dateStr) return "-";
   const d = new Date(dateStr);
@@ -1090,7 +1103,6 @@ const fmt = (val: number | string | undefined, digits: number) => {
 </script>
 
 <style scoped>
-/* 기존 스타일 유지 */
 :deep(.p-select),
 :deep(.custom-dropdown) {
   @apply !bg-slate-100 dark:!bg-zinc-800/50 !border-0 text-slate-700 dark:text-slate-200 rounded-lg font-bold shadow-none transition-colors;
@@ -1147,4 +1159,3 @@ const fmt = (val: number | string | undefined, digits: number) => {
   padding: 4px 8px !important;
 }
 </style>
-
