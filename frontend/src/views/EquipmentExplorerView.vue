@@ -8,7 +8,9 @@
         <div
           class="flex items-center justify-center w-8 h-8 bg-white border rounded-lg shadow-sm dark:bg-zinc-900 border-slate-100 dark:border-zinc-800"
         >
-          <i class="text-lg text-teal-600 pi pi-desktop dark:text-teal-400"></i>
+          <i
+            class="text-lg text-teal-600 pi pi-desktop dark:text-teal-400"
+          ></i>
         </div>
         <div class="flex items-baseline gap-2">
           <h1
@@ -462,6 +464,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
+import { useAuthStore } from "@/stores/auth"; // [추가] Auth Store
 import { dashboardApi } from "@/api/dashboard";
 import { equipmentApi, type EquipmentSpecDto } from "@/api/equipment";
 
@@ -475,6 +478,7 @@ import Button from "primevue/button";
 import ProgressSpinner from "primevue/progressspinner";
 
 // State
+const authStore = useAuthStore(); // [추가]
 const selectedSite = ref("");
 const selectedSdwt = ref("");
 const selectedEqpId = ref("");
@@ -509,21 +513,32 @@ const totalRecords = computed(() => filteredRecords.value.length);
 // Lifecycle
 onMounted(async () => {
   try {
+    // 1. Site 목록 로드
     sites.value = await dashboardApi.getSites();
 
-    // 1. Site 복원
-    const savedSite = localStorage.getItem("explorer_site");
-    if (savedSite && sites.value.includes(savedSite)) {
-      selectedSite.value = savedSite;
-      sdwts.value = await dashboardApi.getSdwts(savedSite);
+    // 2. 기본 필터 결정 (우선순위: DB 사용자 설정 -> 페이지 전용 로컬 스토리지)
+    let defaultSite = authStore.user?.site;
+    let defaultSdwt = authStore.user?.sdwt;
 
-      // 2. SDWT 복원 및 데이터 로드
-      const savedSdwt = localStorage.getItem("explorer_sdwt");
-      if (savedSdwt) {
-        selectedSdwt.value = savedSdwt;
-        await loadEquipmentData(); // 데이터 로드 (Eqp List)
+    // DB에 없으면 로컬 스토리지 확인 (페이지 전용 키: explorer_site, explorer_sdwt)
+    if (!defaultSite) {
+      defaultSite = localStorage.getItem("explorer_site") || undefined;
+      if (defaultSite) {
+        defaultSdwt = localStorage.getItem("explorer_sdwt") || undefined;
+      }
+    }
 
-        // 3. EQP ID 복원 (데이터 로드 후에만 가능)
+    // 3. 결정된 Site가 유효하면 적용 및 SDWT 로드
+    if (defaultSite && sites.value.includes(defaultSite)) {
+      selectedSite.value = defaultSite;
+      sdwts.value = await dashboardApi.getSdwts(defaultSite);
+
+      // 4. SDWT 적용 및 데이터 로드
+      if (defaultSdwt) {
+        selectedSdwt.value = defaultSdwt;
+        await loadEquipmentData(); // 데이터 로드
+
+        // 5. EQP ID 복원 (마지막 선택 장비, 페이지 전용 키: explorer_eqpid)
         const savedEqpId = localStorage.getItem("explorer_eqpid");
         if (savedEqpId) {
           // 로드된 리스트에 해당 ID가 있는지 확인
@@ -755,8 +770,6 @@ const copyToClipboard = async (text: string) => {
   font-size: 0.75rem;
   white-space: nowrap;
 }
-
-/* ❌ Sticky(Frozen) Column 관련 CSS 삭제됨 ❌ */
 
 /* Dropdown & Input Styles */
 :deep(.p-select),
