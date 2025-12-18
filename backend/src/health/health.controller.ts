@@ -2,7 +2,8 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { HealthService } from './health.service';
 
-@Controller('api/Health')
+// [수정] 'api/Health' -> 'Health'
+@Controller('Health') 
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
