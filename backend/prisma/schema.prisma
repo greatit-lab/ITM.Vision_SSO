@@ -1,5 +1,4 @@
 // backend/prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -58,7 +57,6 @@ model AgentInfo {
   memory     String?
   disk       String?
   vga        String?
-
   equipment RefEquipment @relation(fields: [eqpid], references: [eqpid])
 
   @@map("agent_info")
@@ -311,20 +309,6 @@ model CfgNewServer {
   description String? @db.VarChar(255)
 
   @@map("cfg_new_server")
-}
-
-// 2. [추가] 인프라 서버 목록 관리용 (InfraManagementView 목록용)
-model CfgInfraServer {
-  id          Int      @id @default(autoincrement())
-  serverName  String   @map("server_name") @db.VarChar(50)
-  type        String   @default("WEB") @db.VarChar(20) // WEB, WAS, DB, ETC
-  ipAddress   String?  @map("ip_address") @db.VarChar(50)
-  port        Int      @default(80)
-  description String?  @db.VarChar(200)
-  isActive    String   @default("Y") @map("is_active") @db.Char(1)
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@map("cfg_infra_server")
 }
 
 // 3. [추가] 장비별 Agent 서버 정보
