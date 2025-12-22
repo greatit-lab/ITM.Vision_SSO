@@ -7,12 +7,6 @@ export const getInfraEquipment = () => http.get("/equipment");
 // 1. SDWT (ref_sdwt)
 export const getInfraSdwt = () => http.get("/infra/sdwt");
 
-// 2. Infra Server List (cfg_infra_server)
-export const getInfraServers = () => http.get("/infra/server-list");
-export const createInfraServer = (data: any) => http.post("/infra/server-list", data);
-export const updateInfraServer = (id: number, data: any) => http.put(`/infra/server-list/${id}`, data);
-export const deleteInfraServer = (id: number) => http.delete(`/infra/server-list/${id}`);
-
 // 3. Agent Server Config (cfg_server)
 export const getAgentServers = () => http.get("/infra/agent-server");
 export const createAgentServer = (data: any) => http.post("/infra/agent-server", data);
