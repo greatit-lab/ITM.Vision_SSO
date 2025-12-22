@@ -279,7 +279,7 @@
         </div>
 
         <div class="grid grid-cols-12 gap-4">
-           <div class="col-span-5 flex flex-col gap-1">
+           <div class="col-span-6 flex flex-col gap-1">
               <label class="text-xs font-bold text-slate-500">Icon</label>
               <Select 
                   v-model="menuForm.icon" 
@@ -309,12 +309,12 @@
               </Select>
            </div>
 
-           <div class="col-span-3 flex flex-col gap-1">
+           <div class="col-span-2 flex flex-col gap-1">
               <label class="text-xs font-bold text-slate-500">Order</label>
               <InputNumber v-model="menuForm.sortOrder" class="!text-sm" showButtons :min="0" />
            </div>
 
-           <div class="col-span-4 flex flex-col gap-1">
+           <div class="col-span-3 flex flex-col gap-1">
               <label class="text-xs font-bold text-slate-500">Tag</label>
               <Select 
                   v-model="menuForm.statusTag" 
