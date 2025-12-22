@@ -167,23 +167,24 @@ const router = createRouter({
  * @param menus 현재 사용자의 메뉴 리스트
  * @returns 권한 존재 여부 (boolean)
  */
+// [Helper] 권한 재귀 체크 함수 (기존 유지 또는 아래 코드로 확인)
 function checkRoutePermission(targetPath: string, menus: MenuNode[]): boolean {
   for (const menu of menus) {
-    // 1. 현재 메뉴의 경로와 일치하는지 확인
-    if (menu.routerPath === targetPath) {
-      return true;
-    }
-    // 2. 자식 메뉴가 있다면 재귀적으로 확인
+    // 1. 정확히 일치하거나
+    if (menu.routerPath === targetPath) return true;
+    
+    // 2. 하위 경로인지 체크 (예: /equipment/detail 은 /equipment 권한 필요 등 규칙 정의 가능)
+    // 여기서는 단순 일치만 봅니다.
+    
+    // 3. 자식 재귀 탐색
     if (menu.children && menu.children.length > 0) {
-      if (checkRoutePermission(targetPath, menu.children)) {
-        return true;
-      }
+      if (checkRoutePermission(targetPath, menu.children)) return true;
     }
   }
   return false;
 }
 
-// [Navigation Guard] 페이지 이동 전 인증 및 권한 확인
+// --- Navigation Guard 강화 ---
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore();
   const menuStore = useMenuStore();
@@ -192,50 +193,59 @@ router.beforeEach(async (to, _from, next) => {
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
   const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin);
 
-  // 1. 인증이 필요한 페이지에 접속 시도 시 (로그인 여부 체크)
+  // 1. 비로그인 접근 차단
   if (requiresAuth && !isAuthenticated) {
-    return next({ name: "login" });
+    return next({ name: "login", query: { redirect: to.fullPath } });
   }
 
-  // 2. 이미 로그인 상태에서 로그인 페이지 접속 시도 시 (홈으로 리다이렉트)
+  // 2. 로그인 상태에서 로그인 페이지 접근 시 홈으로
   if (to.path === "/login" && isAuthenticated) {
     return next({ name: "home" });
   }
 
-  // 3. 로그인 된 상태에서의 권한 정밀 검사
+  // 3. 권한 체크
   if (isAuthenticated) {
-    // 3-1. 관리자 권한 체크 (Admin Routes)
+    // 3-1. 관리자 전용 페이지 체크
     if (requiresAdmin && !authStore.isAdmin) {
-      alert("Access Denied: Administrator privileges are required.");
-      return next({ name: "home" });
+      // alert는 UX를 해칠 수 있으므로, Toast 또는 별도 Error 페이지가 좋으나 여기선 경고만
+      console.warn(`[Access Denied] Admin required for ${to.path}`);
+      return next({ name: "home" }); // 또는 'error-403'
     }
 
-    // 3-2. 동적 메뉴 권한 체크 (Dynamic Menu Permission)
-    // 메뉴 데이터가 아직 로드되지 않았다면 서버에서 가져옴
+    // 3-2. 동적 메뉴 권한 체크
+    // 메뉴가 로드되지 않았다면 먼저 로드
     if (menuStore.menus.length === 0) {
-      await menuStore.loadMenus();
+      try {
+        await menuStore.loadMenus();
+      } catch (e) {
+        console.error("Failed to load menus during navigation guard.", e);
+        // 메뉴 로드 실패 시에도 홈으로 보내거나 에러 처리
+      }
     }
 
-    // 예외: 홈('/')은 기본 대시보드로서 항상 허용.
-    // 관리자 페이지(/admin/*)는 별도 requiresAdmin 가드로 처리되므로 여기서는 체크 생략 가능.
-    // agent-memory도 메뉴에 등록되어 있다면 체크 대상이 되지만, 개발 편의상 일단 예외 처리하거나 메뉴 DB에 추가해야 함.
+    // 홈(/), 관리자(/admin), 그리고 예외 페이지는 권한 체크 건너뜀
+    // (관리자는 위 requiresAdmin에서 이미 체크됨)
     if (
       to.path !== "/" && 
       !to.path.startsWith("/admin") &&
-      to.name !== "agent-memory" // 개발 중인 페이지 임시 허용
+      to.name !== "not-found"
     ) {
       const hasPermission = checkRoutePermission(to.path, menuStore.menus);
 
+      // [중요] 개발 중인 페이지나 메뉴에 등록되지 않은 페이지 처리
+      // 실제 배포 시에는 엄격하게 차단해야 함
       if (!hasPermission) {
-        console.warn(`[Router Guard] Unauthorized access attempt to: ${to.path}`);
-        alert("접근 권한이 없는 메뉴입니다.");
+        // [옵션] DB에 메뉴가 없더라도 라우터에 정의되어 있으면 허용할지 결정
+        // 여기서는 "메뉴에 없으면 접근 불가" 정책을 따름
+        console.warn(`[Router Guard] Unauthorized access or menu not linked: ${to.path}`);
+        // alert("해당 메뉴에 대한 접근 권한이 없습니다."); 
         return next({ name: "home" });
       }
     }
   }
 
-  // 4. 모든 검사 통과
   next();
 });
 
 export default router;
+
