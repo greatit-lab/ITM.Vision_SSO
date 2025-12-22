@@ -22,3 +22,6 @@ export const deleteAccessCode = (id: string) =>
 export const getGuests = () => http.get("/admin/guests");
 export const addGuest = (data: any) => http.post("/admin/guests", data);
 export const deleteGuest = (id: string) => http.delete(`/admin/guests/${id}`);
+
+// 5. Equipments (ref_equipment)
+export const getRefEquipments = () => http.get("/admin/equipments");
