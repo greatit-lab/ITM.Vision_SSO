@@ -12,10 +12,11 @@ export interface MenuNode {
   sortOrder: number | null;
   children: MenuNode[];
   statusTag?: string | null;
+  isVisible?: boolean; // [추가] 조회 시 반환할 필드
   roles?: string[];
 }
 
-// DTO 정의
+// DTO 정의 (Controller와 맞춤)
 export interface CreateMenuDto {
   label: string;
   routerPath?: string;
@@ -23,6 +24,7 @@ export interface CreateMenuDto {
   icon?: string;
   sortOrder?: number;
   statusTag?: string;
+  isVisible?: boolean; // [추가]
   roles?: string[];
 }
 
@@ -33,6 +35,7 @@ export interface UpdateMenuDto {
   icon?: string;
   sortOrder?: number;
   statusTag?: string;
+  isVisible?: boolean; // [추가]
   roles?: string[];
 }
 
@@ -40,15 +43,15 @@ export interface UpdateMenuDto {
 export class MenuService {
   constructor(private prisma: PrismaService) {}
 
-  // [핵심 로직 개선] 권한에 따른 메뉴 트리 구성
+  // [핵심 로직] 권한 및 노출 여부에 따른 메뉴 트리 구성 (사용자용)
   async getMyMenus(role: string): Promise<MenuNode[]> {
-    // 1. 활성화된 모든 메뉴 가져오기 (구조 계산을 위해 전체 로드 필요)
+    // 1. 활성화된(isVisible='Y') 메뉴만 가져오기
     const allMenus = await this.prisma.refMenu.findMany({
       where: { isVisible: 'Y' },
       orderBy: { sortOrder: 'asc' },
     });
 
-    // 2. ADMIN은 전체 트리 반환
+    // 2. ADMIN은 전체 트리 반환 (단, isVisible='Y'인 것들 중)
     if (role === 'ADMIN') {
       return this.buildMenuTree(allMenus);
     }
@@ -61,13 +64,12 @@ export class MenuService {
     const allowedIds = new Set(accessible.map((a) => a.menuId));
 
     // 4. 권한 기반 필터링 (부모 노드 자동 포함 로직)
-    // - 본인에게 권한이 있거나, 권한이 있는 자식을 가진 부모라면 포함
     const validMenus = this.filterMenusRecursive(allMenus, allowedIds);
 
     return this.buildMenuTree(validMenus);
   }
 
-  // [관리자용] 전체 메뉴 및 권한 매핑 정보 조회
+  // [관리자용] 전체 메뉴 및 권한 매핑 정보 조회 (숨김 메뉴 포함)
   async getAllMenus(): Promise<MenuNode[]> {
     const menus = await this.prisma.refMenu.findMany({
       orderBy: { sortOrder: 'asc' },
@@ -86,10 +88,10 @@ export class MenuService {
     return this.buildMenuTree(menus, roleMap);
   }
 
-  // --- CRUD Operations (기존 유지 및 개선) ---
+  // --- CRUD Operations ---
 
   async createMenu(data: CreateMenuDto) {
-    const { label, routerPath, parentId, icon, sortOrder, statusTag, roles } = data;
+    const { label, routerPath, parentId, icon, sortOrder, statusTag, roles, isVisible } = data;
 
     const newMenu = await this.prisma.refMenu.create({
       data: {
@@ -99,7 +101,8 @@ export class MenuService {
         icon: icon || null,
         sortOrder: sortOrder || 0,
         statusTag: statusTag || null,
-        isVisible: 'Y',
+        // [수정] boolean -> 'Y'/'N' 변환 (기본값 'Y')
+        isVisible: isVisible === false ? 'N' : 'Y',
       },
     });
 
@@ -115,7 +118,7 @@ export class MenuService {
   }
 
   async updateMenu(id: number, data: UpdateMenuDto) {
-    const { label, routerPath, parentId, icon, sortOrder, statusTag, roles } = data;
+    const { label, routerPath, parentId, icon, sortOrder, statusTag, roles, isVisible } = data;
 
     const updateData: Prisma.RefMenuUpdateInput = {
       ...(label !== undefined && { label }),
@@ -124,6 +127,8 @@ export class MenuService {
       ...(icon !== undefined && { icon: icon || null }),
       ...(sortOrder !== undefined && { sortOrder }),
       ...(statusTag !== undefined && { statusTag: statusTag || null }),
+      // [수정] boolean -> 'Y'/'N' 변환
+      ...(isVisible !== undefined && { isVisible: isVisible ? 'Y' : 'N' }),
     };
 
     const updatedMenu = await this.prisma.refMenu.update({
@@ -148,8 +153,7 @@ export class MenuService {
   }
 
   async deleteMenu(id: number) {
-    // 자식 메뉴가 있는지 확인 후 처리 필요하나, DB FK Cascade 설정에 따라 다름.
-    // 안전을 위해 Role 매핑 먼저 삭제
+    // 안전을 위해 Role 매핑 먼저 삭제 후 메뉴 삭제
     await this.prisma.cfgMenuRole.deleteMany({ where: { menuId: id } });
     return this.prisma.refMenu.delete({ where: { menuId: id } });
   }
@@ -171,7 +175,7 @@ export class MenuService {
 
   // --- Helper Methods ---
 
-  // [신규] 재귀적 필터링 로직: 자식에게 권한이 있으면 부모도 살린다.
+  // 재귀적 필터링 로직: 자식에게 권한이 있으면 부모도 살린다.
   private filterMenusRecursive(allMenus: RefMenu[], allowedIds: Set<number>): RefMenu[] {
     const menuMap = new Map<number, RefMenu>(allMenus.map(m => [m.menuId, m]));
     const resultIds = new Set<number>();
@@ -211,6 +215,7 @@ export class MenuService {
         parentId: menu.parentId,
         sortOrder: menu.sortOrder,
         statusTag: menu.statusTag,
+        isVisible: menu.isVisible === 'Y', // [추가] 'Y' -> true 변환
         children: [],
         roles: roleMap ? (roleMap.get(menu.menuId) || []) : undefined,
       });
