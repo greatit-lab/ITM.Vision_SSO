@@ -28,17 +28,15 @@ export class AuthController {
   @Post('callback')
   @UseGuards(AuthGuard('saml'))
   async callback(@Req() req: RequestWithUser, @Res() res: Response) {
-    // .env.FRONTEND_URL이 설정되어 있지 않으면 기본값 사용
     const frontendUrl = process.env.FRONTEND_URL || 'https://localhost:8082/login';
 
     if (!req.user) {
       return res.redirect(`${frontendUrl}?error=NoUser`);
     }
 
-    // AuthService.login 실행 -> 여기서 Role과 Context가 계산됨
+    // AuthService.login 실행 -> Role, Context 계산 및 이름 동기화 수행
     const jwtResult = await this.authService.login(req.user);
 
-    // [수정 핵심] req.user(구 정보) 대신 jwtResult.user(계산된 신규 정보)를 사용해야 함
     const userJson = JSON.stringify(jwtResult.user); 
     const encodedUser = encodeURIComponent(userJson);
 
@@ -68,5 +66,11 @@ export class AuthController {
     @Body() body: { site: string; sdwt: string }
   ) {
     return await this.authService.saveUserContext(req.user.userId, body.site, body.sdwt);
+  }
+
+  // [New] 접근 제어 목록 조회 API
+  @Get('access-codes')
+  async getAccessCodes() {
+    return await this.authService.getAccessCodes();
   }
 }
