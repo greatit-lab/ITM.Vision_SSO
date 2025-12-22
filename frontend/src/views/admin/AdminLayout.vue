@@ -3,8 +3,8 @@
   <div class="flex flex-col h-full bg-[#F8FAFC] dark:bg-[#09090B] transition-colors duration-500">
     <AdminSubMenu />
 
-    <main class="flex-1 p-6 overflow-auto">
-      <div class="mx-auto max-w-7xl animate-fade-in h-full">
+    <main class="flex-1 p-4 overflow-auto">
+      <div class="w-full h-full animate-fade-in">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
             <component :is="Component" />
