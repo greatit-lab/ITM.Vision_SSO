@@ -30,7 +30,7 @@ export class AuthService {
       if (companyAuth) {
         isAllowed = true;
         
-        // [New] 회사명이 비어있거나 다르면 AD 정보로 업데이트
+        // [Auto Update] 회사명이 비어있거나 다르면 AD 정보로 업데이트
         if (user.companyName && companyAuth.compName !== user.companyName) {
            await this.prisma.refAccessCode.update({
              where: { compid: companyAuth.compid },
@@ -41,21 +41,26 @@ export class AuthService {
       }
     }
 
-    // 2. 부서 코드로 확인
-    if (!isAllowed && user.department) {
+    // 2. 부서 코드로 확인 및 이름 업데이트 (회사 인증 여부와 관계없이 실행)
+    if (user.department) {
+      // 활성 여부와 상관없이 해당 부서 코드가 Whitelist 테이블에 있는지 조회
       const deptAuth = await this.prisma.refAccessCode.findFirst({
-        where: { deptid: user.department, isActive: 'Y' },
+        where: { deptid: user.department },
       });
-      if (deptAuth) {
-        isAllowed = true;
 
-        // [New] 부서명이 비어있거나 다르면 AD 정보로 업데이트
+      if (deptAuth) {
+        // [Auto Update] 부서명이 비어있거나 다르면 AD 정보로 업데이트 (DB 현행화)
         if (user.departmentName && deptAuth.deptName !== user.departmentName) {
            await this.prisma.refAccessCode.update({
-             where: { compid: deptAuth.compid }, // PK 사용
+             where: { compid: deptAuth.compid }, // PK(compid)를 사용하여 업데이트
              data: { deptName: user.departmentName }
            });
            this.logger.log(`[AUTO UPDATE] AccessCode Dept Name updated: ${user.departmentName}`);
+        }
+
+        // 아직 권한이 없고(회사체크 실패 또는 스킵), 해당 부서 설정이 활성(Y) 상태라면 접속 허용
+        if (!isAllowed && deptAuth.isActive === 'Y') {
+          isAllowed = true;
         }
       }
     }
