@@ -63,7 +63,6 @@ model AgentInfo {
   memory     String?
   disk       String?
   vga        String?
-
   // [관계 설정] RefEquipment (1:1)
   equipment RefEquipment @relation(fields: [eqpid], references: [eqpid])
 
@@ -72,7 +71,7 @@ model AgentInfo {
 
 model AgentStatus {
   eqpid          String    @id
-  status         String? // 'ONLINE' | 'OFFLINE'
+  status         String?   // 'ONLINE' | 'OFFLINE'
   lastPerfUpdate DateTime? @map("last_perf_update")
 
   // [관계 설정] RefEquipment (1:1)
@@ -82,10 +81,10 @@ model AgentStatus {
 }
 
 model PlgError {
-  eqpid      String
-  timeStamp  DateTime @map("time_stamp")
-  errorId    String?  @map("error_id")
-  errorLabel String?  @map("error_label")
+  eqpid         String
+  timeStamp     DateTime @map("time_stamp")
+  errorId       String?  @map("error_id")
+  errorLabel    String?  @map("error_label")
   errorDesc     String?  @map("error_desc")
   extraMessage1 String?  @map("extra_message_1")
   extraMessage2 String?  @map("extra_message_2")
@@ -234,10 +233,17 @@ model CfgLotUniformityMetrics {
 // [A. Access Control] 접근 허용 화이트리스트 (Gate 2)
 model RefAccessCode {
   // 기존 code -> compid 로 변경 (PK 유지)
-  compid      String   @id @map("compid") @db.VarChar(3) 
+  compid      String   @id @map("compid") @db.VarChar(50) 
   
+  // [New] 회사명 (화면 표시 및 확인용)
+  compName    String?  @map("comp_name") @db.VarChar(100)
+
   // 기존 type -> deptid 로 변경
-  deptid      String   @map("deptid") @db.VarChar(20)
+  deptid      String   @map("deptid") @db.VarChar(50)
+  
+  // [New] 부서명 (화면 표시 및 확인용)
+  deptName    String?  @map("dept_name") @db.VarChar(100)
+
   description String?  @db.VarChar(100)
   isActive    String   @default("Y") @map("is_active") @db.Char(1)
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
@@ -314,7 +320,6 @@ model SysUser {
   createdAt   DateTime @default(now()) @map("created_at")
 
   context SysUserContext?
-
   @@map("sys_user")
 }
 
