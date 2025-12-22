@@ -1,8 +1,9 @@
 // backend/src/equipment/equipment.service.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { RefEquipment, Prisma } from '@prisma/client';
 
-// [기존 DTO 유지]
+// [DTO 정의 복구] - 다른 페이지(Equipment Explorer 등)에서 사용
 export interface EquipmentRaw {
   eqpid: string;
   pc_name: string;
@@ -49,47 +50,30 @@ export interface EquipmentDto {
   dbVersion: string;
 }
 
-// [New] 인프라 관리용 단순 조회 DTO
-export interface InfraListDto {
-  eqpId: string;
-  sdwt: string;
-  site: string;
-  campus: string;
-  isUse: string;
-}
-
 @Injectable()
 export class EquipmentService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // =================================================================
+  // 1. [Infra Management] 인프라 관리용 단순 조회 (수정 요청 사항 반영)
+  // =================================================================
   /**
-   * [New] 인프라 관리 화면용 단순 목록 조회
-   * - 500 에러 방지를 위해 복잡한 Join 없이 Master 데이터만 조회
-   * - ref_equipment + ref_sdwt (소속 정보)
+   * 인프라 관리 화면용 목록 조회
+   * - agent_info, agent_status 등 다른 테이블과 연관시키지 않음
+   * - 오직 ref_equipment 테이블의 데이터만 조회
    */
-  async getInfraList(): Promise<InfraListDto[]> {
-    const list = await this.prisma.refEquipment.findMany({
-      include: {
-        sdwtRel: true, // 소속(Site/Campus) 정보 조인
-      },
+  async getInfraList(): Promise<RefEquipment[]> {
+    return await this.prisma.refEquipment.findMany({
       orderBy: {
         eqpid: 'asc',
       },
+      // include 옵션 없음 (순수 ref_equipment 데이터만 조회)
     });
-
-    return list.map((item) => ({
-      eqpId: item.eqpid,
-      // [Fix] 타입 오류 수정: sdwt가 null로 추론될 경우를 대비해 기본값('-') 할당
-      sdwt: item.sdwt || '-',
-      site: item.sdwtRel?.site || '-',
-      campus: item.sdwtRel?.campus || '-',
-      isUse: item.sdwtRel?.isUse || 'N',
-    }));
   }
 
-  /**
-   * 장비 상세 정보 조회 (Agent 정보 포함) - 기존 유지
-   */
+  // =================================================================
+  // 2. [Equipment Explorer] 장비 탐색기/상세용 복잡한 조회 (기존 복구)
+  // =================================================================
   async getDetails(
     site?: string,
     sdwt?: string,
@@ -153,9 +137,6 @@ export class EquipmentService {
     }));
   }
 
-  /**
-   * 장비 ID 목록 조회 - 기존 유지
-   */
   async getEqpIds(
     site?: string,
     sdwt?: string,
@@ -197,5 +178,34 @@ export class EquipmentService {
     );
 
     return rawData.map((r) => r.eqpid);
+  }
+
+  // =================================================================
+  // 3. [Basic CRUD] 기본 기능
+  // =================================================================
+  async create(data: Prisma.RefEquipmentCreateInput): Promise<RefEquipment> {
+    return await this.prisma.refEquipment.create({ data });
+  }
+
+  async findOne(eqpid: string): Promise<RefEquipment | null> {
+    return await this.prisma.refEquipment.findUnique({
+      where: { eqpid },
+    });
+  }
+
+  async update(
+    eqpid: string,
+    data: Prisma.RefEquipmentUpdateInput,
+  ): Promise<RefEquipment> {
+    return await this.prisma.refEquipment.update({
+      where: { eqpid },
+      data,
+    });
+  }
+
+  async remove(eqpid: string): Promise<RefEquipment> {
+    return await this.prisma.refEquipment.delete({
+      where: { eqpid },
+    });
   }
 }
