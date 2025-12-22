@@ -18,9 +18,14 @@ import SpectrumAnalysisView from "../views/SpectrumAnalysisView.vue";
 import LotUniformityTrendView from "../views/LotUniformityTrendView.vue";
 import EquipmentHealthView from "../views/EquipmentHealthView.vue";
 import ProcessMatchingAnalyticsView from "../views/ProcessMatchingAnalyticsView.vue";
+import ItmAgentMemoryView from "../views/ItmAgentMemoryView.vue";
 
 // Admin Components
+import AdminLayout from "../views/admin/AdminLayout.vue";
 import MenuManagementView from "../views/admin/MenuManagementView.vue";
+import UserManagementView from "../views/admin/UserManagementView.vue";
+import InfraManagementView from "../views/admin/InfraManagementView.vue";
+import SystemConfigView from "../views/admin/SystemConfigView.vue";
 
 // Routes Definition
 const routes: Array<RouteRecordRaw> = [
@@ -102,12 +107,52 @@ const routes: Array<RouteRecordRaw> = [
     component: ProcessMatchingAnalyticsView,
     meta: { requiresAuth: true },
   },
-  // [관리자 전용] 메뉴 권한 관리
   {
-    path: "/admin/menus",
-    name: "admin-menus",
-    component: MenuManagementView,
+    path: "/agent-memory",
+    name: "agent-memory",
+    component: ItmAgentMemoryView,
+    meta: { requiresAuth: true },
+  },
+  
+  // [관리자 섹션] AdminLayout을 적용하여 하위 탭 구조로 변경
+  {
+    path: "/admin",
+    component: AdminLayout,
     meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      {
+        path: "",
+        redirect: { name: "admin-menus" }, // 기본 진입 시 메뉴 관리 탭으로 이동
+      },
+      // 1. 메뉴 및 권한 (Menu & Roles)
+      {
+        path: "menus",
+        name: "admin-menus",
+        component: MenuManagementView,
+        meta: { title: "Menu Management" },
+      },
+      // 2. 사용자 및 보안 (User & Security)
+      {
+        path: "users",
+        name: "admin-users",
+        component: UserManagementView, 
+        meta: { title: "User & Security" },
+      },
+      // 3. 인프라 관리 (Infrastructure)
+      {
+        path: "infra",
+        name: "admin-infra",
+        component: InfraManagementView,
+        meta: { title: "Infrastructure" },
+      },
+      // 4. 시스템 설정 (System Config)
+      {
+        path: "system",
+        name: "admin-system",
+        component: SystemConfigView,
+        meta: { title: "System Config" },
+      },
+    ],
   },
 ];
 
@@ -171,10 +216,14 @@ router.beforeEach(async (to, _from, next) => {
       await menuStore.loadMenus();
     }
 
-    // 예외: 홈('/')은 기본 대시보드로서 항상 허용하거나, 메뉴에 반드시 포함되어야 함.
-    // 관리자 페이지(/admin/*)는 별도 requiresAdmin 가드로 처리되므로 여기서는 패스 가능하나,
-    // 메뉴 트리 기반 접근 제어를 원한다면 포함 가능. 여기서는 '/'만 예외 처리.
-    if (to.path !== "/" && !to.path.startsWith("/admin")) {
+    // 예외: 홈('/')은 기본 대시보드로서 항상 허용.
+    // 관리자 페이지(/admin/*)는 별도 requiresAdmin 가드로 처리되므로 여기서는 체크 생략 가능.
+    // agent-memory도 메뉴에 등록되어 있다면 체크 대상이 되지만, 개발 편의상 일단 예외 처리하거나 메뉴 DB에 추가해야 함.
+    if (
+      to.path !== "/" && 
+      !to.path.startsWith("/admin") &&
+      to.name !== "agent-memory" // 개발 중인 페이지 임시 허용
+    ) {
       const hasPermission = checkRoutePermission(to.path, menuStore.menus);
 
       if (!hasPermission) {
