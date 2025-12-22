@@ -7,7 +7,7 @@
           인프라 관리
         </h2>
         <p class="text-xs text-slate-500">
-          장비(Equipment), SDWT, 서버 연결 정보를 관리합니다.
+          장비(Equipment), SDWT 정보를 관리합니다.
         </p>
       </div>
       <Button
@@ -31,9 +31,6 @@
           >
           <Tab value="1"
             ><i class="mr-2 pi pi-sitemap"></i>SDWT 구성 (ref_sdwt)</Tab
-          >
-          <Tab value="2"
-            ><i class="mr-2 pi pi-server"></i>서버 설정 (cfg_infra_server)</Tab
           >
         </TabList>
         <TabPanels class="!p-0 flex-1 overflow-auto">
@@ -228,136 +225,9 @@
               </DataTable>
             </div>
           </TabPanel>
-
-          <TabPanel value="2" class="h-full">
-            <div class="flex flex-col h-full gap-2 p-4">
-              <div class="flex justify-end">
-                <Button
-                  label="Server 추가"
-                  icon="pi pi-plus"
-                  size="small"
-                  @click="openServerDialog"
-                />
-              </div>
-              <DataTable
-                :value="servers"
-                scrollable
-                scrollHeight="flex"
-                class="text-xs border rounded p-datatable-sm"
-                stripedRows
-                :loading="loading"
-              >
-                <Column
-                  field="serverName"
-                  header="Server Name"
-                  sortable
-                  style="font-weight: bold"
-                ></Column>
-                <Column field="type" header="Type" sortable>
-                  <template #body="{ data }">
-                    <Tag
-                      :value="data.type"
-                      severity="info"
-                      class="!text-[10px]"
-                    />
-                  </template>
-                </Column>
-                <Column field="ipAddress" header="IP"></Column>
-                <Column field="port" header="Port"></Column>
-                <Column field="description" header="Desc"></Column>
-                <Column field="isActive" header="Active" align="center">
-                  <template #body="{ data }">
-                    <i
-                      class="pi"
-                      :class="
-                        data.isActive === 'Y'
-                          ? 'pi-check-circle text-green-500'
-                          : 'pi-times-circle text-slate-300'
-                      "
-                    ></i>
-                  </template>
-                </Column>
-                <Column header="Action" align="center" style="width: 80px">
-                  <template #body="{ data }">
-                    <div class="flex justify-center gap-2">
-                      <Button
-                        icon="pi pi-pencil"
-                        text
-                        size="small"
-                        severity="info"
-                        class="!p-0 !w-6 !h-6"
-                        @click="editServer(data)"
-                      />
-                      <Button
-                        icon="pi pi-trash"
-                        text
-                        size="small"
-                        severity="danger"
-                        class="!p-0 !w-6 !h-6"
-                        @click="removeServer(data.id)"
-                      />
-                    </div>
-                  </template>
-                </Column>
-              </DataTable>
-            </div>
-          </TabPanel>
         </TabPanels>
       </Tabs>
     </div>
-
-    <Dialog
-      v-model:visible="serverDialogVisible"
-      modal
-      :header="isEditMode ? '서버 정보 수정' : '서버 추가'"
-      :style="{ width: '30rem' }"
-    >
-      <div class="flex flex-col gap-4 mb-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-semibold">Server Name</label>
-            <InputText
-              v-model="serverForm.serverName"
-              placeholder="e.g. WAS-01"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-semibold">Type</label>
-            <SelectButton
-              v-model="serverForm.type"
-              :options="['WEB', 'WAS', 'DB', 'ETC']"
-              class="text-xs"
-            />
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-semibold">IP Address</label>
-            <InputText v-model="serverForm.ipAddress" placeholder="0.0.0.0" />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-semibold">Port</label>
-            <InputNumber v-model="serverForm.port" :useGrouping="false" />
-          </div>
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-semibold">Description</label>
-          <InputText v-model="serverForm.description" />
-        </div>
-        <div class="flex items-center gap-2">
-          <Checkbox v-model="serverForm.isActive" binary inputId="srvActive" />
-          <label for="srvActive" class="text-sm">사용 여부 (Active)</label>
-        </div>
-      </div>
-      <div class="flex justify-end gap-2">
-        <Button
-          label="취소"
-          severity="secondary"
-          @click="serverDialogVisible = false"
-        />
-        <Button label="저장" @click="saveServer" />
-      </div>
-    </Dialog>
   </div>
 </template>
 
@@ -372,27 +242,18 @@ import Button from "primevue/button";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Tag from "primevue/tag";
-import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
-import InputNumber from "primevue/inputnumber";
-import Checkbox from "primevue/checkbox";
-import SelectButton from "primevue/selectbutton";
 import Select from "primevue/select";
 
 // API
 import { 
   getInfraEquipment, 
-  getInfraSdwt, 
-  getInfraServers, 
-  createInfraServer, 
-  updateInfraServer, 
-  deleteInfraServer 
+  getInfraSdwt
 } from "@/api/infra";
 
 const loading = ref(false);
 const equipments = ref([]);
 const sdwts = ref([]);
-const servers = ref([]);
 
 // --- 1. 검색 필터 로직 ---
 const filters = reactive({
@@ -433,14 +294,12 @@ const resetFilter = () => {
 const loadAllData = async () => {
   loading.value = true;
   try {
-    const [eqRes, sdwtRes, svrRes] = await Promise.all([
+    const [eqRes, sdwtRes] = await Promise.all([
       getInfraEquipment(),
       getInfraSdwt(),
-      getInfraServers(),
     ]);
     equipments.value = eqRes.data;
     sdwts.value = sdwtRes.data;
-    servers.value = svrRes.data;
   } catch (e) {
     console.error("Failed to load infra data", e);
   } finally {
@@ -451,69 +310,4 @@ const loadAllData = async () => {
 onMounted(() => {
   loadAllData();
 });
-
-// --- Server CRUD ---
-const serverDialogVisible = ref(false);
-const isEditMode = ref(false);
-const serverForm = ref({
-  id: null,
-  serverName: "",
-  ipAddress: "",
-  port: 80,
-  type: "WEB",
-  description: "",
-  isActive: true,
-});
-
-const openServerDialog = () => {
-  isEditMode.value = false;
-  serverForm.value = {
-    id: null,
-    serverName: "",
-    ipAddress: "",
-    port: 80,
-    type: "WEB",
-    description: "",
-    isActive: true,
-  };
-  serverDialogVisible.value = true;
-};
-
-const editServer = (data: any) => {
-  isEditMode.value = true;
-  serverForm.value = {
-    ...data,
-    isActive: data.isActive === "Y",
-  };
-  serverDialogVisible.value = true;
-};
-
-const saveServer = async () => {
-  const payload = {
-    ...serverForm.value,
-    isActive: serverForm.value.isActive ? "Y" : "N",
-  };
-
-  try {
-    if (isEditMode.value && payload.id) {
-      await updateInfraServer(payload.id, payload);
-    } else {
-      await createInfraServer(payload);
-    }
-    serverDialogVisible.value = false;
-    loadAllData(); // Reload list
-  } catch (e) {
-    alert("저장 실패: " + e);
-  }
-};
-
-const removeServer = async (id: number) => {
-  if (!confirm("정말 삭제하시겠습니까?")) return;
-  try {
-    await deleteInfraServer(id);
-    loadAllData();
-  } catch (e) {
-    alert("삭제 실패");
-  }
-};
 </script>
