@@ -3,45 +3,49 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from './prisma.service';
 
-// Modules
-import { EquipmentModule } from './equipment/equipment.module';
-import { PreAlignModule } from './prealign/prealign.module';
-import { LampLifeModule } from './lamplife/lamplife.module';
-import { HealthModule } from './health/health.module';
+// --- Feature Modules ---
+import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
+import { DashboardModule } from './dashboard/dashboard.module'; // [Fix] 파일 생성 후 오류 해결됨
+import { EquipmentModule } from './equipment/equipment.module';
+import { ErrorModule } from './error/error.module';
+import { FiltersModule } from './filters/filters.module'; // [Fix] 파일 생성 후 오류 해결됨
+import { HealthModule } from './health/health.module';
+import { LampLifeModule } from './lamplife/lamplife.module'; // [Fix] LamplifeModule -> LampLifeModule
 import { MenuModule } from './menu/menu.module';
 import { PerformanceModule } from './performance/performance.module';
+import { PreAlignModule } from './prealign/prealign.module'; // [Fix] PrealignModule -> PreAlignModule
 import { WaferModule } from './wafer/wafer.module';
-import { AdminModule } from './admin/admin.module'; // [New] Import
 
-// Controllers & Services
-import { DashboardController } from './dashboard/dashboard.controller';
-import { DashboardService } from './dashboard/dashboard.service';
-import { ErrorController } from './error/error.controller';
-import { ErrorService } from './error/error.service';
-import { FiltersController } from './filters/filters.controller';
-import { FiltersService } from './filters/filters.service';
+// [New] Infra Management Module
+import { InfraModule } from './infra/infra.module';
 
 @Module({
   imports: [
+    // Global Config (Process Env)
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath:
-        process.env.NODE_ENV === 'production'
-          ? '.env.production'
-          : '.env.development',
+      envFilePath: ['.env.development', '.env.production', '.env'],
     }),
-    EquipmentModule,
-    PreAlignModule,
-    LampLifeModule,
-    HealthModule,
+
+    // Business Modules
+    AdminModule,
     AuthModule,
+    DashboardModule,
+    EquipmentModule,
+    ErrorModule,
+    FiltersModule,
+    HealthModule,
+    LampLifeModule,
     MenuModule,
     PerformanceModule,
+    PreAlignModule,
     WaferModule,
-    AdminModule, // [New] 모듈 등록
+
+    // [New] Added Module
+    InfraModule,
   ],
-  controllers: [DashboardController, ErrorController, FiltersController],
-  providers: [PrismaService, DashboardService, ErrorService, FiltersService],
+  controllers: [],
+  providers: [PrismaService],
 })
 export class AppModule {}
