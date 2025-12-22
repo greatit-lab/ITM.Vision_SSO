@@ -17,7 +17,12 @@
            <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-zinc-900"></span>
         </button>
 
-        <button class="p-2 text-slate-500 transition-all rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400">
+        <button 
+          v-if="authStore.isAdmin"
+          @click="router.push({ name: 'admin-menus' })"
+          class="p-2 text-slate-500 transition-all rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+          v-tooltip.bottom="'Menu Management'"
+        >
            <i class="pi pi-cog text-lg"></i>
         </button>
 
@@ -208,12 +213,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { useRoute } from "vue-router";
+// [수정] useRouter 추가
+import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { dashboardApi } from "@/api/dashboard"; 
 import http from "@/api/http"; 
 
 const route = useRoute();
+// [수정] router 인스턴스 생성
+const router = useRouter();
 const authStore = useAuthStore();
 const dropdownRef = ref<HTMLElement | null>(null);
 
