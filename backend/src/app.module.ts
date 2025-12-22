@@ -11,8 +11,8 @@ import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { MenuModule } from './menu/menu.module';
 import { PerformanceModule } from './performance/performance.module';
-// [추가] WaferModule import
 import { WaferModule } from './wafer/wafer.module';
+import { AdminModule } from './admin/admin.module'; // [New] Import
 
 // Controllers & Services
 import { DashboardController } from './dashboard/dashboard.controller';
@@ -21,11 +21,9 @@ import { ErrorController } from './error/error.controller';
 import { ErrorService } from './error/error.service';
 import { FiltersController } from './filters/filters.controller';
 import { FiltersService } from './filters/filters.service';
-// Wafer 관련 Controller/Service는 제거됨 (Module로 이동)
 
 @Module({
   imports: [
-    // 환경 변수 설정 모듈
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath:
@@ -40,20 +38,10 @@ import { FiltersService } from './filters/filters.service';
     AuthModule,
     MenuModule,
     PerformanceModule,
-    WaferModule, // [추가] 여기에 모듈 등록
+    WaferModule,
+    AdminModule, // [New] 모듈 등록
   ],
-  controllers: [
-    DashboardController,
-    ErrorController,
-    FiltersController,
-    // WaferController 제거됨
-  ],
-  providers: [
-    PrismaService,
-    DashboardService,
-    ErrorService,
-    FiltersService,
-    // WaferService 제거됨
-  ],
+  controllers: [DashboardController, ErrorController, FiltersController],
+  providers: [PrismaService, DashboardService, ErrorService, FiltersService],
 })
 export class AppModule {}
