@@ -107,4 +107,11 @@ export class AdminService {
       where: { loginId },
     });
   }
+
+  // 5. [New] 장비 목록 (ref_equipment)
+  async getRefEquipments() {
+    return this.prisma.refEquipment.findMany({
+      orderBy: { eqpid: 'asc' },
+    });
+  }
 }
