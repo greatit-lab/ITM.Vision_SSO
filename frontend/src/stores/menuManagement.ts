@@ -11,7 +11,8 @@ export interface MenuNode {
   roles?: string[];
   icon?: string;
   sortOrder?: number;
-  statusTag?: string; // [확인] 인터페이스에 존재
+  statusTag?: string;
+  isVisible?: boolean; // [추가] 노출 여부
   children?: MenuNode[];
   data?: any; 
 }
@@ -56,7 +57,8 @@ export const useMenuManagementStore = defineStore('menuManagement', () => {
         roles: node.roles,
         icon: node.icon,
         sortOrder: node.sortOrder,
-        statusTag: node.statusTag, // [추가] statusTag 매핑
+        statusTag: node.statusTag,
+        isVisible: node.isVisible ?? true, // [추가] 기본값 true 처리
       },
       children: node.children ? transformToTreeNode(node.children) : []
     }));
