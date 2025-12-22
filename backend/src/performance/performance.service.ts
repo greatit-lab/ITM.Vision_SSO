@@ -1,4 +1,3 @@
-// backend/src/performance/performance.service.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 
@@ -19,7 +18,7 @@ interface ProcessMemoryRawResult {
   MemoryUsageMB: number | null;
 }
 
-// [추가] ITM Agent Trend 결과 타입
+// ITM Agent Trend 결과 타입
 interface ItmAgentTrendRawResult {
   Timestamp: Date;
   EqpId: string;
@@ -126,7 +125,7 @@ export class PerformanceService {
     }));
   }
 
-  // [추가] ITM Agent 프로세스 메모리 트렌드 조회 (장비별 비교)
+  // [수정됨] ITM Agent 프로세스 메모리 트렌드 조회
   async getItmAgentTrend(
     site: string,
     sdwt: string,
@@ -138,8 +137,8 @@ export class PerformanceService {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    // 실제 수집되는 Agent 프로세스 명으로 설정 (필요시 수정)
-    const TARGET_PROCESS_NAME = 'ITM Agent';
+    // [수정 핵심] 실제 DB에 저장되는 이름 'ITM_Agent'로 변경
+    const TARGET_PROCESS_NAME = 'ITM_Agent';
 
     let interval = intervalSeconds;
     if (!interval || interval <= 0) {
@@ -156,18 +155,13 @@ export class PerformanceService {
     
     // eqpid가 지정되어 있으면 해당 장비만 조회
     if (eqpid) {
-      // SQL Injection 방지를 위해 파라미터 바인딩을 권장하지만, 
-      // 여기서는 로직 흐름상 문자열 보간을 사용하되, Controller에서 검증된 값을 사용한다고 가정
-      // 안전하게 Prisma raw query 파라미터($4 등)를 사용할 수도 있음.
-      // 편의상 문자열 처리:
       eqpFilterCondition = `AND p.eqpid = '${eqpid}'`;
     } else if (sdwt) {
       // SDWT가 지정되어 있으면 해당 SDWT에 속한 장비들로 제한
-      // RefEquipment 테이블과 조인하거나 서브쿼리 사용
       eqpFilterCondition = `AND p.eqpid IN (SELECT eqpid FROM ref_equipment WHERE sdwt = '${sdwt}')`;
     }
 
-    // 쿼리 실행 (Timestamp 및 장비별 Grouping)
+    // 쿼리 실행
     const results = await this.prisma.$queryRawUnsafe<ItmAgentTrendRawResult[]>(
       `
         SELECT
