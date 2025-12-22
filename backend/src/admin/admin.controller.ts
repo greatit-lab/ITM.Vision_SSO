@@ -84,4 +84,10 @@ export class AdminController {
   async deleteGuest(@Param('id') id: string) {
     return this.adminService.deleteGuest(id);
   }
+
+  // 5. [New] Equipments
+  @Get('equipments')
+  async getEquipments() {
+    return this.adminService.getRefEquipments();
+  }
 }
