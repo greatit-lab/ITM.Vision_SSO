@@ -1,5 +1,5 @@
 // frontend/src/api/equipment.ts
-import http from "./http"; // axios 인스턴스 import
+import http from "./http";
 
 export interface EquipmentSpecDto {
   eqpId: string;
@@ -24,29 +24,44 @@ export interface EquipmentSpecDto {
   dbVersion: string;
 }
 
-// [수정] EqpIdType 타입 정의 추가
-export type EqpIdType = 'wafer' | 'performance' | 'process' | 'error' | 'prealign' | 'agent' | 'all';
+// [New] 인프라 관리용 DTO 추가
+export interface InfraEquipmentDto {
+  eqpId: string;
+  sdwt: string;
+  site: string;
+  campus: string;
+  isUse: string;
+}
+
+export type EqpIdType =
+  | "wafer"
+  | "performance"
+  | "process"
+  | "error"
+  | "prealign"
+  | "agent"
+  | "all";
 
 export const equipmentApi = {
-  // [수정] 장비 ID 목록 조회 (type 파라미터 추가)
-  // type이 없으면 기존처럼 동작하지 않고, Backend에서 처리
-  getEqpIds: async (site?: string, sdwt?: string, type: EqpIdType = 'all') => {
+  getEqpIds: async (site?: string, sdwt?: string, type: EqpIdType = "all") => {
     const params = { site, sdwt, type };
-    // [수정] Backend Controller 경로 변경 (/Filters/eqpids)
-    // 기존 /Equipment/eqpids는 전체 조회를 담당했으나, 필터링 기능이 강화된 /Filters/eqpids로 통합 권장
     const { data } = await http.get<string[]>("/Filters/eqpids", {
       params,
     });
     return data;
   },
 
-  // 장비 상세 정보 조회 (기존 유지)
   getDetails: async (site?: string, sdwt?: string, eqpId?: string) => {
     const params = { site, sdwt, eqpId };
-    const { data } = await http.get<EquipmentSpecDto[]>(
-      "/Equipment/details",
-      { params }
-    );
+    const { data } = await http.get<EquipmentSpecDto[]>("/Equipment/details", {
+      params,
+    });
+    return data;
+  },
+
+  // [New] 인프라 목록 조회 API 추가
+  getInfraList: async () => {
+    const { data } = await http.get<InfraEquipmentDto[]>("/Equipment/infra");
     return data;
   },
 };
