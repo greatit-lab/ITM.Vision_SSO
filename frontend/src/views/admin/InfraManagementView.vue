@@ -33,7 +33,7 @@
             ><i class="mr-2 pi pi-sitemap"></i>SDWT 구성 (ref_sdwt)</Tab
           >
           <Tab value="2"
-            ><i class="mr-2 pi pi-server"></i>서버 설정 (cfg_server)</Tab
+            ><i class="mr-2 pi pi-server"></i>서버 설정 (cfg_infra_server)</Tab
           >
         </TabList>
         <TabPanels class="!p-0 flex-1 overflow-auto">
@@ -294,7 +294,7 @@
                         size="small"
                         severity="danger"
                         class="!p-0 !w-6 !h-6"
-                        @click="removeServer(data.serverId)"
+                        @click="removeServer(data.id)"
                       />
                     </div>
                   </template>
@@ -362,7 +362,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue"; // reactive, computed 추가
+import { ref, reactive, computed, onMounted } from "vue";
 import Tabs from "primevue/tabs";
 import TabList from "primevue/tablist";
 import Tab from "primevue/tab";
@@ -377,17 +377,24 @@ import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 import Checkbox from "primevue/checkbox";
 import SelectButton from "primevue/selectbutton";
-import Select from "primevue/select"; // Select 추가 (PrimeVue v4), v3라면 'primevue/dropdown' 사용
+import Select from "primevue/select";
 
 // API
-import * as InfraApi from "@/api/infra";
+import { 
+  getInfraEquipment, 
+  getInfraSdwt, 
+  getInfraServers, 
+  createInfraServer, 
+  updateInfraServer, 
+  deleteInfraServer 
+} from "@/api/infra";
 
 const loading = ref(false);
 const equipments = ref([]);
 const sdwts = ref([]);
 const servers = ref([]);
 
-// --- 1. 검색 필터 로직 추가 ---
+// --- 1. 검색 필터 로직 ---
 const filters = reactive({
   keyword: "",
   status: null,
@@ -398,30 +405,22 @@ const statusOptions = [
   { label: "OFFLINE", value: "OFFLINE" },
 ];
 
-// 필터링된 장비 목록 (Client-side Filtering)
 const filteredEquipments = computed(() => {
   if (!equipments.value) return [];
-
   return equipments.value.filter((item: any) => {
-    // 1. 키워드 검색 (EQP ID, IP, PC Name)
     const keyword = filters.keyword.toLowerCase();
     const matchKeyword =
       !keyword ||
       item.eqpid?.toLowerCase().includes(keyword) ||
       item.agentInfo?.ipAddress?.includes(keyword) ||
       item.agentInfo?.pcName?.toLowerCase().includes(keyword);
-
-    // 2. 상태 검색 (ONLINE / OFFLINE)
     const matchStatus =
       !filters.status || item.agentStatus?.status === filters.status;
-
     return matchKeyword && matchStatus;
   });
 });
 
 const applyFilter = () => {
-  // Client-side 필터링이므로 별도 API 호출 없이 filteredEquipments가 자동 갱신됩니다.
-  // 추후 API 검색이 필요하면 여기서 loadAllData(filters) 형태로 호출하면 됩니다.
   console.log("Filters applied:", filters);
 };
 
@@ -435,9 +434,9 @@ const loadAllData = async () => {
   loading.value = true;
   try {
     const [eqRes, sdwtRes, svrRes] = await Promise.all([
-      InfraApi.getInfraEquipment(),
-      InfraApi.getInfraSdwt(),
-      InfraApi.getInfraServers(),
+      getInfraEquipment(),
+      getInfraSdwt(),
+      getInfraServers(),
     ]);
     equipments.value = eqRes.data;
     sdwts.value = sdwtRes.data;
@@ -453,11 +452,11 @@ onMounted(() => {
   loadAllData();
 });
 
-// --- Server CRUD (기존 유지) ---
+// --- Server CRUD ---
 const serverDialogVisible = ref(false);
 const isEditMode = ref(false);
 const serverForm = ref({
-  serverId: null,
+  id: null,
   serverName: "",
   ipAddress: "",
   port: 80,
@@ -469,7 +468,7 @@ const serverForm = ref({
 const openServerDialog = () => {
   isEditMode.value = false;
   serverForm.value = {
-    serverId: null,
+    id: null,
     serverName: "",
     ipAddress: "",
     port: 80,
@@ -496,10 +495,10 @@ const saveServer = async () => {
   };
 
   try {
-    if (isEditMode.value && payload.serverId) {
-      await InfraApi.updateServer(payload.serverId, payload);
+    if (isEditMode.value && payload.id) {
+      await updateInfraServer(payload.id, payload);
     } else {
-      await InfraApi.createServer(payload);
+      await createInfraServer(payload);
     }
     serverDialogVisible.value = false;
     loadAllData(); // Reload list
@@ -511,7 +510,7 @@ const saveServer = async () => {
 const removeServer = async (id: number) => {
   if (!confirm("정말 삭제하시겠습니까?")) return;
   try {
-    await InfraApi.deleteServer(id);
+    await deleteInfraServer(id);
     loadAllData();
   } catch (e) {
     alert("삭제 실패");
