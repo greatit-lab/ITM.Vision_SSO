@@ -19,17 +19,17 @@
       />
     </div>
 
-    <div class="flex-1 bg-white dark:bg-[#111111] rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col">
-      <Tabs value="0">
-        <TabList class="border-b bg-slate-50 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800">
+    <div class="flex-1 bg-white dark:bg-[#111111] rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col min-h-0">
+      <Tabs value="0" class="flex flex-col h-full">
+        <TabList class="shrink-0 border-b bg-slate-50 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800">
           <Tab value="0" class="!py-2.5 !px-4 text-xs font-bold transition-all"><i class="mr-2 pi pi-desktop"></i>장비 목록 (ref_equipment)</Tab>
           <Tab value="1" class="!py-2.5 !px-4 text-xs font-bold transition-all"><i class="mr-2 pi pi-sitemap"></i>SDWT 구성 (ref_sdwt)</Tab>
         </TabList>
         
-        <TabPanels class="!p-0 flex-1 overflow-hidden">
+        <TabPanels class="!p-0 flex-1 overflow-hidden flex flex-col min-h-0">
           
-          <TabPanel value="0" class="h-full">
-            <div class="flex flex-col h-full gap-3 p-4">
+          <TabPanel value="0" class="flex flex-col h-full min-h-0">
+            <div class="flex flex-col h-full gap-3 p-4 min-h-0">
               
               <div class="flex flex-wrap items-end justify-between gap-3 p-0 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-[#111111] shrink-0">
                 <div class="flex items-end gap-2 flex-1 max-w-2xl">
@@ -120,7 +120,7 @@
                 </div>
               </div>
 
-              <div class="flex-1 overflow-hidden border rounded-lg border-slate-200 dark:border-zinc-800">
+              <div class="flex-1 overflow-hidden border rounded-lg border-slate-200 dark:border-zinc-800 min-h-0">
                 <DataTable
                   :value="filteredEquipments"
                   paginator
@@ -147,15 +147,12 @@
                   <Column field="maker" header="Maker" sortable style="min-width: 100px"></Column>
                   <Column field="model" header="Model" sortable style="min-width: 120px"></Column>
                   <Column field="prcGroup" header="Prc Group" sortable style="min-width: 120px"></Column>
-                  
                   <Column field="bay" header="Bay" style="min-width: 80px"></Column>
-                  
                   <Column field="sdwt" header="SDWT" sortable style="min-width: 100px; color: #2563eb">
                     <template #body="{ data }">
                       <span v-html="highlightText(data.sdwt, filters.sdwt)"></span>
                     </template>
                   </Column>
-                  
                   <Column field="lastUpdate" header="Last Update" style="min-width: 130px">
                     <template #body="{ data }">
                       {{ formatDateTime(data.lastUpdate) }}
@@ -172,10 +169,10 @@
             </div>
           </TabPanel>
 
-          <TabPanel value="1" class="h-full">
-            <div class="flex flex-col h-full gap-3 p-4">
+          <TabPanel value="1" class="flex flex-col h-full min-h-0">
+            <div class="flex flex-col h-full gap-3 p-4 min-h-0">
               
-              <div class="flex flex-wrap items-center justify-between gap-3 p-2 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-[#111111] shrink-0">
+              <div class="flex flex-wrap items-center justify-between gap-3 p-0 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-[#111111] shrink-0">
                 <Button 
                   label="SDWT 추가" 
                   icon="pi pi-plus" 
@@ -235,7 +232,7 @@
                 </div>
               </div>
 
-              <div class="flex-1 overflow-hidden border rounded-lg border-slate-200 dark:border-zinc-800">
+              <div class="flex-1 overflow-hidden border rounded-lg border-slate-200 dark:border-zinc-800 min-h-0">
                 <DataTable
                   :value="sdwts"
                   paginator
@@ -243,10 +240,12 @@
                   v-model:first="sdwtFirst"
                   scrollable
                   scrollHeight="flex"
-                  class="h-full text-xs p-datatable-sm [&_.p-paginator]:hidden"
+                  class="h-full text-xs p-datatable-sm compact-table [&_.p-paginator]:hidden"
                   stripedRows
                   :loading="loading"
                   removableSort
+                  sortField="id"
+                  :sortOrder="1"
                 >
                   <Column field="id" header="ID (PK)" sortable style="width: 10%; font-weight: bold"></Column>
                   <Column field="sdwt" header="SDWT Name" sortable style="width: 15%; color: #2563eb"></Column>
@@ -262,7 +261,7 @@
                   </Column>
                   <Column field="update" header="Updated" style="width: 10%">
                     <template #body="{ data }">
-                      {{ new Date(data.update).toLocaleDateString() }}
+                      {{ formatDateTime(data.update) }}
                     </template>
                   </Column>
                   
@@ -374,14 +373,13 @@ const eqpFirst = ref(0);
 const sdwtRows = ref(20);
 const sdwtFirst = ref(0);
 
-// --- 1. 검색 필터 로직 확장 ---
+// --- Search Filters ---
 const filters = reactive({
   eqpId: "",
   indexLine: "",
   sdwt: "",
 });
 
-// [변경] 필터링 로직: 3개 필드 모두 체크
 const filteredEquipments = computed(() => {
   if (!equipments.value) return [];
   return equipments.value.filter((item: any) => {
@@ -401,7 +399,6 @@ const filteredEquipments = computed(() => {
   });
 });
 
-// 검색어 변경 시 페이지 초기화
 watch(() => [filters.eqpId, filters.indexLine, filters.sdwt], () => {
   eqpFirst.value = 0;
 });
@@ -553,3 +550,18 @@ const removeSdwt = async (id: string) => {
   }
 };
 </script>
+
+<style scoped>
+/* 공통 헤더/바디 스타일 (기본) */
+:deep(.p-datatable-sm .p-datatable-thead > tr > th) {
+  @apply bg-white dark:bg-[#111111] text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase border-b border-slate-100 dark:border-zinc-800;
+}
+:deep(.p-datatable-sm .p-datatable-tbody > tr > td) {
+  @apply py-1 text-[11px] border-b border-slate-50 dark:border-zinc-800/30;
+}
+
+/* [중요] .compact-table 클래스가 있는 테이블(SDWT)만 행 높이를 강제로 줄임 */
+:deep(.compact-table .p-datatable-tbody > tr > td) {
+  @apply !py-0.5; /* SDWT 전용: 행 간격 축소 */
+}
+</style>
