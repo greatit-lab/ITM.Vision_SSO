@@ -1,8 +1,14 @@
 // backend/src/auth/auth.service.ts
-import { Injectable, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
-import { User, LoginResult } from './auth.interface';
+import type { User, LoginResult } from './auth.interface';
+import { GuestRequestDto } from './auth.controller';
 
 @Injectable()
 export class AuthService {
@@ -15,161 +21,134 @@ export class AuthService {
 
   async login(user: User): Promise<LoginResult> {
     const rawUserId = user.userId;
-    this.logger.log(`===========================================================`);
-    this.logger.log(`[LOGIN START] Processing login for Raw UserID: '${rawUserId}'`);
+    this.logger.log(
+      `[LOGIN START] Processing login for Raw UserID: '${rawUserId}'`,
+    );
 
-    // [Gate 2] 접근 허용 확인 (Company / Department Whitelist)
-    // + AD 정보로 DB의 이름 정보 현행화 (Auto Update)
-    let isAllowed = false;
+    let isWhitelisted = false;
 
-    // 1. 회사 코드로 확인
-    if (user.companyCode) {
-      const companyAuth = await this.prisma.refAccessCode.findFirst({
-        where: { compid: user.companyCode, isActive: 'Y' },
-      });
-      if (companyAuth) {
-        isAllowed = true;
-        
-        // [Auto Update] 회사명이 비어있거나 다르면 AD 정보로 업데이트
-        if (user.companyName && companyAuth.compName !== user.companyName) {
-           await this.prisma.refAccessCode.update({
-             where: { compid: companyAuth.compid },
-             data: { compName: user.companyName }
-           });
-           this.logger.log(`[AUTO UPDATE] AccessCode Company Name updated: ${user.companyName}`);
+    // 1. Whitelist Check
+    try {
+      if (user.companyCode) {
+        const companyAuth = await this.prisma.refAccessCode.findFirst({
+          where: { compid: user.companyCode, isActive: 'Y' },
+        });
+        if (companyAuth) isWhitelisted = true;
+      }
+
+      if (user.department) {
+        const deptAuth = await this.prisma.refAccessCode.findFirst({
+          where: { deptid: user.department },
+        });
+        if (deptAuth && !isWhitelisted && deptAuth.isActive === 'Y') {
+          isWhitelisted = true;
         }
       }
+    } catch (e) {
+      this.logger.error(`[Whitelist Check Error] ${e}`);
+      // Whitelist 체크 실패해도 Guest 권한 확인으로 넘어감
     }
 
-    // 2. 부서 코드로 확인 및 이름 업데이트 (회사 인증 여부와 관계없이 실행)
-    if (user.department) {
-      // 활성 여부와 상관없이 해당 부서 코드가 Whitelist 테이블에 있는지 조회
-      const deptAuth = await this.prisma.refAccessCode.findFirst({
-        where: { deptid: user.department },
-      });
-
-      if (deptAuth) {
-        // [Auto Update] 부서명이 비어있거나 다르면 AD 정보로 업데이트 (DB 현행화)
-        if (user.departmentName && deptAuth.deptName !== user.departmentName) {
-           await this.prisma.refAccessCode.update({
-             where: { compid: deptAuth.compid }, // PK(compid)를 사용하여 업데이트
-             data: { deptName: user.departmentName }
-           });
-           this.logger.log(`[AUTO UPDATE] AccessCode Dept Name updated: ${user.departmentName}`);
-        }
-
-        // 아직 권한이 없고(회사체크 실패 또는 스킵), 해당 부서 설정이 활성(Y) 상태라면 접속 허용
-        if (!isAllowed && deptAuth.isActive === 'Y') {
-          isAllowed = true;
-        }
-      }
-    }
-
-    if (!isAllowed) {
-      this.logger.error(`[ACCESS DENIED] Company: ${user.companyCode}, Dept: ${user.department}`);
-      throw new ForbiddenException(
-        `Access Denied: Unauthorized Company (${user.companyCode}) or Department (${user.department}).`,
-      );
-    }
-
-    // ---------------------------------------------------------------------------
-    // [Step 1] DB ID 동기화 및 식별 (ID 정규화)
-    // ---------------------------------------------------------------------------
-    let dbLoginId = rawUserId; 
-
+    // 2. User Sync
+    let dbLoginId = rawUserId;
     try {
       const existingUser = await this.prisma.sysUser.findFirst({
-        where: { loginId: { equals: rawUserId, mode: 'insensitive' } }
+        where: { loginId: { equals: rawUserId, mode: 'insensitive' } },
       });
 
       if (existingUser) {
-        dbLoginId = existingUser.loginId; // DB에 저장된 실제 ID 사용
-        this.logger.log(`[STEP 1] User Found in DB. Raw: '${rawUserId}' -> Resolved: '${dbLoginId}'`);
-        
+        dbLoginId = existingUser.loginId;
         await this.prisma.sysUser.update({
           where: { loginId: dbLoginId },
           data: { loginCount: { increment: 1 }, lastLoginAt: new Date() },
         });
       } else {
-        this.logger.log(`[STEP 1] New User Detected. Creating: '${rawUserId}'`);
         const newUser = await this.prisma.sysUser.create({
-          data: { loginId: rawUserId, loginCount: 1 }
+          data: { loginId: rawUserId, loginCount: 1 },
         });
         dbLoginId = newUser.loginId;
       }
     } catch (e) {
-      this.logger.warn(`[STEP 1] Error during user sync: ${e}. Retrying lookup...`);
-      const retryUser = await this.prisma.sysUser.findFirst({
-        where: { loginId: { equals: rawUserId, mode: 'insensitive' } }
-      });
-      if (retryUser) dbLoginId = retryUser.loginId;
+      this.logger.warn(`[User Sync] Error: ${e}. Retrying lookup...`);
+      // Sync 실패 시 rawUserId 사용
     }
 
-    // ---------------------------------------------------------------------------
-    // [Step 2] Admin 권한 부여 확인
-    // ---------------------------------------------------------------------------
+    // 3. Role & Guest Check
     let role = 'USER';
-    this.logger.log(`[STEP 2] Checking Admin Privileges for ID: '${dbLoginId}'...`);
+    let hasGuestAccess = false;
 
-    const adminUser = await this.prisma.cfgAdminUser.findFirst({
-      where: { 
-        loginId: { equals: dbLoginId, mode: 'insensitive' }
-      }
-    });
-
-    if (adminUser) {
-      role = adminUser.role.toUpperCase(); 
-      this.logger.log(`   ✅ Admin Matched! Role set to: [${role}]`);
-    } else {
-      // Guest Check
-      const guestUser = await this.prisma.cfgGuestAccess.findFirst({
-        where: {
-          loginId: { equals: dbLoginId, mode: 'insensitive' },
-          validUntil: { gte: new Date() },
-        },
+    try {
+      const adminUser = await this.prisma.cfgAdminUser.findFirst({
+        where: { loginId: { equals: dbLoginId, mode: 'insensitive' } },
       });
-      if (guestUser) {
-        role = guestUser.grantedRole.toUpperCase(); 
-        this.logger.log(`   ✅ Guest Access Granted! Role set to: [${role}]`);
+
+      if (adminUser) {
+        role = adminUser.role.toUpperCase();
       } else {
-        this.logger.warn(`   ❌ Admin Not Found in 'cfg_admin_user' for ID: '${dbLoginId}'. Defaulting to USER.`);
+        const guestUser = await this.prisma.cfgGuestAccess.findFirst({
+          where: {
+            loginId: { equals: dbLoginId, mode: 'insensitive' },
+            validUntil: { gte: new Date() },
+          },
+        });
+        if (guestUser) {
+          role = guestUser.grantedRole.toUpperCase();
+          hasGuestAccess = true;
+        }
       }
+    } catch (e) {
+      this.logger.error(`[Role Check Error] ${e}`);
+      // DB 에러 시 접속 차단으로 이어질 수 있음
     }
 
-    // ---------------------------------------------------------------------------
-    // [Step 3] Site/Sdwt Context 정보 확인
-    // ---------------------------------------------------------------------------
+    // 4. Final Access Decision
+    const isAdmin = role === 'ADMIN' || role === 'MANAGER';
+    const isAllowed = isWhitelisted || isAdmin || hasGuestAccess;
+
+    if (!isAllowed) {
+      // 신청 상태 확인
+      try {
+        const lastRequest = await this.prisma.cfgGuestRequest.findFirst({
+          where: { loginId: { equals: dbLoginId, mode: 'insensitive' } },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (lastRequest) {
+          if (lastRequest.status === 'PENDING') {
+            throw new ForbiddenException('PendingApproval');
+          }
+          if (lastRequest.status === 'REJECTED') {
+            throw new ForbiddenException('Rejected');
+          }
+        }
+      } catch (e) {
+        if (e instanceof ForbiddenException) throw e; // PENDING/REJECTED 전파
+        this.logger.error(`[Request Check Error] ${e}`);
+      }
+
+      throw new ForbiddenException('AccessDenied');
+    }
+
+    // 5. Token Issuance
     let contextSite = '';
     let contextSdwt = '';
-    this.logger.log(`[STEP 3] Checking Saved Context for ID: '${dbLoginId}'...`);
-
-    const userContext = await this.prisma.sysUserContext.findFirst({
-      where: { 
-        loginId: { equals: dbLoginId, mode: 'insensitive' } 
-      },
-      include: {
-        sdwtInfo: true, 
-      },
-    });
-
-    if (userContext && userContext.sdwtInfo) {
-      contextSite = userContext.sdwtInfo.site;
-      contextSdwt = userContext.sdwtInfo.sdwt;
-      this.logger.log(`   ✅ Context Found: Site=[${contextSite}], SDWT=[${contextSdwt}]`);
-    } else {
-      this.logger.warn(`   ❌ Context Not Found in 'sys_user_context' for ID: '${dbLoginId}'.`);
+    try {
+      const userContext = await this.prisma.sysUserContext.findFirst({
+        where: { loginId: { equals: dbLoginId, mode: 'insensitive' } },
+        include: { sdwtInfo: true },
+      });
+      if (userContext && userContext.sdwtInfo) {
+        contextSite = userContext.sdwtInfo.site;
+        contextSdwt = userContext.sdwtInfo.sdwt;
+      }
+    } catch (e) {
+      this.logger.warn(`[Context Load Error] ${e}`);
     }
-
-    // ---------------------------------------------------------------------------
-    // [Final] 최종 결과 반환
-    // ---------------------------------------------------------------------------
-    this.logger.log(`[LOGIN COMPLETE] Final User State -> ID: ${dbLoginId}, Role: ${role}, Context: ${contextSite}/${contextSdwt}`);
-    this.logger.log(`===========================================================`);
 
     const finalUser: User = {
       ...user,
       userId: dbLoginId,
-      role, 
+      role,
       site: contextSite || undefined,
       sdwt: contextSdwt || undefined,
     };
@@ -190,37 +169,51 @@ export class AuthService {
   }
 
   async saveUserContext(loginId: string, site: string, sdwt: string) {
-    this.logger.log(`[SAVE CONTEXT] Request for ${loginId} -> Site: ${site}, SDWT: ${sdwt}`);
-
     const sdwtInfo = await this.prisma.refSdwt.findFirst({
       where: { site, sdwt },
     });
-
-    if (!sdwtInfo) {
-      this.logger.error(`[SAVE CONTEXT] Failed: Invalid Site/SDWT combination.`);
-      throw new NotFoundException(`Invalid Site (${site}) or SDWT (${sdwt}).`);
-    }
+    if (!sdwtInfo) throw new NotFoundException(`Invalid Site or SDWT.`);
 
     const sysUser = await this.prisma.sysUser.findFirst({
-      where: { loginId: { equals: loginId, mode: 'insensitive' } }
+      where: { loginId: { equals: loginId, mode: 'insensitive' } },
     });
-    
     const targetLoginId = sysUser ? sysUser.loginId : loginId;
 
-    const result = await this.prisma.sysUserContext.upsert({
+    return await this.prisma.sysUserContext.upsert({
       where: { loginId: targetLoginId },
       update: { lastSdwtId: sdwtInfo.id },
       create: { loginId: targetLoginId, lastSdwtId: sdwtInfo.id },
     });
-
-    this.logger.log(`[SAVE CONTEXT] Success for ${targetLoginId}`);
-    return result;
   }
 
-  // [New] 접근 제어 목록 조회 (Admin 화면용)
   async getAccessCodes() {
     return await this.prisma.refAccessCode.findMany({
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  async createGuestRequest(data: GuestRequestDto) {
+    this.logger.log(`[GUEST REQUEST] New request from ${data.loginId}`);
+
+    const existing = await this.prisma.cfgGuestRequest.findFirst({
+      where: { loginId: data.loginId, status: 'PENDING' },
+    });
+
+    if (existing) {
+      return {
+        message: '이미 대기 중인 신청 내역이 있습니다.',
+        reqId: existing.reqId,
+      };
+    }
+
+    return this.prisma.cfgGuestRequest.create({
+      data: {
+        loginId: data.loginId,
+        deptCode: data.deptCode,
+        deptName: data.deptName,
+        reason: data.reason,
+        status: 'PENDING',
+      },
     });
   }
 }
