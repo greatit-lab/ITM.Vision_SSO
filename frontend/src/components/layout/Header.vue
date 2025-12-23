@@ -12,9 +12,15 @@
 
       <div class="flex items-center gap-3">
         
-        <button class="relative p-2 text-slate-500 transition-all rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400">
+        <button 
+          class="relative p-2 text-slate-500 transition-all rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+          v-tooltip.bottom="pendingRequestCount > 0 ? `${pendingRequestCount}건의 승인 대기 요청` : '알림 없음'"
+        >
            <i class="pi pi-bell text-lg"></i>
-           <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-zinc-900"></span>
+           <span 
+             v-if="pendingRequestCount > 0"
+             class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-zinc-900 animate-pulse"
+           ></span>
         </button>
 
         <button 
@@ -216,6 +222,7 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { dashboardApi } from "@/api/dashboard"; 
+import * as AdminApi from "@/api/admin"; // [추가] Admin API
 import http from "@/api/http"; 
 
 const route = useRoute();
@@ -235,15 +242,16 @@ const selectedSdwt = ref("");
 // Notification State
 const notification = ref({ show: false, message: '' });
 
+// [추가] 알림 카운트 (게스트 접근 신청 대기)
+const pendingRequestCount = ref(0);
+
 const pageTitle = computed(() => {
   const name = route.name?.toString();
   if (!name || name === "home") return "Overview";
   return name.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 });
 
-// [추가] Admin 버튼 클릭 핸들러
 const handleAdminClick = () => {
-  // SuperAdmin(Admin)이면 메뉴 관리로, Manager면 사용자 관리로 이동
   if (authStore.isSuperAdmin) {
     router.push({ name: 'admin-menus' });
   } else {
@@ -337,11 +345,27 @@ const saveProfileSettings = async () => {
   }
 };
 
+// [추가] 게스트 신청 목록 조회 및 카운트 업데이트
+const fetchNotifications = async () => {
+  // 관리자(Admin/SuperAdmin)만 조회
+  if (authStore.isAdmin) {
+    try {
+      const res = await AdminApi.getGuestRequests();
+      // PENDING 상태인 요청만 필터링하여 개수 저장
+      pendingRequestCount.value = res.data.filter((req: any) => req.status === 'PENDING').length;
+    } catch (e) {
+      console.error("Failed to fetch guest requests", e);
+    }
+  }
+};
+
 onMounted(() => {
   document.addEventListener("click", closeDropdown);
   if (document.documentElement.classList.contains("dark")) {
     isDark.value = true;
   }
+  // [추가] 마운트 시 알림 확인
+  fetchNotifications();
 });
 onUnmounted(() => document.removeEventListener("click", closeDropdown));
 </script>
