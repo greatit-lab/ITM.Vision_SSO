@@ -25,27 +25,68 @@
     </div>
 
     <div class="flex flex-1 min-h-0 gap-3 overflow-hidden">
+      
       <div
-        class="flex flex-col w-1/2 h-full overflow-hidden bg-white border rounded-lg shadow-sm dark:bg-[#111111] border-slate-200 dark:border-zinc-800"
+        class="flex flex-col flex-[4] h-full overflow-hidden bg-white border rounded-lg shadow-sm dark:bg-[#111111] border-slate-200 dark:border-zinc-800"
       >
         <div
-          class="flex items-center justify-between px-3 py-2 border-b shrink-0 border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/30"
+          class="flex flex-col border-b shrink-0 border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/30"
         >
-          <div class="flex items-center gap-2">
-            <i class="text-xs text-slate-500 pi pi-user"></i>
-            <span class="text-xs font-bold text-slate-700 dark:text-slate-200"
-              >시스템 사용자 (Employees)</span
-            >
-            <Tag
-              :value="users.length"
+          <div class="flex items-center justify-between px-3 py-2">
+            <div class="flex items-center gap-2">
+              <i class="text-xs text-slate-500 pi pi-user"></i>
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-200"
+                >시스템 사용자 (Employees)</span
+              >
+              <Tag
+                :value="filteredUsers.length"
+                severity="secondary"
+                class="!h-4 !text-[9px] !px-1"
+              />
+            </div>
+            <Button
+              v-if="filterUserId || filterSite || filterSdwt"
+              icon="pi pi-filter-slash"
+              text
               severity="secondary"
-              class="!h-4 !text-[9px] !px-1"
+              size="small"
+              class="!w-6 !h-6"
+              v-tooltip.top="'필터 초기화'"
+              @click="clearFilters"
             />
           </div>
+          
+          <div class="flex gap-2 px-3 pb-2">
+            <div class="flex-1">
+              <IconField iconPosition="left" class="w-full">
+                <InputIcon class="pi pi-search !text-[10px]" />
+                <InputText 
+                  v-model="filterUserId" 
+                  placeholder="User ID" 
+                  class="!h-7 !text-[11px] w-full" 
+                />
+              </IconField>
+            </div>
+            <div class="flex-1">
+              <InputText 
+                v-model="filterSite" 
+                placeholder="Site" 
+                class="!h-7 !text-[11px] w-full" 
+              />
+            </div>
+            <div class="flex-1">
+              <InputText 
+                v-model="filterSdwt" 
+                placeholder="SDWT" 
+                class="!h-7 !text-[11px] w-full" 
+              />
+            </div>
+          </div>
         </div>
+
         <div class="relative flex-1 w-full min-h-0 overflow-hidden">
           <DataTable
-            :value="users"
+            :value="filteredUsers"
             scrollable
             scrollHeight="flex"
             class="absolute inset-0 w-full h-full text-xs border-none p-datatable-sm"
@@ -61,23 +102,27 @@
               header="User ID"
               sortable
               style="width: 20%; font-weight: bold"
-            ></Column>
-            <Column header="즐겨찾기(소속)" style="width: 20%">
+            >
+              <template #body="slotProps">
+                 <span v-html="highlightText(slotProps.data.loginId, filterUserId)"></span>
+              </template>
+            </Column>
+            <Column header="즐겨찾기(소속)" style="width: 25%">
               <template #body="slotProps">
                 <div
                   v-if="slotProps.data.context?.sdwtInfo"
                   class="flex items-center gap-2"
                 >
                   <Tag
-                    :value="slotProps.data.context.sdwtInfo.site"
                     severity="info"
                     class="!text-[9px] !h-4 !px-1"
-                  />
+                  >
+                    {{ slotProps.data.context.sdwtInfo.site }}
+                  </Tag>
                   <span
                     class="font-medium truncate text-slate-600 dark:text-slate-300"
-                  >
-                    {{ slotProps.data.context.sdwtInfo.sdwt }}
-                  </span>
+                    v-html="highlightText(slotProps.data.context.sdwtInfo.sdwt, filterSdwt)"
+                  ></span>
                 </div>
                 <span v-else class="text-slate-400 text-[10px] italic"
                   >- 설정 없음 -</span
@@ -89,7 +134,7 @@
               header="접속 횟수"
               sortable
               align="center"
-              style="width: 20%"
+              style="width: 15%"
             >
               <template #body="slotProps">
                 <Badge
@@ -128,7 +173,7 @@
       </div>
 
       <div
-        class="flex flex-col w-1/2 h-full overflow-hidden bg-white border rounded-lg shadow-sm dark:bg-[#111111] border-slate-200 dark:border-zinc-800"
+        class="flex flex-col flex-[5] h-full overflow-hidden bg-white border rounded-lg shadow-sm dark:bg-[#111111] border-slate-200 dark:border-zinc-800"
       >
         <div class="flex border-b border-slate-200 dark:border-zinc-800">
           <button
@@ -190,12 +235,12 @@
             <Column
               field="loginId"
               header="Guest ID"
-              style="width: 25%; font-weight: bold"
+              style="width: 15%; font-weight: bold"
             ></Column>
             <Column
               field="deptName"
               header="부서명"
-              style="width: 20%"
+              style="width: 30%"
             ></Column>
             <Column field="reason" header="사유" style="width: 30%"></Column>
             <Column
@@ -250,7 +295,7 @@
             <Column
               field="loginId"
               header="신청 ID"
-              style="width: 20%; font-weight: bold"
+              style="width: 10%; font-weight: bold"
             ></Column>
             <Column
               field="deptCode"
@@ -260,7 +305,7 @@
             <Column
               field="deptName"
               header="부서명"
-              style="width: 15%"
+              style="width: 20%"
             ></Column>
             <Column
               field="reason"
@@ -281,7 +326,7 @@
                 />
               </template>
             </Column>
-            <Column header="Action" style="width: 10%" align="center">
+            <Column header="Action" style="width: 15%" align="center">
               <template #body="slotProps">
                 <div
                   v-if="slotProps.data.status === 'PENDING'"
@@ -308,7 +353,7 @@
                     @click="rejectRequest(slotProps.data.reqId)"
                   />
                 </div>
-                <span v-else class="text-[9px] text-slate-400">
+                <span v-else class="text-[9px] text-slate-400 whitespace-nowrap">
                   {{ formatDateFull(slotProps.data.processedAt) }}
                 </span>
               </template>
@@ -422,16 +467,64 @@ import Badge from "primevue/badge";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import DatePicker from "primevue/datepicker";
+import IconField from "primevue/iconfield";
+import InputIcon from "primevue/inputicon";
 import { useAuthStore } from "@/stores/auth";
 import * as AdminApi from "@/api/admin";
 
 const authStore = useAuthStore();
-// [변경] 기본 탭: Active Guests
 const activeTab = ref("Active Guests");
 
 const users = ref<any[]>([]);
 const guests = ref<any[]>([]);
 const requests = ref<any[]>([]);
+
+// 필터 상태 변수
+const filterUserId = ref("");
+const filterSite = ref("");
+const filterSdwt = ref("");
+
+// 필터링된 유저 목록 computed 속성
+const filteredUsers = computed(() => {
+  return users.value.filter((user) => {
+    // 1. User ID 필터 (대소문자 무시)
+    const matchId =
+      !filterUserId.value ||
+      (user.loginId &&
+        user.loginId
+          .toLowerCase()
+          .includes(filterUserId.value.toLowerCase()));
+
+    // 2. Site 필터 (대소문자 무시)
+    const site = user.context?.sdwtInfo?.site || "";
+    const matchSite =
+      !filterSite.value ||
+      site.toLowerCase().includes(filterSite.value.toLowerCase());
+
+    // 3. SDWT 필터 (대소문자 무시)
+    const sdwt = user.context?.sdwtInfo?.sdwt || "";
+    const matchSdwt =
+      !filterSdwt.value ||
+      sdwt.toLowerCase().includes(filterSdwt.value.toLowerCase());
+
+    return matchId && matchSite && matchSdwt;
+  });
+});
+
+// 필터 초기화 함수
+const clearFilters = () => {
+  filterUserId.value = "";
+  filterSite.value = "";
+  filterSdwt.value = "";
+};
+
+// 검색어 하이라이팅 헬퍼 함수
+const highlightText = (text: string, query: string) => {
+  if (!text) return "";
+  if (!query) return text;
+  const regex = new RegExp(`(${query})`, "gi");
+  return text.replace(regex, '<span class="bg-yellow-200 text-black">$1</span>');
+};
 
 const pendingCount = computed(
   () => requests.value.filter((r) => r.status === "PENDING").length
@@ -456,7 +549,7 @@ onMounted(() => {
   fetchAllData();
 });
 
-// Actions
+// Actions & Dialog Logic
 const approveDialogVisible = ref(false);
 const selectedRequest = ref<any>(null);
 const approveValidUntil = ref<Date | null>(null);
