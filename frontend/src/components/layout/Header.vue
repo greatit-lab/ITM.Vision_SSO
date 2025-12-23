@@ -19,9 +19,9 @@
 
         <button 
           v-if="authStore.isAdmin"
-          @click="router.push({ name: 'admin-menus' })"
+          @click="handleAdminClick"
           class="p-2 text-slate-500 transition-all rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
-          v-tooltip.bottom="'Menu Management'"
+          v-tooltip.bottom="'Admin Settings'"
         >
            <i class="pi pi-cog text-lg"></i>
         </button>
@@ -213,14 +213,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
-// [수정] useRouter 추가
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { dashboardApi } from "@/api/dashboard"; 
 import http from "@/api/http"; 
 
 const route = useRoute();
-// [수정] router 인스턴스 생성
 const router = useRouter();
 const authStore = useAuthStore();
 const dropdownRef = ref<HTMLElement | null>(null);
@@ -242,6 +240,16 @@ const pageTitle = computed(() => {
   if (!name || name === "home") return "Overview";
   return name.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 });
+
+// [추가] Admin 버튼 클릭 핸들러
+const handleAdminClick = () => {
+  // SuperAdmin(Admin)이면 메뉴 관리로, Manager면 사용자 관리로 이동
+  if (authStore.isSuperAdmin) {
+    router.push({ name: 'admin-menus' });
+  } else {
+    router.push({ name: 'admin-users' });
+  }
+};
 
 const toggleTheme = () => {
   isDark.value = !isDark.value;
