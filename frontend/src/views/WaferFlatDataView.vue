@@ -64,6 +64,7 @@
               filter
               placeholder="EQP ID"
               :disabled="!filterStore.selectedSdwt"
+              :loading="isEqpLoading"
               showClear
               class="w-full custom-dropdown small"
               overlayClass="custom-dropdown-panel small"
@@ -818,8 +819,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, onUnmounted } from "vue";
+// [수정] 사용하지 않는 import 제거
 import { useFilterStore } from "@/stores/filter";
-import { useAuthStore } from "@/stores/auth"; // [추가] Auth Store
+import { useAuthStore } from "@/stores/auth";
 import { dashboardApi } from "@/api/dashboard";
 import {
   waferApi,
@@ -839,8 +841,9 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import ProgressSpinner from "primevue/progressspinner";
 
+// [수정] 사용하지 않는 변수 선언 제거 (route, menuStore)
 const filterStore = useFilterStore();
-const authStore = useAuthStore(); // [추가]
+const authStore = useAuthStore();
 const showAdvanced = ref(false);
 const isLoading = ref(false);
 const hasSearched = ref(false);
@@ -860,6 +863,9 @@ const filters = reactive({
 });
 
 const eqpIds = ref<string[]>([]);
+// [유지] EQP ID 로딩 상태 변수
+const isEqpLoading = ref(false);
+
 const lotIds = ref<string[]>([]);
 const waferIds = ref<string[]>([]);
 const cassetteRcps = ref<string[]>([]);
@@ -1100,7 +1106,7 @@ const spectrumOption = computed(() => {
   };
 });
 
-// [수정] Site 변경 핸들러
+// Site 변경 핸들러
 const onSiteChange = async () => {
   if (filterStore.selectedSite) {
     localStorage.setItem("wafer_site", filterStore.selectedSite);
@@ -1120,7 +1126,7 @@ const onSiteChange = async () => {
   filters.waferId = "";
 };
 
-// [수정] SDWT 변경 핸들러
+// SDWT 변경 핸들러
 const onSdwtChange = () => {
   if (filterStore.selectedSdwt) {
     localStorage.setItem("wafer_sdwt", filterStore.selectedSdwt);
@@ -1136,16 +1142,22 @@ const onSdwtChange = () => {
   filters.waferId = "";
 };
 
+// [유지] EqpID 로딩 상태 처리
 const loadEqpIds = async () => {
-  if (filterStore.selectedSdwt)
+  if (!filterStore.selectedSdwt) return;
+  isEqpLoading.value = true;
+  try {
     eqpIds.value = await equipmentApi.getEqpIds(
       undefined,
       filterStore.selectedSdwt,
       "wafer"
     );
+  } finally {
+    isEqpLoading.value = false;
+  }
 };
 
-// [수정] EqpID 변경 핸들러
+// EqpID 변경 핸들러
 const onEqpChange = () => {
   if (filters.eqpId) {
     localStorage.setItem("wafer_eqpid", filters.eqpId);
