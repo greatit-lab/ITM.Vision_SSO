@@ -310,8 +310,10 @@ export class AdminService {
     return this.prisma.cfgServer.create({
       data: {
         eqpid: data.eqpid,
-        serverUrl: data.serverUrl,
-        agentVer: data.agentVer,
+        agentDbHost: data.agentDbHost,
+        agentFtpHost: data.agentFtpHost,
+        updateFlag: data.updateFlag || 'no',
+        update: new Date(),
       },
     });
   }
@@ -320,8 +322,10 @@ export class AdminService {
     return this.prisma.cfgServer.update({
       where: { eqpid },
       data: {
-        serverUrl: data.serverUrl,
-        agentVer: data.agentVer,
+        agentDbHost: data.agentDbHost,
+        agentFtpHost: data.agentFtpHost,
+        updateFlag: data.updateFlag,
+        update: new Date(),
       },
     });
   }
