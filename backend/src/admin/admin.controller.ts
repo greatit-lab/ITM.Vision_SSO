@@ -16,10 +16,12 @@ import {
   CreateAccessCodeDto,
   UpdateAccessCodeDto,
   CreateGuestDto,
+  ApproveGuestRequestDto, // [추가] DTO Import
+  RejectGuestRequestDto, // [추가] DTO Import
 } from './dto/admin.dto';
 
 @Controller('admin')
-// @UseGuards(JwtAuthGuard) // 실제 운영 환경 배포 시 주석을 해제하여 보안을 적용하세요.
+// @UseGuards(JwtAuthGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
@@ -69,7 +71,7 @@ export class AdminController {
     return this.adminService.deleteAccessCode(id);
   }
 
-  // 4. Guests
+  // 4. Guests (기존 활성 게스트 목록)
   @Get('guests')
   async getGuests() {
     return this.adminService.getAllGuests();
@@ -85,7 +87,26 @@ export class AdminController {
     return this.adminService.deleteGuest(id);
   }
 
-  // 5. [New] Equipments
+  // =========================================================
+  // [New] 5. 게스트 요청 승인/반려 (Guest Requests Workflow)
+  // =========================================================
+
+  @Get('guest-requests')
+  async getGuestRequests() {
+    return this.adminService.getGuestRequests();
+  }
+
+  @Post('guest-requests/approve')
+  async approveGuestRequest(@Body() body: ApproveGuestRequestDto) {
+    return this.adminService.approveGuestRequest(body);
+  }
+
+  @Post('guest-requests/reject')
+  async rejectGuestRequest(@Body() body: RejectGuestRequestDto) {
+    return this.adminService.rejectGuestRequest(body);
+  }
+
+  // 6. Equipments
   @Get('equipments')
   async getEquipments() {
     return this.adminService.getRefEquipments();
