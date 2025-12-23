@@ -9,29 +9,31 @@ import {
   Param,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
-// import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // 보안 적용 시 주석 해제
-// import { UseGuards } from '@nestjs/common'; // 보안 적용 시 주석 해제
 import {
   CreateAdminDto,
   CreateAccessCodeDto,
   UpdateAccessCodeDto,
   CreateGuestDto,
-  ApproveGuestRequestDto, // [추가] DTO Import
-  RejectGuestRequestDto, // [추가] DTO Import
+  ApproveGuestRequestDto,
+  RejectGuestRequestDto,
+  CreateSeverityDto,
+  UpdateSeverityDto,
+  CreateMetricDto,
+  UpdateMetricDto,
 } from './dto/admin.dto';
 
 @Controller('admin')
-// @UseGuards(JwtAuthGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  // 1. Users
+  // ==========================================
+  // [User & Admin Management]
+  // ==========================================
   @Get('users')
   async getUsers() {
     return this.adminService.getAllUsers();
   }
 
-  // 2. Admins
   @Get('admins')
   async getAdmins() {
     return this.adminService.getAllAdmins();
@@ -47,7 +49,9 @@ export class AdminController {
     return this.adminService.deleteAdmin(id);
   }
 
-  // 3. Access Codes
+  // ==========================================
+  // [Access Codes]
+  // ==========================================
   @Get('access-codes')
   async getAccessCodes() {
     return this.adminService.getAllAccessCodes();
@@ -71,7 +75,9 @@ export class AdminController {
     return this.adminService.deleteAccessCode(id);
   }
 
-  // 4. Guests (기존 활성 게스트 목록)
+  // ==========================================
+  // [Guest Management]
+  // ==========================================
   @Get('guests')
   async getGuests() {
     return this.adminService.getAllGuests();
@@ -87,26 +93,78 @@ export class AdminController {
     return this.adminService.deleteGuest(id);
   }
 
-  // =========================================================
-  // [New] 5. 게스트 요청 승인/반려 (Guest Requests Workflow)
-  // =========================================================
-
-  @Get('guest-requests')
+  @Get('requests')
   async getGuestRequests() {
     return this.adminService.getGuestRequests();
   }
 
-  @Post('guest-requests/approve')
+  @Post('requests/approve')
   async approveGuestRequest(@Body() body: ApproveGuestRequestDto) {
     return this.adminService.approveGuestRequest(body);
   }
 
-  @Post('guest-requests/reject')
+  @Post('requests/reject')
   async rejectGuestRequest(@Body() body: RejectGuestRequestDto) {
     return this.adminService.rejectGuestRequest(body);
   }
 
-  // 6. Equipments
+  // ==========================================
+  // [System Config] Error Severity Map
+  // ==========================================
+  @Get('severity')
+  async getSeverities() {
+    return this.adminService.getSeverities();
+  }
+
+  @Post('severity')
+  async createSeverity(@Body() body: CreateSeverityDto) {
+    return this.adminService.createSeverity(body);
+  }
+
+  // [수정] ID(int) 대신 ErrorID(string) 사용
+  @Put('severity/:errorId')
+  async updateSeverity(
+    @Param('errorId') errorId: string,
+    @Body() body: UpdateSeverityDto,
+  ) {
+    return this.adminService.updateSeverity(errorId, body);
+  }
+
+  // [수정] ID(int) 대신 ErrorID(string) 사용
+  @Delete('severity/:errorId')
+  async deleteSeverity(@Param('errorId') errorId: string) {
+    return this.adminService.deleteSeverity(errorId);
+  }
+
+  // ==========================================
+  // [System Config] Analysis Metrics
+  // ==========================================
+  @Get('metrics')
+  async getMetrics() {
+    return this.adminService.getMetrics();
+  }
+
+  @Post('metrics')
+  async createMetric(@Body() body: CreateMetricDto) {
+    return this.adminService.createMetric(body);
+  }
+
+  @Put('metrics/:name')
+  async updateMetric(
+    @Param('name') name: string,
+    @Body() body: UpdateMetricDto,
+  ) {
+    return this.adminService.updateMetric(name, body);
+  }
+
+  @Delete('metrics/:name')
+  async deleteMetric(@Param('name') name: string) {
+    return this.adminService.deleteMetric(name);
+  }
+
+  // ==========================================
+  // [Equipments]
+  // ==========================================
   @Get('equipments')
   async getEquipments() {
     return this.adminService.getRefEquipments();
