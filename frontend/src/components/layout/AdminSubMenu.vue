@@ -4,7 +4,7 @@
     <div class="px-6">
       <nav class="flex gap-6 -mb-px" aria-label="Tabs">
         <router-link
-          v-for="tab in tabs"
+          v-for="tab in visibleTabs"
           :key="tab.name"
           :to="{ name: tab.routeName }"
           class="flex items-center gap-2 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap"
@@ -23,17 +23,20 @@
 </template>
 
 <script setup lang="ts">
-// [수정] 사용하지 않는 computed 제거
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
 const route = useRoute();
+const authStore = useAuthStore();
 
-const tabs = [
+const allTabs = [
   {
     name: 'menu',
     label: '메뉴 및 권한 (Menu & Roles)',
     routeName: 'admin-menus',
-    icon: 'pi pi-sitemap'
+    icon: 'pi pi-sitemap',
+    requiresSuperAdmin: true // [추가] Super Admin 전용 플래그
   },
   {
     name: 'users',
@@ -55,9 +58,15 @@ const tabs = [
   }
 ];
 
+// [수정] 권한에 따라 탭 필터링
+const visibleTabs = computed(() => {
+  if (authStore.isSuperAdmin) {
+    return allTabs;
+  }
+  return allTabs.filter(tab => !tab.requiresSuperAdmin);
+});
+
 const isActive = (routeName: string) => {
-  // route.meta.parent는 중첩된 하위 페이지에서 상위 탭을 활성화 상태로 유지하기 위한 용도입니다.
-  // (meta 타입 정의에 따라 as any 혹은 옵셔널 체이닝 ?. 사용 권장)
   return route.name === routeName || (route.meta as any)?.parent === routeName;
 };
 </script>
