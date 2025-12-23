@@ -96,34 +96,31 @@
                 scrollHeight="100%" 
                 stripedRows 
                 :loading="loadingServers"
+                removableSort
+                sortMode="multiple"
+                :multiSortMeta="serverMultiSortMeta"
               >
-                <Column field="eqpid" header="EQP ID" sortable style="width: 20%; font-weight: bold"></Column>
-                
-                <Column field="agentDbHost" header="Agent DB Host" sortable style="width: 25%"></Column>
-                <Column field="agentFtpHost" header="Agent FTP Host" sortable style="width: 25%"></Column>
-                
-                <Column field="updateFlag" header="Update Flag" sortable style="width: 10%">
+                <Column field="sdwtId" header="sdwtId" sortable style="width: 10%"></Column>
+                <Column field="site" header="Site" sortable style="width: 10%"></Column>
+                <Column field="sdwt" header="SDWT" sortable style="width: 15%; color: #2563eb; font-weight:bold"></Column>
+                <Column field="eqpid" header="EqpId" sortable style="width: 15%; font-weight: bold"></Column>
+                <Column field="agentDbHost" header="DB Host" sortable style="width: 20%"></Column>
+                <Column field="agentFtpHost" header="FTP Host" sortable style="width: 20%"></Column>
+                <Column field="update" header="Update" sortable style="width: 15%">
                   <template #body="{ data }">
-                    <span :class="data.updateFlag === 'yes' ? 'text-green-600 font-bold' : 'text-slate-400'">
-                      {{ data.updateFlag }}
-                    </span>
+                    {{ formatDateTime(data.update) }}
+                  </template>
+                </Column>
+                <Column field="updateFlag" header="Flag" sortable style="width: 100px" align="center">
+                  <template #body="{ data }">
+                    <InputSwitch 
+                      :modelValue="data.updateFlag === 'yes'" 
+                      @update:modelValue="(val: boolean) => toggleFlag(data, val)"
+                      class="scale-75"
+                    />
                   </template>
                 </Column>
                 
-                <Column field="update" header="Updated" sortable style="width: 10%">
-                  <template #body="{ data }">
-                    {{ data.update ? new Date(data.update).toLocaleString() : '-' }}
-                  </template>
-                </Column>
-                
-                <Column header="Action" style="width: 100px; min-width: 100px;" align="center">
-                  <template #body="{ data }">
-                    <div class="flex justify-center gap-2">
-                      <Button icon="pi pi-pencil" text rounded severity="info" size="small" class="!w-6 !h-6" @click="openServerDialog(data)" />
-                      <Button icon="pi pi-trash" text rounded severity="danger" size="small" class="!w-6 !h-6" @click="deleteServer(data.eqpid)" />
-                    </div>
-                  </template>
-                </Column>
                 <template #empty>
                   <div class="p-4 text-center text-slate-400">등록된 서버가 없습니다.</div>
                 </template>
@@ -180,7 +177,8 @@ import InputNumber from 'primevue/inputnumber';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Dialog from 'primevue/dialog';
-import RadioButton from 'primevue/radiobutton'; // [추가]
+import RadioButton from 'primevue/radiobutton';
+import InputSwitch from 'primevue/inputswitch';
 import * as AdminApi from '@/api/admin';
 
 // --- 1. New Server Config ---
@@ -210,8 +208,12 @@ const saveNewServerConfig = async () => {
 const cfgServers = ref([]);
 const loadingServers = ref(false);
 const serverDialog = reactive({ visible: false, isEdit: false });
-// [수정] 폼 데이터 구조 변경
 const serverForm = reactive({ eqpid: '', agentDbHost: '', agentFtpHost: '', updateFlag: 'no' });
+
+const serverMultiSortMeta = ref([
+  { field: 'sdwtId', order: 1 as const }, 
+  { field: 'eqpid', order: 1 as const }
+]);
 
 const loadCfgServers = async () => {
   loadingServers.value = true;
@@ -228,7 +230,6 @@ const openServerDialog = (item?: any) => {
   if(item) {
     Object.assign(serverForm, item);
   } else {
-    // 초기값
     Object.assign(serverForm, { eqpid: '', agentDbHost: '', agentFtpHost: '', updateFlag: 'no' });
   }
 };
@@ -242,11 +243,40 @@ const saveServer = async () => {
   } catch(e) { alert("저장 실패"); }
 };
 
-const deleteServer = async (eqpid: string) => {
-  if(confirm("삭제하시겠습니까?")) {
-    await AdminApi.deleteCfgServer(eqpid);
-    loadCfgServers();
+const toggleFlag = async (data: any, newValue: boolean) => {
+  const newFlagStr = newValue ? 'yes' : 'no';
+  const originalFlag = data.updateFlag;
+  data.updateFlag = newFlagStr;
+
+  try {
+    await AdminApi.updateCfgServer(data.eqpid, { updateFlag: newFlagStr });
+  } catch (e) {
+    data.updateFlag = originalFlag;
+    alert("업데이트 실패");
   }
+};
+
+// [KST 포맷팅] DB에는 이미 KST 시간이 저장되어 있음.
+// 따라서 UTC로 해석하여 시간을 변환하지 않고 그대로 출력해야 함.
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  
+  const formatter = new Intl.DateTimeFormat('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZone: 'UTC' // 중요
+  });
+  
+  const parts = formatter.formatToParts(date);
+  const getPart = (type: string) => parts.find(p => p.type === type)?.value;
+  
+  return `${getPart('year')}-${getPart('month')}-${getPart('day')} ${getPart('hour')}:${getPart('minute')}:${getPart('second')}`;
 };
 
 onMounted(() => {
@@ -256,7 +286,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 테이블 스타일 */
 :deep(.p-datatable-sm .p-datatable-thead > tr > th) {
   @apply bg-white dark:bg-[#111111] text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase border-b border-slate-100 dark:border-zinc-800;
 }
@@ -266,7 +295,6 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* InputNumber 내부 input 높이 조절 */
 :deep(.p-inputnumber-input) {
   @apply !py-1 !text-xs !h-7;
 }
