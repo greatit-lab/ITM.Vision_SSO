@@ -221,13 +221,16 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { useMenuStore } from "@/stores/menu"; // [추가] 메뉴 스토어
 import { dashboardApi } from "@/api/dashboard"; 
 import * as AdminApi from "@/api/admin";
 import http from "@/api/http"; 
+import type { MenuNode } from "@/api/menu"; // [추가] 타입 정의
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const menuStore = useMenuStore(); // [추가]
 const dropdownRef = ref<HTMLElement | null>(null);
 
 const isDropdownOpen = ref(false);
@@ -242,12 +245,39 @@ const selectedSdwt = ref("");
 const notification = ref({ show: false, message: '' });
 const pendingRequestCount = ref(0);
 
-// [수정] 페이지 타이틀 로직 개선 (요청사항 반영)
+// [수정] 페이지 타이틀 로직 개선 (메뉴 트리 탐색 적용)
 const pageTitle = computed(() => {
+  // 1. 메뉴 트리에서 현재 경로와 매칭되는 항목 찾기 (Breadcrumb 구성)
+  const findBreadcrumb = (nodes: MenuNode[], targetPath: string, parents: string[]): string | null => {
+    for (const node of nodes) {
+      // 경로 비교 시 trailing slash 제거 및 null 체크
+      const nodePath = (node.routerPath || '').replace(/\/$/, '');
+      const target = targetPath.replace(/\/$/, '');
+      
+      // 정확히 매칭되면 Breadcrumb 반환 (예: Parent / Child)
+      if (nodePath && nodePath === target) {
+        return [...parents, node.label].join(' / ');
+      }
+      
+      // 자식 노드가 있으면 재귀 탐색
+      if (node.children && node.children.length > 0) {
+        const found = findBreadcrumb(node.children, targetPath, [...parents, node.label]);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // 메뉴 데이터가 로드된 경우 우선 탐색
+  if (menuStore.menus.length > 0) {
+    const breadcrumb = findBreadcrumb(menuStore.menus, route.path, []);
+    if (breadcrumb) return breadcrumb;
+  }
+
+  // 2. 메뉴에 없는 경우 기존 로직 (Admin 페이지 등)
   const name = route.name?.toString();
   if (!name || name === "home") return "Overview";
 
-  // 관리자 페이지별 명칭 커스텀 (Management / ...)
   switch (name) {
     case "admin-menus":
       return "Management / Menus";
@@ -258,13 +288,11 @@ const pageTitle = computed(() => {
     case "admin-system":
       return "Management / System";
     default:
-      // 기본: 카멜/케밥 케이스를 공백으로 변환 및 첫 글자 대문자화
       return name.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   }
 });
 
 const handleAdminClick = () => {
-  // 슈퍼 어드민 여부에 따라 초기 진입 페이지 분기
   if (authStore.isSuperAdmin) {
     router.push({ name: 'admin-menus' });
   } else {
