@@ -40,17 +40,17 @@ export class RejectGuestRequestDto {
   approverId: string;
 }
 
-// [수정] 테이블 구조 변경 반영 (errorId, severity only)
+// Error Severity
 export class CreateSeverityDto {
   errorId: string;
   severity: string;
 }
 
-// [수정] Update 시에는 severity만 변경 가능 (PK인 errorId는 변경 불가)
 export class UpdateSeverityDto {
   severity: string;
 }
 
+// Metrics
 export class CreateMetricDto {
   metricName: string;
   isExcluded: boolean | string;
@@ -58,4 +58,29 @@ export class CreateMetricDto {
 
 export class UpdateMetricDto {
   isExcluded: boolean | string;
+}
+
+// [추가] New Server Config (Migration Target)
+export class UpdateNewServerDto {
+  newDbHost?: string;
+  newDbUser?: string;
+  newDbPw?: string;
+  newDbPort?: number;
+  newFtpHost?: string;
+  newFtpUser?: string;
+  newFtpPw?: string;
+  newFtpPort?: number;
+  description?: string;
+}
+
+// [추가] Cfg Server (Agent Server List)
+export class CreateCfgServerDto {
+  eqpid: string;
+  serverUrl?: string;
+  agentVer?: string;
+}
+
+export class UpdateCfgServerDto {
+  serverUrl?: string;
+  agentVer?: string;
 }
