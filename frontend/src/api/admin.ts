@@ -86,13 +86,15 @@ export const getCfgServers = () => http.get('/admin/servers');
 
 export const addCfgServer = (data: {
   eqpid: string;
-  serverUrl?: string;
-  agentVer?: string;
+  agentDbHost?: string;
+  agentFtpHost?: string;
+  updateFlag?: string;
 }) => http.post('/admin/servers', data);
 
 export const updateCfgServer = (eqpid: string, data: {
-  serverUrl?: string;
-  agentVer?: string;
+  agentDbHost?: string;
+  agentFtpHost?: string;
+  updateFlag?: string;
 }) => http.put(`/admin/servers/${eqpid}`, data);
 
 export const deleteCfgServer = (eqpid: string) => http.delete(`/admin/servers/${eqpid}`);
