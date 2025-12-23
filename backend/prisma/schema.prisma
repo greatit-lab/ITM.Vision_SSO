@@ -17,7 +17,6 @@ model RefEquipment {
   eqpid      String    @id
   sdwt       String
   
-  // [추가됨] 요청하신 컬럼 정의
   lineCode   String?   @map("line_code") @db.VarChar(50)
   simaxLine  String?   @map("simax_line") @db.VarChar(50)
   indexLine  String?   @map("index_line") @db.VarChar(50)
@@ -29,7 +28,6 @@ model RefEquipment {
 
   sdwtRel RefSdwt @relation(fields: [sdwt], references: [sdwt])
 
-  // 연관 테이블 (유지)
   agentInfo   AgentInfo?
   agentStatus AgentStatus?
   plgErrors   PlgError[]
@@ -54,7 +52,6 @@ model RefSdwt {
   @@map("ref_sdwt")
 }
 
-// ... (이하 다른 모델들은 기존과 동일하게 유지)
 model AgentInfo {
   eqpid      String  @id
   pcName     String? @map("pc_name")
@@ -246,7 +243,7 @@ model RefMenu {
   children RefMenu[] @relation("MenuHierarchy")
 
   sortOrder Int @default(0) @map("sort_order")
-  statusTag String?  @map("status_tag") @db.VarChar(10) 
+  statusTag String? @map("status_tag") @db.VarChar(10) 
   isVisible String @default("Y") @map("is_visible") @db.Char(1)
 
   roleMappings CfgMenuRole[]
@@ -274,13 +271,36 @@ model CfgAdminUser {
 
 model CfgGuestAccess {
   loginId     String   @id @map("login_id") @db.VarChar(50)
-  requester   String?  @db.VarChar(50)
+  deptCode    String?  @map("dept_code") @db.VarChar(50)
+  deptName    String?  @map("dept_name") @db.VarChar(100)
+  
   grantedRole String   @default("GUEST") @map("granted_role") @db.VarChar(20)
   validUntil  DateTime @map("valid_until")
   reason      String?  @db.VarChar(100)
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@map("cfg_guest_access")
+}
+
+// [수정] 게스트 접근 신청 이력 (부서 코드 추가)
+model CfgGuestRequest {
+  reqId       Int      @id @default(autoincrement()) @map("req_id")
+  loginId     String   @map("login_id") @db.VarChar(50)
+  
+  deptCode    String?  @map("dept_code") @db.VarChar(50) // [추가]
+  deptName    String?  @map("dept_name") @db.VarChar(100)
+  
+  reason      String?  @db.VarChar(200)
+  
+  // 상태: PENDING(대기), APPROVED(승인), REJECTED(반려)
+  status      String   @default("PENDING") @db.VarChar(20) 
+  
+  processedBy String?  @map("processed_by") @db.VarChar(50)
+  processedAt DateTime? @map("processed_at")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("cfg_guest_request")
 }
 
 model SysUser {
@@ -304,11 +324,6 @@ model SysUserContext {
   @@map("sys_user_context")
 }
 
-// ==========================================
-// [Infra Management] 인프라 관리용 테이블
-// ==========================================
-
-// 1. [사용자 정의] Global Config (단일 설정용)
 model CfgNewServer {
   id          Int     @id @default(1)
   newDbHost   String  @map("new_db_host") @db.VarChar(255)
@@ -324,7 +339,6 @@ model CfgNewServer {
   @@map("cfg_new_server")
 }
 
-// 3. [추가] 장비별 Agent 서버 정보
 model CfgServer {
   eqpid       String    @id @db.VarChar(50)
   serverUrl   String?   @map("server_url") @db.VarChar(200)
