@@ -38,7 +38,7 @@ export const rejectGuestRequest = (data: {
 }) => http.post('/admin/requests/reject', data);
 
 // ==========================================
-// [System Config] 1. 에러 심각도 (Error Severity)
+// [Infra Management] 1. 에러 심각도 (Error Severity)
 // ==========================================
 export const getSeverities = () => http.get('/admin/severity');
 
@@ -48,16 +48,15 @@ export const addSeverity = (data: {
   description?: string;
 }) => http.post('/admin/severity', data);
 
-export const updateSeverity = (id: number, data: {
-  errorId: string;
+export const updateSeverity = (errorId: string, data: {
   severity: string;
   description?: string;
-}) => http.put(`/admin/severity/${id}`, data);
+}) => http.put(`/admin/severity/${errorId}`, data);
 
-export const deleteSeverity = (id: number) => http.delete(`/admin/severity/${id}`);
+export const deleteSeverity = (errorId: string) => http.delete(`/admin/severity/${errorId}`);
 
 // ==========================================
-// [System Config] 2. 분석 지표 (Analysis Metrics)
+// [Infra Management] 2. 분석 지표 (Analysis Metrics)
 // ==========================================
 export const getMetrics = () => http.get('/admin/metrics');
 
@@ -72,3 +71,28 @@ export const updateMetric = (name: string, data: {
 }) => http.put(`/admin/metrics/${name}`, data);
 
 export const deleteMetric = (name: string) => http.delete(`/admin/metrics/${name}`);
+
+// ==========================================
+// [System Config] 1. 신규 서버 설정 (New Server Config)
+// ==========================================
+export const getNewServerConfig = () => http.get('/admin/new-server');
+
+export const updateNewServerConfig = (data: any) => http.put('/admin/new-server', data);
+
+// ==========================================
+// [System Config] 2. Agent 서버 목록 (Server List)
+// ==========================================
+export const getCfgServers = () => http.get('/admin/servers');
+
+export const addCfgServer = (data: {
+  eqpid: string;
+  serverUrl?: string;
+  agentVer?: string;
+}) => http.post('/admin/servers', data);
+
+export const updateCfgServer = (eqpid: string, data: {
+  serverUrl?: string;
+  agentVer?: string;
+}) => http.put(`/admin/servers/${eqpid}`, data);
+
+export const deleteCfgServer = (eqpid: string) => http.delete(`/admin/servers/${eqpid}`);
