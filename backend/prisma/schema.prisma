@@ -353,10 +353,11 @@ model CfgNewServer {
 }
 
 model CfgServer {
-  eqpid       String    @id @db.VarChar(50)
-  serverUrl   String?   @map("server_url") @db.VarChar(200)
-  agentVer    String?   @map("agent_ver") @db.VarChar(20)
-  lastCheck   DateTime? @map("last_check")
+  eqpid        String    @id @db.VarChar(50)
+  agentDbHost  String?   @map("agent_db_host") @db.VarChar(255)
+  agentFtpHost String?   @map("agent_ftp_host") @db.VarChar(255)
+  updateFlag   String    @default("no") @map("update_flag") @db.VarChar(10)
+  update       DateTime? @map("update") @db.Timestamp(0)
   
   @@map("cfg_server")
 }
