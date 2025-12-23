@@ -114,52 +114,53 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true },
   },
   
-  // [관리자 섹션] AdminLayout을 적용하여 하위 탭 구조로 변경
+  // [관리자 섹션] AdminLayout 적용 및 권한 기반 접근 제어
   {
     path: "/admin",
     component: AdminLayout,
-    meta: { requiresAuth: true, requiresAdmin: true },
+    meta: { requiresAuth: true }, // 기본 로그인 필요
     children: [
       {
         path: "",
         // [수정] 권한에 따라 리다이렉트 분기
         redirect: () => {
           const authStore = useAuthStore();
-          if (authStore.isSuperAdmin) return { name: "admin-menus" };
+          // ADMIN은 메뉴 관리로, MANAGER는 사용자 관리로 이동
+          if (authStore.user?.role === 'ADMIN') return { name: "admin-menus" };
           return { name: "admin-users" };
         }, 
       },
-      // 1. 메뉴 및 권한 (Menu & Roles)
+      // 1. 메뉴 및 권한 (Menu & Roles) - Admin Only
       {
         path: "menus",
         name: "admin-menus",
         component: MenuManagementView,
-        meta: { title: "Menu Management", requiresSuperAdmin: true }, // [수정] SuperAdmin 전용
+        meta: { roles: ['ADMIN'] }, 
       },
-      // 2. 사용자 및 보안 (User & Security)
+      // 2. 사용자 및 보안 (User & Security) - Admin, Manager
       {
         path: "users",
         name: "admin-users",
         component: UserManagementView, 
-        meta: { title: "User & Security" },
+        meta: { roles: ['ADMIN', 'MANAGER'] },
       },
-      // 3. 인프라 관리 (Infrastructure)
+      // 3. 인프라 관리 (Infrastructure) - Admin, Manager (탭 내부에서 세부 제어)
       {
         path: "infra",
         name: "admin-infra",
         component: InfraManagementView,
-        meta: { title: "Infrastructure" },
+        meta: { roles: ['ADMIN', 'MANAGER'] },
       },
-      // 4. 시스템 설정 (System Config)
+      // 4. 시스템 설정 (System Config) - Admin Only
       {
         path: "system",
         name: "admin-system",
         component: SystemConfigView,
-        meta: { title: "System Config" },
+        meta: { roles: ['ADMIN'] },
       },
     ],
   },
-  // [추가] 404 Not Found (옵션)
+  // 404 Not Found
   {
     path: "/:pathMatch(.*)*",
     name: "not-found",
@@ -206,9 +207,6 @@ router.beforeEach(async (to, _from, next) => {
 
   const isAuthenticated = authStore.isAuthenticated;
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
-  const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin);
-  // [추가] Super Admin 권한 체크
-  const requiresSuperAdmin = to.matched.some((record) => record.meta.requiresSuperAdmin);
 
   // 1. 비로그인 접근 차단
   if (requiresAuth && !isAuthenticated) {
@@ -222,19 +220,19 @@ router.beforeEach(async (to, _from, next) => {
 
   // 3. 권한 체크
   if (isAuthenticated) {
-    // 3-1. 관리자 전용 페이지 체크
-    if (requiresAdmin && !authStore.isAdmin) {
-      console.warn(`[Access Denied] Admin privileges required for ${to.path}`);
-      return next({ name: "home" }); 
+    // 3-1. RBAC (Role Based Access Control) 체크
+    // 라우트에 roles 메타 데이터가 있으면 체크
+    if (to.meta.roles) {
+      const allowedRoles = to.meta.roles as string[];
+      const userRole = authStore.user?.role || 'GUEST';
+
+      if (!allowedRoles.includes(userRole)) {
+        alert("접근 권한이 없습니다."); // 사용자 알림
+        return next({ name: "home" }); // 권한 없으면 홈으로 리다이렉트
+      }
     }
 
-    // [추가] 3-2. Super Admin 전용 페이지 체크 (Manager 접근 차단)
-    if (requiresSuperAdmin && !authStore.isSuperAdmin) {
-      console.warn(`[Access Denied] Super Admin privileges required for ${to.path}`);
-      return next({ name: "admin-users" }); // 접근 권한이 없는 경우 User 관리로 리다이렉트
-    }
-
-    // 3-3. 동적 메뉴 권한 체크
+    // 3-2. 동적 메뉴 권한 체크 (일반 페이지 대상)
     if (menuStore.menus.length === 0) {
       try {
         await menuStore.loadMenus();
