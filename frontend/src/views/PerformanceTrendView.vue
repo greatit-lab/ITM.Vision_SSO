@@ -88,6 +88,7 @@
             overlayClass="custom-dropdown-panel small"
             :class="{ '!text-slate-400': !selectedEqpId }"
             :disabled="!filterStore.selectedSdwt || isRealtime"
+            :loading="isEqpLoading"
             @change="onEqpIdChange"
           />
         </div>
@@ -437,7 +438,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, reactive } from "vue";
 import { useFilterStore } from "@/stores/filter";
-import { useAuthStore } from "@/stores/auth"; // [추가] Auth Store
+import { useAuthStore } from "@/stores/auth";
 import { dashboardApi } from "@/api/dashboard";
 import { equipmentApi } from "@/api/equipment";
 import {
@@ -465,7 +466,7 @@ interface PerformanceSummary {
 }
 
 const filterStore = useFilterStore();
-const authStore = useAuthStore(); // [추가]
+const authStore = useAuthStore();
 const selectedEqpId = ref("");
 const startDate = ref(new Date(Date.now() - 24 * 60 * 60 * 1000));
 const endDate = ref(new Date());
@@ -474,6 +475,7 @@ const intervalSeconds = ref(0);
 const sites = ref<string[]>([]);
 const sdwts = ref<string[]>([]);
 const eqpIds = ref<string[]>([]);
+const isEqpLoading = ref(false); // [유지] 로딩 상태 변수
 
 const chartData = ref<PerformanceDataPointDto[]>([]);
 const summaryData = ref<PerformanceSummary[]>([]);
@@ -560,7 +562,7 @@ onUnmounted(() => {
 });
 
 // --- Handlers ---
-// [수정] Site 변경 시 로컬 스토리지 업데이트 (performance_site)
+// Site 변경 시 로컬 스토리지 업데이트 (performance_site)
 const onSiteChange = async () => {
   if (filterStore.selectedSite) {
     localStorage.setItem("performance_site", filterStore.selectedSite);
@@ -579,7 +581,7 @@ const onSiteChange = async () => {
   hasSearched.value = false;
 };
 
-// [수정] SDWT 변경 시 로컬 스토리지 업데이트 (performance_sdwt)
+// SDWT 변경 시 로컬 스토리지 업데이트 (performance_sdwt)
 const onSdwtChange = async () => {
   if (filterStore.selectedSdwt) {
     localStorage.setItem("performance_sdwt", filterStore.selectedSdwt);
@@ -594,7 +596,7 @@ const onSdwtChange = async () => {
   localStorage.removeItem("performance_eqpid");
 };
 
-// [수정] EqpID 변경 시 로컬 스토리지 업데이트 (performance_eqpid)
+// EqpID 변경 시 로컬 스토리지 업데이트 (performance_eqpid)
 const onEqpIdChange = () => {
   if (selectedEqpId.value) {
     localStorage.setItem("performance_eqpid", selectedEqpId.value);
@@ -603,7 +605,7 @@ const onEqpIdChange = () => {
   }
 };
 
-// [수정] 초기화 시 로컬 스토리지 키 삭제
+// 초기화 시 로컬 스토리지 키 삭제
 const resetFilters = () => {
   if (isRealtime.value) return;
 
@@ -622,12 +624,18 @@ const resetFilters = () => {
   intervalSeconds.value = 0;
 };
 
+// [유지] EqpID 로딩 상태 처리
 const loadEqpIds = async () => {
-  eqpIds.value = await equipmentApi.getEqpIds(
-    undefined,
-    filterStore.selectedSdwt,
-    "performance"
-  );
+  isEqpLoading.value = true;
+  try {
+    eqpIds.value = await equipmentApi.getEqpIds(
+      undefined,
+      filterStore.selectedSdwt,
+      "performance"
+    );
+  } finally {
+    isEqpLoading.value = false;
+  }
 };
 
 // --- Chart Options & Helpers (기존 유지) ---
@@ -1015,12 +1023,13 @@ const searchData = async (silent = false) => {
       else fetchInterval = 1800;
     }
 
+    // [수정] 배열로 전달하여 API 에러 방지 ([selectedEqpId.value])
     const rawData = await performanceApi.getHistory(
       isRealtime.value
         ? startDate.value.toISOString()
         : fixedStart.toISOString(),
       isRealtime.value ? endDate.value.toISOString() : fixedEnd.toISOString(),
-      selectedEqpId.value,
+      [selectedEqpId.value],
       fetchInterval
     );
 
@@ -1064,9 +1073,9 @@ const calculateSummary = (data: PerformanceDataPointDto[]) => {
   let gpuPeakItem = data[0] as PerformanceDataPointDto;
 
   for (const d of data) {
-    if (d.cpuUsage > cpuPeakItem.cpuUsage) cpuPeakItem = d;
-    if (d.memoryUsage > memPeakItem.memoryUsage) memPeakItem = d;
-    if (d.gpuTemp > gpuPeakItem.gpuTemp) gpuPeakItem = d;
+    if ((d.cpuUsage ?? 0) > (cpuPeakItem.cpuUsage ?? 0)) cpuPeakItem = d;
+    if ((d.memoryUsage ?? 0) > (memPeakItem.memoryUsage ?? 0)) memPeakItem = d;
+    if ((d.gpuTemp ?? 0) > (gpuPeakItem.gpuTemp ?? 0)) gpuPeakItem = d;
   }
 
   summaryData.value = [
