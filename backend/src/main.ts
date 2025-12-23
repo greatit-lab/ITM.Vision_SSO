@@ -5,6 +5,9 @@ import { NestApplicationOptions } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// [중요] 한국 시간대(KST)로 설정 (웹 조회 시 시간 차이 해결)
+process.env.TZ = 'Asia/Seoul';
+
 async function bootstrap() {
   // NestJS의 httpsOptions 타입을 그대로 사용
   let httpsOptions: NestApplicationOptions['httpsOptions'] = undefined;
