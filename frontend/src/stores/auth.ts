@@ -1,7 +1,7 @@
 // frontend/src/stores/auth.ts
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import http from "@/api/http"; // [추가] API 호출을 위한 axios 인스턴스
+import http from "@/api/http";
 
 export interface UserInfo {
   userId: string;
@@ -14,7 +14,7 @@ export interface UserInfo {
   groups: string | string[];
   role?: string;
   sessionIndex?: string;
-  // [추가] 사용자 컨텍스트
+  // 사용자 컨텍스트
   site?: string;
   sdwt?: string;
   [key: string]: any;
@@ -37,7 +37,7 @@ export const useAuthStore = defineStore("auth", () => {
     return user.value?.name ? user.value.name.charAt(0).toUpperCase() : "U";
   });
 
-  // [기존] Admin 또는 Manager (일반 관리자 포함)
+  // Admin 또는 Manager
   const isAdmin = computed(() => {
     if (user.value?.role === "ADMIN" || user.value?.role === "MANAGER")
       return true;
@@ -51,7 +51,7 @@ export const useAuthStore = defineStore("auth", () => {
     }
   });
 
-  // [추가] Super Admin (최고 관리자 - ADMIN 역할만 해당)
+  // Super Admin
   const isSuperAdmin = computed(() => {
     if (user.value?.role === "ADMIN") return true;
     if (Array.isArray(user.value?.groups)) {
@@ -80,7 +80,7 @@ export const useAuthStore = defineStore("auth", () => {
     localStorage.setItem("jwt_token", newToken);
   };
 
-  // 사용자 정보 갱신 (Profile Settings 저장 시 호출)
+  // 사용자 정보 갱신
   const setUser = (newUser: UserInfo) => {
     user.value = newUser;
     localStorage.setItem("user_info", JSON.stringify(newUser));
@@ -94,10 +94,9 @@ export const useAuthStore = defineStore("auth", () => {
     window.location.href = "/login";
   };
 
-  // [New Action] 로그인 처리
+  // 로그인 처리
   const loginAction = async (id: string, pw: string) => {
     try {
-      // Backend의 AuthController.login 호출
       const res = await http.post("/auth/login", {
         userId: id,
         password: pw,
@@ -109,9 +108,28 @@ export const useAuthStore = defineStore("auth", () => {
       }
       return false;
     } catch (e) {
-      // 에러는 View에서 처리하도록 throw
       throw e;
     }
+  };
+
+  // [수정] 데모 모드용 가상 로그인 (데이터 자동 조회를 위한 값 설정)
+  const loginAsDemoUser = () => {
+    const demoUser: UserInfo = {
+      userId: "demo_user",
+      name: "Demo User",
+      email: "demo@itm.com",
+      department: "Development",
+      departmentName: "Dev Team",
+      companyCode: "ITM",
+      groups: ["Users"], 
+      role: "USER",      
+      
+      // [중요] 초기 데이터 자동 조회를 위한 기본값 설정
+      site: "Hanam",     
+      sdwt: "WHT"        // <-- [수정필요] 실제 DB에 존재하는 장비 타입(SDWT) 입력 (예: 'WHT', 'EQP')
+    };
+    
+    setAuth("demo-mode-dummy-token", demoUser);
   };
 
   return {
@@ -127,6 +145,7 @@ export const useAuthStore = defineStore("auth", () => {
     setToken,
     setUser,
     logout,
-    loginAction, // [Export]
+    loginAction,
+    loginAsDemoUser,
   };
 });
