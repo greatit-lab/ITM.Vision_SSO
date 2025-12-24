@@ -1,12 +1,11 @@
 // backend/src/dashboard/dashboard.controller.ts
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { DashboardService } from './dashboard.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // [수정] 커스텀 가드 임포트
 
-// [수정] Global Prefix('api')와 결합되어 최종 URL은 '/api/dashboard'가 됩니다.
-// 기존 'api/dashboard' -> 'dashboard'로 변경
+// Global Prefix('api')와 결합되어 최종 URL은 '/api/dashboard'가 됩니다.
 @Controller('dashboard')
-@UseGuards(AuthGuard('jwt')) // JWT 인증 가드 적용 (보안 강화)
+@UseGuards(JwtAuthGuard) // [수정] AuthGuard('jwt') -> JwtAuthGuard로 변경 (데모 모드 지원)
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
