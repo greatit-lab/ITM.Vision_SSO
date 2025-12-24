@@ -80,6 +80,16 @@ export interface SpectrumSeriesDto {
   };
 }
 
+// [신규] Optical Trend DTO
+export interface OpticalTrendDto {
+  ts: string;
+  lotId: string;
+  waferId: string;
+  point: number;
+  totalIntensity: number;
+  peakIntensity: number;
+}
+
 // --- API 함수 (apiClient -> http로 변경) ---
 
 export const waferApi = {
@@ -214,6 +224,14 @@ export const waferApi = {
 
   getComparisonData: async (params: any) => {
     const { data } = await http.get<any[]>("/WaferData/comparison", { params });
+    return data;
+  },
+
+  // [신규] Optical Trend 데이터 조회
+  getOpticalTrend: async (params: any) => {
+    const { data } = await http.get<OpticalTrendDto[]>("/WaferData/optical-trend", {
+      params,
+    });
     return data;
   },
 };
