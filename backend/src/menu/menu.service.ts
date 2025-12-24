@@ -12,11 +12,11 @@ export interface MenuNode {
   sortOrder: number | null;
   children: MenuNode[];
   statusTag?: string | null;
-  isVisible?: boolean; // [추가] 조회 시 반환할 필드
+  isVisible?: boolean; 
   roles?: string[];
 }
 
-// DTO 정의 (Controller와 맞춤)
+// (DTO 정의 부분은 기존과 동일하므로 생략 가능하나, 전체 코드 제공 원칙에 따라 포함)
 export interface CreateMenuDto {
   label: string;
   routerPath?: string;
@@ -24,7 +24,7 @@ export interface CreateMenuDto {
   icon?: string;
   sortOrder?: number;
   statusTag?: string;
-  isVisible?: boolean; // [추가]
+  isVisible?: boolean;
   roles?: string[];
 }
 
@@ -35,7 +35,7 @@ export interface UpdateMenuDto {
   icon?: string;
   sortOrder?: number;
   statusTag?: string;
-  isVisible?: boolean; // [추가]
+  isVisible?: boolean;
   roles?: string[];
 }
 
@@ -51,12 +51,13 @@ export class MenuService {
       orderBy: { sortOrder: 'asc' },
     });
 
-    // 2. ADMIN은 전체 트리 반환 (단, isVisible='Y'인 것들 중)
-    if (role === 'ADMIN') {
+    // [수정] 데모 모드이거나 ADMIN 권한이면 전체 메뉴 반환 (권한 테이블 조회 패스)
+    // 이렇게 하면 DB에 USER 권한 매핑이 없어도 메뉴가 보입니다.
+    if (process.env.ENABLE_DEMO_MODE === 'true' || role === 'ADMIN') {
       return this.buildMenuTree(allMenus);
     }
 
-    // 3. 해당 Role이 접근 가능한 메뉴 ID 목록 조회
+    // 3. 해당 Role이 접근 가능한 메뉴 ID 목록 조회 (일반 모드 로직)
     const accessible = await this.prisma.cfgMenuRole.findMany({
       where: { role: role },
       select: { menuId: true },
@@ -101,7 +102,6 @@ export class MenuService {
         icon: icon || null,
         sortOrder: sortOrder || 0,
         statusTag: statusTag || null,
-        // [수정] boolean -> 'Y'/'N' 변환 (기본값 'Y')
         isVisible: isVisible === false ? 'N' : 'Y',
       },
     });
@@ -127,7 +127,6 @@ export class MenuService {
       ...(icon !== undefined && { icon: icon || null }),
       ...(sortOrder !== undefined && { sortOrder }),
       ...(statusTag !== undefined && { statusTag: statusTag || null }),
-      // [수정] boolean -> 'Y'/'N' 변환
       ...(isVisible !== undefined && { isVisible: isVisible ? 'Y' : 'N' }),
     };
 
@@ -153,7 +152,6 @@ export class MenuService {
   }
 
   async deleteMenu(id: number) {
-    // 안전을 위해 Role 매핑 먼저 삭제 후 메뉴 삭제
     await this.prisma.cfgMenuRole.deleteMany({ where: { menuId: id } });
     return this.prisma.refMenu.delete({ where: { menuId: id } });
   }
@@ -175,15 +173,12 @@ export class MenuService {
 
   // --- Helper Methods ---
 
-  // 재귀적 필터링 로직: 자식에게 권한이 있으면 부모도 살린다.
   private filterMenusRecursive(allMenus: RefMenu[], allowedIds: Set<number>): RefMenu[] {
     const menuMap = new Map<number, RefMenu>(allMenus.map(m => [m.menuId, m]));
     const resultIds = new Set<number>();
 
-    // 1. 직접 권한이 있는 메뉴 추가
     allowedIds.forEach(id => resultIds.add(id));
 
-    // 2. 권한 있는 메뉴의 모든 부모(조상) 경로 추가
     allowedIds.forEach(id => {
       let current = menuMap.get(id);
       while (current && current.parentId) {
@@ -200,12 +195,10 @@ export class MenuService {
     return allMenus.filter(m => resultIds.has(m.menuId));
   }
 
-  // 트리 구조 변환
   private buildMenuTree(menus: RefMenu[], roleMap?: Map<number, string[]>): MenuNode[] {
     const map = new Map<number, MenuNode>();
     const roots: MenuNode[] = [];
 
-    // 1. 노드 생성
     menus.forEach((menu) => {
       map.set(menu.menuId, {
         menuId: menu.menuId,
@@ -215,13 +208,12 @@ export class MenuService {
         parentId: menu.parentId,
         sortOrder: menu.sortOrder,
         statusTag: menu.statusTag,
-        isVisible: menu.isVisible === 'Y', // [추가] 'Y' -> true 변환
+        isVisible: menu.isVisible === 'Y',
         children: [],
         roles: roleMap ? (roleMap.get(menu.menuId) || []) : undefined,
       });
     });
 
-    // 2. 트리 연결
     menus.forEach((menu) => {
       if (menu.parentId && map.has(menu.parentId)) {
         const parent = map.get(menu.parentId);
@@ -231,7 +223,6 @@ export class MenuService {
       }
     });
 
-    // 3. 정렬 (재귀)
     const sortNodes = (nodes: MenuNode[]) => {
       nodes.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
       nodes.forEach(node => {
