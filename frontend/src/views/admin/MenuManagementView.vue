@@ -41,15 +41,18 @@
           <div class="flex gap-1">
              <Button 
               v-if="hasSelection"
-              icon="pi pi-shield" 
-              class="!w-6 !h-6 !bg-indigo-500 !border-indigo-500 !rounded"
+              icon="pi pi-shield"
+              label="Bulk Role"
+              class="!h-7 !text-xs !bg-indigo-500 !border-indigo-500"
+              size="small"
               v-tooltip="'Bulk Permissions'"
               @click="openBulkRoleModal"
             />
             <Button 
-              icon="pi pi-plus" 
-              class="!w-6 !h-6 !bg-slate-900 dark:!bg-white !text-white dark:!text-slate-900 !border-none !rounded"
-              v-tooltip="'Add New Menu'"
+              icon="pi pi-plus"
+              label="New Menu"
+              class="!h-7 !text-xs !bg-slate-900 dark:!bg-white !text-white dark:!text-slate-900 !border-none"
+              size="small"
               @click="openNewMenuModal" 
             />
           </div>
