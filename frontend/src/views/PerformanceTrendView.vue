@@ -512,35 +512,50 @@ onMounted(async () => {
   // 1. Site 목록 로드
   sites.value = await dashboardApi.getSites();
 
-  // 2. 기본 필터 결정 (우선순위: DB 사용자 설정 -> 페이지 전용 로컬 스토리지)
-  let defaultSite = authStore.user?.site;
-  let defaultSdwt = authStore.user?.sdwt;
+  // 2. 초기 필터 값 결정 (우선순위: 1.Store -> 2.LocalStorage -> 3.Auth/Demo)
+  let targetSite = filterStore.selectedSite;
+  let targetSdwt = filterStore.selectedSdwt;
 
-  // DB에 없으면 로컬 스토리지 확인 (페이지 전용 키: performance_site, performance_sdwt)
-  if (!defaultSite) {
-    defaultSite = localStorage.getItem("performance_site") || undefined;
-    if (defaultSite) {
-      defaultSdwt = localStorage.getItem("performance_sdwt") || undefined;
+  // Store 비어있으면 LocalStorage 확인
+  if (!targetSite) {
+    targetSite = localStorage.getItem("performance_site") || "";
+    if (targetSite) {
+      targetSdwt = localStorage.getItem("performance_sdwt") || "";
     }
   }
 
-  // 3. 결정된 Site가 유효하면 적용 및 SDWT 로드
-  if (defaultSite && sites.value.includes(defaultSite)) {
-    filterStore.selectedSite = defaultSite;
-    sdwts.value = await dashboardApi.getSdwts(defaultSite);
+  // LocalStorage도 없으면 Auth/Demo 기본값
+  if (!targetSite) {
+    targetSite = authStore.user?.site || "";
+    targetSdwt = authStore.user?.sdwt || "";
+  }
 
-    // 4. SDWT 적용 및 EqpID 로드
-    if (defaultSdwt) {
-      filterStore.selectedSdwt = defaultSdwt;
-      // Agent가 설치된 장비만 조회 (performance 데이터는 Agent 장비에만 있음)
+  // 3. 결정된 Site 적용 및 하위 데이터(SDWT) 로드
+  if (targetSite && sites.value.includes(targetSite)) {
+    filterStore.selectedSite = targetSite;
+    
+    // [중요] Site 변경에 따른 SDWT 목록 즉시 로드
+    sdwts.value = await dashboardApi.getSdwts(targetSite);
+
+    // 4. SDWT 적용 및 하위 데이터(EQP) 로드
+    if (targetSdwt && sdwts.value.includes(targetSdwt)) {
+      filterStore.selectedSdwt = targetSdwt;
+      
+      // Agent 설치 장비 목록 로드
       await loadEqpIds();
 
-      // 5. EqpID 복원 (마지막 선택 장비, 페이지 전용 키: performance_eqpid)
+      // 5. EQP ID 복원
       const savedEqpId = localStorage.getItem("performance_eqpid");
       if (savedEqpId && eqpIds.value.includes(savedEqpId)) {
         selectedEqpId.value = savedEqpId;
       }
+    } else {
+      filterStore.selectedSdwt = "";
+      selectedEqpId.value = "";
     }
+  } else {
+    filterStore.selectedSite = "";
+    filterStore.selectedSdwt = "";
   }
 
   themeObserver = new MutationObserver((mutations) => {
@@ -1168,3 +1183,4 @@ const fmt = (val: number | string | undefined, digits: number) => {
   padding: 4px 8px !important;
 }
 </style>
+
