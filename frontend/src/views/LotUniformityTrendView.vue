@@ -266,13 +266,69 @@
               Trend by Point ({{ filters.metric?.toUpperCase() }})
             </h3>
           </div>
-          <span
-            class="text-[10px] text-slate-400 font-mono"
-            v-if="chartSeries.length > 0"
-          >
-            {{ chartSeries.length }} Wafers / {{ totalPoints }} Points
-          </span>
+          
+          <div class="flex items-center gap-3">
+             <div class="flex bg-slate-200 dark:bg-zinc-800 p-0.5 rounded-lg">
+                <button
+                  @click="isSpatialView = false"
+                  class="px-3 py-1 text-[10px] font-bold rounded-md transition-all flex items-center gap-1.5"
+                  :class="!isSpatialView ? 'bg-white dark:bg-zinc-700 text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'"
+                >
+                  <i class="pi pi-list text-[9px]"></i> Index
+                </button>
+                <button
+                  @click="isSpatialView = true"
+                  class="px-3 py-1 text-[10px] font-bold rounded-md transition-all flex items-center gap-1.5"
+                  :class="isSpatialView ? 'bg-white dark:bg-zinc-700 text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'"
+                >
+                  <i class="pi pi-arrows-alt text-[9px]"></i> Spatial
+                </button>
+             </div>
+             
+             <span
+              class="hidden sm:block text-[10px] text-slate-400 font-mono"
+              v-if="chartSeries.length > 0"
+            >
+              {{ chartSeries.length }} Wafers / {{ totalPoints }} Points
+            </span>
+          </div>
         </div>
+
+        <div v-if="isSpatialView && !isLoading && chartSeries.length > 0" 
+             class="px-4 py-2 bg-slate-50/30 dark:bg-zinc-900/30 border-b border-dashed border-slate-100 dark:border-zinc-800 flex items-center gap-4 animate-fade-in">
+           <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
+             <i class="pi pi-compass mr-1"></i>View Angle
+           </div>
+           
+           <div class="flex-1 max-w-xs flex items-center gap-3">
+             <input 
+               type="range" 
+               min="0" 
+               max="360" 
+               step="5"
+               v-model.number="viewAngle"
+               class="w-full h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
+             />
+             <span class="text-xs font-mono font-bold w-8 text-right text-teal-600">{{ viewAngle }}°</span>
+           </div>
+
+           <div class="flex items-center gap-1">
+              <button 
+                v-for="(label, angle) in { 0: 'B', 90: 'R', 180: 'T', 270: 'L' }" 
+                :key="angle"
+                @click="viewAngle = Number(angle)"
+                class="w-6 h-6 rounded text-[9px] font-bold border border-slate-200 dark:border-zinc-700 hover:bg-white dark:hover:bg-zinc-800 hover:border-teal-300 hover:text-teal-600 transition-colors"
+                :class="viewAngle === Number(angle) ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-500 text-teal-600' : 'text-slate-500'"
+              >
+                {{ label }}
+              </button>
+           </div>
+           <div class="h-4 border-l border-slate-200 dark:border-zinc-700 mx-2"></div>
+           <p class="text-[10px] text-slate-400">
+             <i class="pi pi-info-circle mr-1"></i>X-Axis: Distance from center (mm)
+           </p>
+        </div>
+
         <div class="relative flex-1 w-full min-h-0">
           <EChart
             v-if="!isLoading && chartSeries.length > 0"
@@ -362,6 +418,17 @@
           <div
             class="relative h-full w-full max-w-full aspect-square flex items-center justify-center bg-slate-50/30 dark:bg-black/20 rounded-full border border-dashed border-slate-200 dark:border-zinc-800/50"
           >
+            <div v-if="isSpatialView" 
+                 class="absolute inset-0 pointer-events-none z-0 transition-transform duration-300 ease-out"
+                 :style="{ transform: `rotate(${-viewAngle}deg)` }"
+            >
+               <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+                  <i class="pi pi-caret-up text-teal-500/50 text-4xl -mb-2"></i>
+                  <i class="pi pi-eye text-teal-500/50 text-2xl animate-pulse"></i>
+               </div>
+               <div class="absolute top-0 bottom-1/2 left-1/2 w-px bg-teal-500/20 border-l border-dashed border-teal-500/30"></div>
+            </div>
+
             <div
               v-if="mapMode === 'heatmap' && !selectedWaferId"
               class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 dark:bg-zinc-900/60 backdrop-blur-[1px] text-center p-4 rounded-full"
@@ -379,7 +446,7 @@
             <EChart
               v-if="!isLoading && chartSeries.length > 0"
               :option="mapChartOption"
-              class="w-full h-full rounded-full overflow-hidden"
+              class="w-full h-full rounded-full overflow-hidden relative z-1"
               :key="mapMode"
             />
             <div
@@ -425,6 +492,9 @@ import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import Button from "primevue/button";
 
+// [유지] 차트 데이터 타입 명시 (TS2532 해결)
+type LineChartPoint = [number, number, number];
+
 const filterStore = useFilterStore();
 const authStore = useAuthStore();
 const isLoading = ref(false);
@@ -434,6 +504,10 @@ const hasTopSearched = ref(false);
 const hasSearched = ref(false);
 const mapMode = ref<"point" | "heatmap">("point");
 const selectedWaferId = ref<number | null>(null);
+
+// Spatial Analysis States
+const isSpatialView = ref(false);
+const viewAngle = ref(0); // 0 = Bottom (Looking Up)
 
 const sites = ref<string[]>([]);
 const sdwts = ref<string[]>([]);
@@ -529,65 +603,41 @@ const globalStats = computed(() => {
   return { min: Math.min(...allValues), max: Math.max(...allValues) };
 });
 
-// [수정] onMounted 로직: 필터 순차 로딩(Chaining) 적용
 onMounted(async () => {
-  // 1. Site 목록 로드
   sites.value = await dashboardApi.getSites();
-
-  // 2. 초기 필터 값 결정 (우선순위: Store > LocalStorage > Auth)
   let targetSite = filterStore.selectedSite;
   let targetSdwt = filterStore.selectedSdwt;
 
-  // Store가 비어있으면 LocalStorage 확인 (페이지 전용 키 lot_site 사용)
   if (!targetSite) {
     targetSite = localStorage.getItem("lot_site") || "";
-    if (targetSite) {
-      targetSdwt = localStorage.getItem("lot_sdwt") || "";
-    }
+    if (targetSite) targetSdwt = localStorage.getItem("lot_sdwt") || "";
   }
-
-  // LocalStorage도 없으면 Auth/Demo 기본값 사용
   if (!targetSite) {
     targetSite = authStore.user?.site || "";
     targetSdwt = authStore.user?.sdwt || "";
   }
 
-  // 3. 결정된 Site 적용 및 하위 데이터(SDWT) 로드
   if (targetSite && sites.value.includes(targetSite)) {
     filterStore.selectedSite = targetSite;
-    
-    // [중요] Site가 선택되어 있다면 반드시 SDWT 목록을 재조회
     sdwts.value = await dashboardApi.getSdwts(targetSite);
-
-    // 4. SDWT 적용 및 하위 데이터(EQP) 로드
     if (targetSdwt && sdwts.value.includes(targetSdwt)) {
       filterStore.selectedSdwt = targetSdwt;
-      
       isEqpLoading.value = true;
       try {
-        // [유지] Agent 설치된 장비만 조회
-        eqpIds.value = await equipmentApi.getEqpIds(
-          undefined,
-          targetSdwt,
-          "agent"
-        );
+        eqpIds.value = await equipmentApi.getEqpIds(undefined, targetSdwt, "agent");
       } finally {
         isEqpLoading.value = false;
       }
-
-      // 5. EqpID 복원 (LocalStorage) 및 Lot 로드
       const savedEqpId = localStorage.getItem("lot_eqpid");
       if (savedEqpId && eqpIds.value.includes(savedEqpId)) {
         filters.eqpId = savedEqpId;
         await loadLotIds(); 
       }
     } else {
-      // Site는 있는데 SDWT가 유효하지 않거나 없으면 초기화
       filterStore.selectedSdwt = "";
       eqpIds.value = [];
     }
   } else {
-    // Site가 유효하지 않으면 전체 초기화
     filterStore.selectedSite = "";
     filterStore.selectedSdwt = "";
     sdwts.value = [];
@@ -633,7 +683,6 @@ const clearStepsFrom = (stepIndex: number) => {
   selectedWaferId.value = null;
 };
 
-// [수정] 핸들러: Store 업데이트 시 LocalStorage도 같이 갱신
 const onSiteChange = async () => {
   if (filterStore.selectedSite) {
     localStorage.setItem("lot_site", filterStore.selectedSite);
@@ -642,11 +691,9 @@ const onSiteChange = async () => {
     localStorage.removeItem("lot_site");
     sdwts.value = [];
   }
-
   filterStore.selectedSdwt = "";
   localStorage.removeItem("lot_sdwt");
   localStorage.removeItem("lot_eqpid");
-
   filters.eqpId = "";
   clearStepsFrom(0);
 };
@@ -656,11 +703,7 @@ const onSdwtChange = async () => {
     localStorage.setItem("lot_sdwt", filterStore.selectedSdwt);
     isEqpLoading.value = true;
     try {
-      eqpIds.value = await equipmentApi.getEqpIds(
-        undefined,
-        filterStore.selectedSdwt,
-        "agent"
-      );
+      eqpIds.value = await equipmentApi.getEqpIds(undefined, filterStore.selectedSdwt, "agent");
     } finally {
       isEqpLoading.value = false;
     }
@@ -668,7 +711,6 @@ const onSdwtChange = async () => {
     localStorage.removeItem("lot_sdwt");
     eqpIds.value = [];
   }
-
   filters.eqpId = "";
   localStorage.removeItem("lot_eqpid");
   clearStepsFrom(0);
@@ -783,7 +825,6 @@ const searchData = async () => {
   isLoading.value = true;
   hasSearched.value = true;
   selectedWaferId.value = null;
-  // 차트 데이터 초기화 (로딩 중 빈 화면 방지 위해)
   chartSeries.value = [];
 
   try {
@@ -823,6 +864,7 @@ const selectWafer = (id: number) => {
   selectedWaferId.value = id;
   mapMode.value = "heatmap";
 };
+
 const onLineChartClick = (params: any) => {
   if (params.seriesName) {
     const id = parseInt(params.seriesName.replace("W", ""));
@@ -894,56 +936,112 @@ const interpolateData = (
   return result;
 };
 
+// Chart Option with Continuous Distance Axis
 const lineChartOption = computed(() => {
   const textColor = isDarkMode.value ? "#cbd5e1" : "#475569";
-  const gridColor = isDarkMode.value
-    ? "rgba(255, 255, 255, 0.1)"
-    : "rgba(0, 0, 0, 0.1)";
-  const allPoints = chartSeries.value.flatMap((s) =>
-    s.dataPoints.map((p) => p.point)
-  );
-  const minPoint = allPoints.length > 0 ? Math.min(...allPoints) : 0;
-  const maxPoint = allPoints.length > 0 ? Math.max(...allPoints) : 20;
+  const gridColor = isDarkMode.value ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)";
+  
+  // -- Spatial Calculation --
+  const rad = (-viewAngle.value * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+
+  // Determine X-Axis Range
+  let minX = 0, maxX = 20;
+  if (!isSpatialView.value) {
+    const allPoints = chartSeries.value.flatMap(s => s.dataPoints.map(p => p.point));
+    if (allPoints.length > 0) {
+      minX = Math.min(...allPoints) - 1;
+      maxX = Math.max(...allPoints) + 1;
+    }
+  } else {
+    // For Spatial, range is approx -150 to +150 mm
+    minX = -155;
+    maxX = 155;
+  }
 
   const series = chartSeries.value.map((s) => {
     const isSelected = selectedWaferId.value === s.waferId;
     const isAnySelected = selectedWaferId.value !== null;
+    
+    // [유지] 타입 명시로 data 변수 선언
+    let data: LineChartPoint[];
+
+    if (isSpatialView.value) {
+       // Project points onto the viewing plane
+       data = s.dataPoints.map((p): LineChartPoint => {
+          const projectedX = p.x * cos - p.y * sin;
+          return [projectedX, p.value, p.point]; 
+       });
+       // Sort by X for correct line drawing
+       data.sort((a, b) => a[0] - b[0]);
+    } else {
+       data = s.dataPoints.map((p): LineChartPoint => [p.point, p.value, p.point]);
+    }
+
     return {
       name: `W${s.waferId}`,
       type: "line",
       showSymbol: true,
-      symbolSize: isSelected ? 8 : 5,
-      data: s.dataPoints.map((p) => [p.point, p.value]),
-      smooth: true,
+      symbolSize: isSelected ? 6 : 4,
+      data: data,
+      // [수정] Smooth curve to reduce noise visualization
+      smooth: isSpatialView.value ? 0.3 : true,
+      
+      // [수정] "Focus on Hover" Strategy
       lineStyle: {
-        width: isSelected ? 3 : 2,
-        opacity: isAnySelected && !isSelected ? 0.2 : 0.8,
+        width: isSelected ? 3 : 1, // Default to thin lines
+        opacity: isSelected ? 1 : 0.5, // Default to semi-transparent
+        type: 'solid'
       },
-      itemStyle: { opacity: isAnySelected && !isSelected ? 0.2 : 1 },
+      itemStyle: { 
+        opacity: isSelected ? 1 : 0.8 
+      },
+      
+      // [핵심] Highlight on hover, blur others
+      emphasis: {
+        focus: 'series',
+        blurScope: 'coordinateSystem',
+        lineStyle: { width: 3, opacity: 1 },
+        itemStyle: { opacity: 1 }
+      },
+      
       z: isSelected ? 10 : 1,
       triggerLineEvent: true,
     };
   });
+
   return {
     backgroundColor: "transparent",
     tooltip: {
       trigger: "axis",
       confine: true,
-      backgroundColor: isDarkMode.value
-        ? "rgba(24, 24, 27, 0.9)"
-        : "rgba(255, 255, 255, 0.95)",
+      backgroundColor: isDarkMode.value ? "rgba(24, 24, 27, 0.9)" : "rgba(255, 255, 255, 0.95)",
       textStyle: { color: isDarkMode.value ? "#fff" : "#1e293b", fontSize: 11 },
       formatter: (params: any) => {
-        let html = `<div class="font-bold mb-1 border-b pb-1 text-xs">Point #${params[0].value[0]}</div>`;
+        // Tooltip Label based on mode
+        let header = '';
+        if (isSpatialView.value) {
+           const xVal = params[0].value[0];
+           header = `Distance: ${xVal.toFixed(1)} mm`;
+        } else {
+           header = `Point #${params[0].value[0]}`;
+        }
+        
+        let html = `<div class="font-bold mb-1 border-b pb-1 text-xs">${header}</div>`;
         html += `<div style="max-height: 200px; overflow-y: auto;">`;
         params.forEach((p: any) => {
-          html += `<div class="flex justify-between items-center gap-3 text-xs mb-0.5"><span>${p.marker} ${p.seriesName}</span><span class="font-mono font-bold">${p.value[1].toFixed(3)}</span></div>`;
+          const pointId = p.value[2]; // Extra data
+          html += `<div class="flex justify-between items-center gap-3 text-xs mb-0.5">
+                    <span>${p.marker} ${p.seriesName} <span class="text-[9px] text-slate-400">(Pt.${pointId})</span></span>
+                    <span class="font-mono font-bold">${p.value[1].toFixed(3)}</span>
+                   </div>`;
         });
         html += `</div>`;
         return html;
       },
     },
-    grid: { left: 40, right: 30, top: 30, bottom: 30, containLabel: true },
+    grid: { left: 40, right: 30, top: 30, bottom: 40, containLabel: true },
     legend: {
       show: true,
       type: "scroll",
@@ -955,17 +1053,18 @@ const lineChartOption = computed(() => {
       { type: "inside", xAxisIndex: 0 },
       { type: "slider", xAxisIndex: 0, bottom: 0, height: 16 },
     ],
+    // Unified Value Axis for X
     xAxis: {
       type: "value",
-      min: minPoint - 1,
-      max: maxPoint + 1,
-      minInterval: 1,
-      interval: 1,
-      axisLabel: { color: textColor },
-      splitLine: {
-        show: true,
-        lineStyle: { color: gridColor, type: "dashed" },
-      },
+      min: minX,
+      max: maxX,
+      interval: isSpatialView.value ? 25 : 1, // Grid interval
+      axisLabel: { color: textColor, fontSize: 10 },
+      splitLine: { show: true, lineStyle: { color: gridColor, type: "dashed" } },
+      name: isSpatialView.value ? '(mm)' : '',
+      nameLocation: 'middle',
+      nameGap: 25,
+      nameTextStyle: { color: textColor, fontSize: 10 }
     },
     yAxis: {
       type: "value",
@@ -1030,11 +1129,15 @@ const mapChartOption = computed(() => {
           const p1 = api.coord([0, 0]);
           const p2 = api.coord([3.75, 0]);
 
+          if (!p1 || !p2) return; 
+
           const pixelSize = Math.abs(p2[0] - p1[0]);
           const drawSize = Math.ceil(pixelSize) + 1;
 
           points.forEach((p) => {
             const coord = api.coord([p.x, p.y]);
+            if (!coord) return;
+
             ctx.fillStyle = getHeatmapColor(p.value, min, max);
             ctx.fillRect(
               coord[0] - drawSize / 2,
