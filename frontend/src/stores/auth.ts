@@ -60,6 +60,11 @@ export const useAuthStore = defineStore("auth", () => {
     return user.value?.groups === "Administrators";
   });
 
+  // [추가] 데모 유저 여부 확인
+  const isDemo = computed(() => {
+    return user.value?.userId === "demo_user";
+  });
+
   const userDetailTooltip = computed(() => {
     const dept =
       user.value?.departmentName || user.value?.department || "Unknown Dept";
@@ -112,7 +117,7 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
-  // [수정] 데모 모드용 가상 로그인 (데이터 자동 조회를 위한 값 설정)
+  // 데모 모드용 가상 로그인
   const loginAsDemoUser = () => {
     const demoUser: UserInfo = {
       userId: "demo_user",
@@ -124,9 +129,9 @@ export const useAuthStore = defineStore("auth", () => {
       groups: ["Users"], 
       role: "USER",      
       
-      // [중요] 초기 데이터 자동 조회를 위한 기본값 설정
+      // 초기 데이터 자동 조회를 위한 기본값 설정
       site: "Hanam",     
-      sdwt: "WHT"        // <-- [수정필요] 실제 DB에 존재하는 장비 타입(SDWT) 입력 (예: 'WHT', 'EQP')
+      sdwt: "WHT"        
     };
     
     setAuth("demo-mode-dummy-token", demoUser);
@@ -140,6 +145,7 @@ export const useAuthStore = defineStore("auth", () => {
     userInitial,
     isAdmin,
     isSuperAdmin,
+    isDemo, // [추가] export
     userDetailTooltip,
     setAuth,
     setToken,
