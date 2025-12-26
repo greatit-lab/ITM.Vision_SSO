@@ -531,7 +531,7 @@
                     >Action Guide</span
                   >
                   <p
-                    class="text-xs font-bold text-slate-700 dark:text-slate-200"
+                    class="text-xs font-bold leading-relaxed text-slate-700 dark:text-slate-200"
                   >
                     {{ diagnostics.actionGuide }}
                   </p>
@@ -954,17 +954,17 @@ const diagnostics = computed(() => {
     trendStatus = "신호 불량 (Poor Signal)";
     trendColor = "bg-rose-100 text-rose-600";
     trendMessage = "노이즈가 심하여 신뢰할 수 없는 상태입니다.";
-    actionGuide = "센서 클리닝 또는 광학계 정렬 상태를 점검하세요.";
+    actionGuide = "우선 측정 좌표(Coordinate) 검증을 수행하세요. 문제가 지속되면 Maker 에 광학계/센서 점검을 요청하세요.";
   } else if (slope < -50) {
     trendStatus = "장애 감지 (Failure)";
     trendColor = "bg-rose-100 text-rose-600";
     trendMessage = "광량의 급격한 하락이 감지되었습니다.";
-    actionGuide = "즉시 램프 전원 및 케이블을 점검하세요.";
+    actionGuide = "램프 전원/케이블 점검 및 램프 교체를 검토하세요.";
   } else if (slope < -10) {
     trendStatus = "노후화 (Aging)";
     trendColor = "bg-amber-100 text-amber-600";
     trendMessage = "점진적인 광량 감소 (정상 노화)입니다.";
-    actionGuide = "조만간 램프 교체를 계획하세요.";
+    actionGuide = "램프 수명이 도래했습니다. 교체 계획을 수립하세요.";
   }
 
   return {
