@@ -695,7 +695,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed, onUnmounted } from "vue";
+import { ref, reactive, onMounted, computed, onUnmounted, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { dashboardApi } from "@/api/dashboard";
 import { equipmentApi } from "@/api/equipment";
@@ -705,21 +705,24 @@ import Select from "primevue/select";
 import Button from "primevue/button";
 import DatePicker from "primevue/datepicker";
 
-// Extended DTO: 백엔드에서 이제 이 필드들을 진짜로 계산해서 보내줍니다.
-// frontend/src/api/wafer.ts 에 정의되지 않았을 수 있으므로 여기서 확장 정의합니다.
 interface ExtendedOpticalTrendDto extends OpticalTrendDto {
-  peakWavelength: number; // nm (Real Calculated from Backend)
-  darkNoise: number; // counts (Real Calculated from Backend)
+  peakWavelength: number;
+  darkNoise: number;
 }
 
-// State
 const authStore = useAuthStore();
+// [추가] LocalStorage 키 정의
+const LS_KEYS = {
+  SITE: "optical_site",
+  SDWT: "optical_sdwt",
+  EQPID: "optical_eqpid",
+};
+
 const isLoading = ref(false);
 const isEqpIdLoading = ref(false);
 const hasSearched = ref(false);
 const isDarkMode = ref(document.documentElement.classList.contains("dark"));
 
-// Guide State
 const showMainGuide = ref(false);
 const showShiftGuide = ref(false);
 const showCorrGuide = ref(false);
@@ -732,29 +735,64 @@ const filter = reactive({
   site: "",
   sdwt: "",
   eqpId: "",
-  startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+  startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 
   endDate: new Date(),
 });
 
 const trendData = ref<ExtendedOpticalTrendDto[]>([]);
 
-// Lifecycle
 let themeObserver: MutationObserver;
 
 onMounted(async () => {
   sites.value = await dashboardApi.getSites();
 
-  // Initialize with saved filters or defaults if available
-  if (authStore.user?.site && sites.value.includes(authStore.user.site)) {
-    filter.site = authStore.user.site;
-    await onSiteChange();
-    if (authStore.user?.sdwt && sdwts.value.includes(authStore.user.sdwt)) {
-      filter.sdwt = authStore.user.sdwt;
-      await onSdwtChange();
+  // 1. 초기 필터 결정 (우선순위: LocalStorage > Auth)
+  let targetSite = localStorage.getItem(LS_KEYS.SITE) || "";
+  let targetSdwt = "";
+
+  if (targetSite) {
+     targetSdwt = localStorage.getItem(LS_KEYS.SDWT) || "";
+  } else {
+     targetSite = authStore.user?.site || "";
+     targetSdwt = authStore.user?.sdwt || "";
+  }
+
+  // 2. Site 적용 및 SDWT 로드
+  if (targetSite && sites.value.includes(targetSite)) {
+    filter.site = targetSite;
+    
+    try {
+      sdwts.value = await dashboardApi.getSdwts(targetSite);
+      
+      // 3. SDWT 적용 및 EQP 로드
+      if (targetSdwt && sdwts.value.includes(targetSdwt)) {
+        filter.sdwt = targetSdwt;
+        isEqpIdLoading.value = true;
+        try {
+          eqpIds.value = await equipmentApi.getEqpIds(
+            undefined,
+            targetSdwt,
+            "wafer"
+          );
+        } finally {
+          isEqpIdLoading.value = false;
+        }
+
+        // 4. EQP ID 복원
+        const savedEqpId = localStorage.getItem(LS_KEYS.EQPID) || "";
+        if (savedEqpId && eqpIds.value.includes(savedEqpId)) {
+          filter.eqpId = savedEqpId;
+          // 필요 시 fetchData();
+        }
+      } else {
+        filter.sdwt = "";
+        eqpIds.value = [];
+      }
+    } catch (e) {
+      console.error("Failed to restore filter state:", e);
     }
   }
 
-  // Theme Observer
   themeObserver = new MutationObserver((m) => {
     m.forEach((mu) => {
       if (mu.attributeName === "class")
@@ -771,22 +809,35 @@ onUnmounted(() => {
   if (themeObserver) themeObserver.disconnect();
 });
 
-// Handlers
+// [추가] EQP ID 변경 감지 및 저장
+watch(() => filter.eqpId, (newVal) => {
+  if (newVal) localStorage.setItem(LS_KEYS.EQPID, newVal);
+  else localStorage.removeItem(LS_KEYS.EQPID);
+});
+
+// Handlers with LocalStorage Logic
 const onSiteChange = async () => {
   if (filter.site) {
+    localStorage.setItem(LS_KEYS.SITE, filter.site);
     sdwts.value = await dashboardApi.getSdwts(filter.site);
   } else {
+    localStorage.removeItem(LS_KEYS.SITE);
     sdwts.value = [];
   }
-  if (!sdwts.value.includes(filter.sdwt)) {
-    filter.sdwt = "";
-    filter.eqpId = "";
-    eqpIds.value = [];
-  }
+  
+  // 하위 필터 초기화
+  filter.sdwt = "";
+  localStorage.removeItem(LS_KEYS.SDWT);
+  
+  filter.eqpId = "";
+  localStorage.removeItem(LS_KEYS.EQPID);
+  
+  eqpIds.value = [];
 };
 
 const onSdwtChange = async () => {
   if (filter.sdwt) {
+    localStorage.setItem(LS_KEYS.SDWT, filter.sdwt);
     isEqpIdLoading.value = true;
     try {
       eqpIds.value = await equipmentApi.getEqpIds(
@@ -798,31 +849,26 @@ const onSdwtChange = async () => {
       isEqpIdLoading.value = false;
     }
   } else {
+    localStorage.removeItem(LS_KEYS.SDWT);
     eqpIds.value = [];
   }
-  if (!eqpIds.value.includes(filter.eqpId)) {
-    filter.eqpId = "";
-  }
+  
+  // 하위 필터 초기화
+  filter.eqpId = "";
+  localStorage.removeItem(LS_KEYS.EQPID);
 };
 
 const resetFilter = async () => {
-  if (authStore.user?.site && sites.value.includes(authStore.user.site)) {
-    filter.site = authStore.user.site;
-    await onSiteChange();
-    if (authStore.user?.sdwt && sdwts.value.includes(authStore.user.sdwt)) {
-      filter.sdwt = authStore.user.sdwt;
-      await onSdwtChange();
-    } else {
-      filter.sdwt = "";
-      filter.eqpId = "";
-    }
-  } else {
-    filter.site = "";
-    filter.sdwt = "";
-    filter.eqpId = "";
-    sdwts.value = [];
-    eqpIds.value = [];
-  }
+  localStorage.removeItem(LS_KEYS.SITE);
+  localStorage.removeItem(LS_KEYS.SDWT);
+  localStorage.removeItem(LS_KEYS.EQPID);
+
+  // 완전 초기화
+  filter.site = "";
+  filter.sdwt = "";
+  filter.eqpId = "";
+  sdwts.value = [];
+  eqpIds.value = [];
 
   filter.startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   filter.endDate = new Date();
@@ -837,21 +883,18 @@ const fetchData = async () => {
   if (!filter.eqpId) return;
   isLoading.value = true;
   hasSearched.value = true;
-  trendData.value = []; // Reset previous data
+  trendData.value = []; 
   showMainGuide.value = false;
   showShiftGuide.value = false;
   showCorrGuide.value = false;
 
   try {
-    // [REAL DATA] 백엔드에서 계산된 Real Data를 가져옵니다.
-    // .map()으로 Mock Data를 주입하던 로직을 제거했습니다.
     const rawData = await waferApi.getOpticalTrend({
       eqpId: filter.eqpId,
       startDate: filter.startDate.toISOString(),
       endDate: filter.endDate.toISOString(),
     });
 
-    // 받은 데이터를 날짜순으로 정렬하여 차트에 표시합니다.
     trendData.value = (rawData as ExtendedOpticalTrendDto[]).sort(
       (a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()
     );
@@ -862,7 +905,6 @@ const fetchData = async () => {
   }
 };
 
-// --- Statistics & Diagnostics Logic ---
 const diagnostics = computed(() => {
   if (trendData.value.length < 2) {
     return {
@@ -874,38 +916,33 @@ const diagnostics = computed(() => {
     };
   }
 
-  // [안전한 접근] Optional Chaining 및 Null Check
   const firstItem = trendData.value[0];
   const lastItem = trendData.value[trendData.value.length - 1];
 
   const start = firstItem?.totalIntensity ?? 0;
   const end = lastItem?.totalIntensity ?? 0;
 
-  const slope = (end - start) / trendData.value.length; // Simple linear slope
+  const slope = (end - start) / trendData.value.length; 
 
-  // 1. Aging vs Failure Logic (한글화)
   let trendStatus = "안정적 (Stable)";
   let trendColor = "bg-emerald-100 text-emerald-600";
   let trendMessage = "광량 수준이 안정적입니다.";
   let actionGuide = "정기적인 모니터링으로 충분합니다.";
 
   if (slope < -50) {
-    // 급격한 하락 (Failure)
     trendStatus = "장애 감지 (Failure)";
     trendColor = "bg-rose-100 text-rose-600";
     trendMessage = "광량의 급격한 하락이 감지되었습니다.";
     actionGuide = "즉시 램프 전원 및 케이블을 점검하세요.";
   } else if (slope < -10) {
-    // 완만한 하락 (Aging)
     trendStatus = "노후화 (Aging)";
     trendColor = "bg-amber-100 text-amber-600";
     trendMessage = "점진적인 광량 감소 (정상 노화)입니다.";
     actionGuide = "조만간 램프 교체를 계획하세요.";
   }
 
-  // 2. SNR Logic (Real Data Based)
   const signal = lastItem?.peakIntensity ?? 0;
-  const noise = lastItem?.darkNoise || 1; // 0 방지
+  const noise = lastItem?.darkNoise || 1; 
   const snr = noise > 0 && signal > 0 ? 20 * Math.log10(signal / noise) : 0;
 
   if (snr < 20) {
@@ -921,7 +958,6 @@ const diagnostics = computed(() => {
   };
 });
 
-// Computed Logic for KPI
 const currentStats = computed(() => {
   if (trendData.value.length === 0) {
     return {
@@ -938,7 +974,6 @@ const currentStats = computed(() => {
 
   const len = trendData.value.length;
 
-  // 1. Averages
   const sumTotal = trendData.value.reduce(
     (acc, v) => acc + v.totalIntensity,
     0
@@ -949,7 +984,6 @@ const currentStats = computed(() => {
     0
   );
 
-  // SNR Average
   const sumSnr = trendData.value.reduce((acc, v) => {
     const s = v.peakIntensity;
     const n = v.darkNoise || 1;
@@ -961,20 +995,16 @@ const currentStats = computed(() => {
   const avgWavelength = sumWave / len;
   const avgSnr = sumSnr / len;
 
-  // 2. Diff from simulated baseline (using the first 10% of data as baseline if no other source)
   const baselineCount = Math.max(1, Math.floor(len * 0.1));
   const baselineData = trendData.value.slice(0, baselineCount);
   const baselineAvg =
     baselineData.reduce((acc, v) => acc + v.totalIntensity, 0) / baselineCount;
 
-  // Calculate Diff %
   const totalDiff =
     baselineAvg !== 0
       ? Math.round(((avgTotal - baselineAvg) / baselineAvg) * 100)
       : 0;
 
-  // 3. Stability (CV: Coefficient of Variation)
-  // Standard Deviation calculation
   const variance =
     trendData.value.reduce(
       (acc, v) => acc + Math.pow(v.totalIntensity - avgTotal, 2),
@@ -983,16 +1013,13 @@ const currentStats = computed(() => {
   const stdDev = Math.sqrt(variance);
   const cv = avgTotal !== 0 ? stdDev / avgTotal : 0;
 
-  // Score: 100 - (CV * 100 * Scaling Factor). If CV is 1% -> 95 score. If CV is 5% -> 75 score.
   let stabilityScore = Math.round(100 - cv * 500);
   if (stabilityScore > 100) stabilityScore = 100;
   if (stabilityScore < 0) stabilityScore = 0;
 
-  // 4. Health Status Logic
   let healthStatus = "HEALTHY";
   let healthColor = "text-emerald-500";
 
-  // SNR이 20dB 미만이면 신호 품질 나쁨
   if (totalDiff < -20 || stabilityScore < 70 || avgSnr < 20) {
     healthStatus = "CRITICAL";
     healthColor = "text-rose-500";
@@ -1019,7 +1046,6 @@ const getDiffClass = (diff: number) => {
   return "text-emerald-500";
 };
 
-// EChart Options
 const chartOption = computed(() => {
   if (trendData.value.length === 0) return {};
 
@@ -1085,7 +1111,7 @@ const chartOption = computed(() => {
         smooth: true,
         showSymbol: false,
         yAxisIndex: 0,
-        itemStyle: { color: "#f59e0b" }, // Amber
+        itemStyle: { color: "#f59e0b" }, 
         areaStyle: {
           color: {
             type: "linear",
@@ -1107,14 +1133,13 @@ const chartOption = computed(() => {
         smooth: true,
         showSymbol: false,
         yAxisIndex: 1,
-        itemStyle: { color: "#6366f1" }, // Indigo
-        lineStyle: { type: "solid" }, // Solid Line
+        itemStyle: { color: "#6366f1" },
+        lineStyle: { type: "solid" }, 
       },
     ],
   };
 });
 
-// Wavelength Shift Chart (Real Data)
 const wavelengthChartOption = computed(() => {
   if (trendData.value.length === 0) return {};
 
@@ -1142,7 +1167,7 @@ const wavelengthChartOption = computed(() => {
       textStyle: { color: isDarkMode.value ? "#f1f5f9" : "#1e293b" },
     },
     grid: { left: 40, right: 20, top: 20, bottom: 20, containLabel: true },
-    xAxis: { type: "category", data: dates, show: false }, // Hide labels to reuse space
+    xAxis: { type: "category", data: dates, show: false }, 
     yAxis: {
       type: "value",
       name: "nm",
@@ -1157,13 +1182,12 @@ const wavelengthChartOption = computed(() => {
         data: waveVals,
         smooth: true,
         showSymbol: false,
-        itemStyle: { color: "#a855f7" }, // Purple
+        itemStyle: { color: "#a855f7" }, 
       },
     ],
   };
 });
 
-// Correlation Chart (Intensity vs SNR - Real Data)
 const correlationChartOption = computed(() => {
   if (trendData.value.length === 0) return {};
 
@@ -1176,7 +1200,6 @@ const correlationChartOption = computed(() => {
   });
 
   const intensityVals = trendData.value.map((d) => d.totalIntensity);
-  // Calculate SNR on the fly for correlation view
   const snrVals = trendData.value.map((d) => {
     const s = d.peakIntensity;
     const n = d.darkNoise || 1;
@@ -1233,7 +1256,7 @@ const correlationChartOption = computed(() => {
         showSymbol: false,
         itemStyle: { color: "#14b8a6" },
         yAxisIndex: 1,
-      }, // Teal
+      }, 
     ],
   };
 });
@@ -1245,7 +1268,7 @@ const correlationChartOption = computed(() => {
   @apply !bg-slate-100 dark:!bg-zinc-800/50 !border-0 text-slate-700 dark:text-slate-200 rounded-lg font-bold shadow-none transition-colors;
 }
 :deep(.custom-dropdown .p-select-label) {
-  @apply text-[12px] py-[5px] px-3;
+  @apply text-[13px] py-[5px] px-3;
 }
 :deep(.custom-dropdown.small) {
   @apply h-7;
@@ -1253,7 +1276,6 @@ const correlationChartOption = computed(() => {
 :deep(.custom-dropdown:hover) {
   @apply !bg-slate-200 dark:!bg-zinc-800;
 }
-/* Datepicker Customization */
 :deep(.p-datepicker-input) {
   @apply !text-[12px] !py-1 !px-2;
 }
