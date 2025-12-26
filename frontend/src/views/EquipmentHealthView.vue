@@ -631,27 +631,33 @@ const goodCount = computed(
   () => healthData.value.filter((i) => i.status === "Good").length
 );
 
+// [수정] onMounted 로직 교체
 onMounted(async () => {
   sites.value = await dashboardApi.getSites();
 
-  let initSite =
-    authStore.user?.site || localStorage.getItem(LS_KEYS.SITE) || "";
-  if (initSite && !sites.value.includes(initSite)) {
-    initSite = "";
+  // 2. 초기 필터 값 결정
+  let targetSite = localStorage.getItem(LS_KEYS.SITE) || "";
+  let targetSdwt = "";
+
+  if (targetSite) {
+    targetSdwt = localStorage.getItem(LS_KEYS.SDWT) || "";
+  } else {
+    targetSite = authStore.user?.site || "";
+    targetSdwt = authStore.user?.sdwt || "";
   }
 
-  if (initSite) {
-    filter.site = initSite;
+  // 3. Site 적용 및 SDWT 로드
+  if (targetSite && sites.value.includes(targetSite)) {
+    filter.site = targetSite;
     try {
-      sdwts.value = await dashboardApi.getSdwts(initSite);
-      let initSdwt =
-        authStore.user?.sdwt || localStorage.getItem(LS_KEYS.SDWT) || "";
-      if (initSdwt && !sdwts.value.includes(initSdwt)) {
-        initSdwt = "";
-      }
-      if (initSdwt) {
-        filter.sdwt = initSdwt;
-        fetchData();
+      sdwts.value = await dashboardApi.getSdwts(targetSite);
+      
+      // 4. SDWT 적용 및 데이터 조회
+      if (targetSdwt && sdwts.value.includes(targetSdwt)) {
+        filter.sdwt = targetSdwt;
+        fetchData(); // 데이터 조회
+      } else {
+        filter.sdwt = "";
       }
     } catch (e) {
       console.error("Failed to restore filter state:", e);
