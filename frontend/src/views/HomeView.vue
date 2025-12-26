@@ -730,28 +730,43 @@ let refreshTimer: number | null = null;
 const isDarkMode = ref(document.documentElement.classList.contains("dark"));
 let themeObserver: MutationObserver | null = null;
 
+// [수정] onMounted 로직 교체
 onMounted(async () => {
   try {
+    // 1. Site 목록 로드
     sites.value = await dashboardApi.getSites();
 
-    let defaultSite = authStore.user?.site;
-    let defaultSdwt = authStore.user?.sdwt;
+    // 2. 초기 필터 값 결정 (우선순위: Store > LocalStorage > Auth)
+    let targetSite = filterStore.selectedSite;
+    let targetSdwt = filterStore.selectedSdwt;
 
-    if (!defaultSite) {
-      defaultSite = localStorage.getItem("dashboard_site") || undefined;
-      if (defaultSite) {
-        defaultSdwt = localStorage.getItem("dashboard_sdwt") || undefined;
+    if (!targetSite) {
+      targetSite = localStorage.getItem("dashboard_site") || "";
+      if (targetSite) {
+        targetSdwt = localStorage.getItem("dashboard_sdwt") || "";
       }
     }
 
-    if (defaultSite && sites.value.includes(defaultSite)) {
-      filterStore.selectedSite = defaultSite;
-      sdwts.value = await dashboardApi.getSdwts(defaultSite);
+    if (!targetSite) {
+      targetSite = authStore.user?.site || "";
+      targetSdwt = authStore.user?.sdwt || "";
+    }
 
-      if (defaultSdwt) {
-        filterStore.selectedSdwt = defaultSdwt;
-        await loadData(true);
+    // 3. Site 적용 및 SDWT 로드
+    if (targetSite && sites.value.includes(targetSite)) {
+      filterStore.selectedSite = targetSite;
+      sdwts.value = await dashboardApi.getSdwts(targetSite);
+
+      // 4. SDWT 적용 및 데이터 로드
+      if (targetSdwt && sdwts.value.includes(targetSdwt)) {
+        filterStore.selectedSdwt = targetSdwt;
+        await loadData(true); // 데이터 자동 조회
+      } else {
+        filterStore.selectedSdwt = "";
       }
+    } else {
+       filterStore.selectedSite = "";
+       filterStore.selectedSdwt = "";
     }
 
     themeObserver = new MutationObserver((mutations) => {
@@ -1254,3 +1269,4 @@ body .p-tooltip .p-tooltip-arrow {
   font-size: 12px !important;
 }
 </style>
+
