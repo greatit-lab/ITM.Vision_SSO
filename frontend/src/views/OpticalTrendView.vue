@@ -18,7 +18,7 @@
         <span
           class="text-slate-400 dark:text-slate-500 font-medium text-[11px]"
         >
-          Real-time Spectrum quantification & intensity trend monitoring.
+          Context-Aware Intensity & Spectrum Trend Monitoring.
         </span>
       </div>
     </div>
@@ -29,7 +29,7 @@
       <div
         class="flex items-center flex-1 gap-2 px-1 py-1 overflow-x-auto scrollbar-hide"
       >
-        <div class="min-w-[120px] shrink-0">
+        <div class="min-w-[100px] shrink-0">
           <Select
             v-model="filter.site"
             :options="sites"
@@ -41,7 +41,7 @@
           />
         </div>
 
-        <div class="min-w-[140px] shrink-0">
+        <div class="min-w-[120px] shrink-0">
           <Select
             v-model="filter.sdwt"
             :options="sdwts"
@@ -54,7 +54,7 @@
           />
         </div>
 
-        <div class="min-w-[160px] shrink-0">
+        <div class="min-w-[140px] shrink-0">
           <Select
             v-model="filter.eqpId"
             :options="eqpIds"
@@ -64,14 +64,64 @@
             showClear
             class="w-full custom-dropdown small"
             overlayClass="custom-dropdown-panel small"
+            @change="onEqpIdChange"
           />
         </div>
 
-        <div
-          class="w-px h-6 mx-1 bg-slate-200 dark:bg-zinc-700 shrink-0"
-        ></div>
+        <div class="w-px h-6 mx-1 bg-slate-200 dark:bg-zinc-700 shrink-0"></div>
 
-        <div class="min-w-[150px] shrink-0">
+        <div class="min-w-[160px] shrink-0">
+          <Select
+            v-model="filter.recipe"
+            :options="options.recipes"
+            :loading="isRecipeLoading"
+            placeholder="Recipe (Required)"
+            :disabled="!filter.eqpId"
+            showClear
+            filter
+            class="w-full custom-dropdown small"
+            :class="{'!border-amber-500 ring-1 ring-amber-500/20': !filter.recipe && filter.eqpId}"
+            overlayClass="custom-dropdown-panel small"
+            @change="onRecipeChange"
+          >
+             <template #option="slotProps">
+                <div class="flex items-center gap-2">
+                    <i class="text-xs pi pi-file text-slate-400"></i>
+                    <span>{{ slotProps.option }}</span>
+                </div>
+            </template>
+          </Select>
+        </div>
+
+        <div class="min-w-[130px] shrink-0">
+          <Select
+            v-model="filter.stage"
+            :options="options.stages"
+            :loading="isDependentLoading"
+            placeholder="Stage Group"
+            :disabled="!filter.recipe"
+            showClear
+            class="w-full custom-dropdown small"
+            overlayClass="custom-dropdown-panel small"
+          />
+        </div>
+
+        <div class="min-w-[130px] shrink-0">
+          <Select
+            v-model="filter.film"
+            :options="options.films"
+            :loading="isDependentLoading"
+            placeholder="Film Type"
+            :disabled="!filter.recipe"
+            showClear
+            class="w-full custom-dropdown small"
+            overlayClass="custom-dropdown-panel small"
+          />
+        </div>
+
+        <div class="w-px h-6 mx-1 bg-slate-200 dark:bg-zinc-700 shrink-0"></div>
+
+        <div class="min-w-[130px] shrink-0">
           <DatePicker
             v-model="filter.startDate"
             showIcon
@@ -81,7 +131,7 @@
           />
         </div>
 
-        <div class="min-w-[150px] shrink-0">
+        <div class="min-w-[130px] shrink-0">
           <DatePicker
             v-model="filter.endDate"
             showIcon
@@ -100,7 +150,8 @@
           label="Analyze"
           class="!px-4 !py-1.5 !text-xs !font-bold !rounded-lg !bg-amber-600 !border-amber-600 hover:!bg-amber-700 !text-white transition-opacity"
           :loading="isLoading"
-          :disabled="!filter.eqpId"
+          :disabled="!canAnalyze"
+          v-tooltip.left="!canAnalyze ? 'Recipe를 선택하여 측정 조건을 통일하세요.' : ''"
           @click="fetchData"
         />
 
@@ -153,7 +204,7 @@
                 </div>
               </div>
               <div
-                class="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-500"
+                class="flex items-center justify-center w-8 h-8 bg-amber-50 dark:bg-amber-900/30 text-amber-500 rounded-lg"
               >
                 <i class="pi pi-sun"></i>
               </div>
@@ -694,7 +745,7 @@
       </div>
       <p class="text-sm font-bold text-slate-500">No Data Analyzed</p>
       <p class="text-xs">
-        Select Equipment and Date Range to analyze optical health.
+        Select Equipment and <strong>Recipe Condition</strong> to analyze optical health.
       </p>
     </div>
 
@@ -728,9 +779,11 @@ import Select from "primevue/select";
 import Button from "primevue/button";
 import DatePicker from "primevue/datepicker";
 
+// Extended Interface for Context-Aware Data
 interface ExtendedOpticalTrendDto extends OpticalTrendDto {
   peakWavelength: number;
   darkNoise: number;
+  recipe?: string; 
 }
 
 const authStore = useAuthStore();
@@ -742,6 +795,8 @@ const LS_KEYS = {
 
 const isLoading = ref(false);
 const isEqpIdLoading = ref(false);
+const isRecipeLoading = ref(false);     // Recipe 로딩용
+const isDependentLoading = ref(false);  // Stage/Film 로딩용
 const hasSearched = ref(false);
 const isDarkMode = ref(document.documentElement.classList.contains("dark"));
 
@@ -753,15 +808,30 @@ const sites = ref<string[]>([]);
 const sdwts = ref<string[]>([]);
 const eqpIds = ref<string[]>([]);
 
+// Dynamic Options for Context-Aware Filtering
+const options = reactive({
+    recipes: [] as string[],
+    stages: [] as string[],
+    films: [] as string[]
+});
+
 const filter = reactive({
   site: "",
   sdwt: "",
   eqpId: "",
+  recipe: "", // Required Field
+  stage: "",  // Optional Field
+  film: "",   // Optional Field
   startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 
   endDate: new Date(),
 });
 
 const trendData = ref<ExtendedOpticalTrendDto[]>([]);
+
+// Computed property to enforce Recipe selection
+const canAnalyze = computed(() => {
+    return !!filter.eqpId && !!filter.recipe;
+});
 
 let themeObserver: MutationObserver;
 
@@ -800,6 +870,8 @@ onMounted(async () => {
         const savedEqpId = localStorage.getItem(LS_KEYS.EQPID) || "";
         if (savedEqpId && eqpIds.value.includes(savedEqpId)) {
           filter.eqpId = savedEqpId;
+          // EQP가 복원되면 Recipe 목록 로딩 -> Recipe가 복원되면 Dependent(Stage/Film) 로딩
+          await onEqpIdChange(); 
         }
       } else {
         filter.sdwt = "";
@@ -826,9 +898,100 @@ onUnmounted(() => {
   if (themeObserver) themeObserver.disconnect();
 });
 
-watch(() => filter.eqpId, (newVal) => {
-  if (newVal) localStorage.setItem(LS_KEYS.EQPID, newVal);
-  else localStorage.removeItem(LS_KEYS.EQPID);
+// [1] 장비 선택 시 -> Recipe 목록만 우선 로딩
+const onEqpIdChange = async () => {
+    // Reset subordinate filters
+    filter.recipe = "";
+    filter.stage = "";
+    filter.film = "";
+    
+    options.recipes = [];
+    options.stages = [];
+    options.films = [];
+
+    if (filter.eqpId) {
+        localStorage.setItem(LS_KEYS.EQPID, filter.eqpId);
+        await loadRecipeOptions(filter.eqpId);
+    } else {
+        localStorage.removeItem(LS_KEYS.EQPID);
+    }
+};
+
+// Recipe 목록 로딩 (Stage/Film은 아직 모름)
+const loadRecipeOptions = async (eqpId: string) => {
+    isRecipeLoading.value = true;
+    try {
+        const params = {
+            eqpId: eqpId,
+            startDate: filter.startDate.toISOString(),
+            endDate: filter.endDate.toISOString()
+        };
+        const recipes = await waferApi.getDistinctValues('cassettercps', params);
+        options.recipes = recipes || [];
+    } catch (e) {
+        console.error("Failed to load recipe options", e);
+    } finally {
+        isRecipeLoading.value = false;
+    }
+};
+
+// [2] Recipe 변경 시 -> Stage, Film 목록을 Filtered 상태로 로딩
+const onRecipeChange = async () => {
+    // 하위 선택 초기화
+    filter.stage = "";
+    filter.film = "";
+    options.stages = [];
+    options.films = [];
+
+    if (filter.recipe) {
+        await loadDependentOptions();
+    }
+};
+
+// 선택된 Recipe에 종속된 Stage/Film 목록 조회
+const loadDependentOptions = async () => {
+    if (!filter.eqpId || !filter.recipe) return;
+
+    isDependentLoading.value = true;
+    try {
+        const params = {
+            eqpId: filter.eqpId,
+            startDate: filter.startDate.toISOString(),
+            endDate: filter.endDate.toISOString(),
+            cassetteRcp: filter.recipe // [중요] Recipe 조건 포함
+        };
+
+        const [stages, films] = await Promise.all([
+            waferApi.getDistinctValues('stagegroups', params),
+            waferApi.getDistinctValues('films', params)
+        ]);
+
+        options.stages = stages || [];
+        options.films = films || [];
+    } catch (e) {
+        console.error("Failed to load dependent options", e);
+    } finally {
+        isDependentLoading.value = false;
+    }
+};
+
+// [추가] 날짜 변경 시 -> Recipe 목록 갱신 (선택된 Recipe가 있다면 하위 목록도 갱신 시도)
+watch([() => filter.startDate, () => filter.endDate], async () => {
+  if (filter.eqpId) {
+    await loadRecipeOptions(filter.eqpId);
+    
+    // 만약 기존 선택한 Recipe가 새 목록에도 있다면 유지하고 하위 목록 갱신
+    if (filter.recipe && options.recipes.includes(filter.recipe)) {
+        await loadDependentOptions();
+    } else {
+        // 날짜 변경으로 해당 Recipe가 없으면 초기화
+        filter.recipe = "";
+        filter.stage = "";
+        filter.film = "";
+        options.stages = [];
+        options.films = [];
+    }
+  }
 });
 
 const onSiteChange = async () => {
@@ -847,6 +1010,9 @@ const onSiteChange = async () => {
   localStorage.removeItem(LS_KEYS.EQPID);
   
   eqpIds.value = [];
+  options.recipes = [];
+  options.stages = [];
+  options.films = [];
 };
 
 const onSdwtChange = async () => {
@@ -869,6 +1035,9 @@ const onSdwtChange = async () => {
   
   filter.eqpId = "";
   localStorage.removeItem(LS_KEYS.EQPID);
+  options.recipes = [];
+  options.stages = [];
+  options.films = [];
 };
 
 const resetFilter = async () => {
@@ -879,8 +1048,16 @@ const resetFilter = async () => {
   filter.site = "";
   filter.sdwt = "";
   filter.eqpId = "";
+  
+  filter.recipe = "";
+  filter.stage = "";
+  filter.film = "";
+  
   sdwts.value = [];
   eqpIds.value = [];
+  options.recipes = [];
+  options.stages = [];
+  options.films = [];
 
   filter.startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   filter.endDate = new Date();
@@ -892,7 +1069,8 @@ const resetFilter = async () => {
 };
 
 const fetchData = async () => {
-  if (!filter.eqpId) return;
+  if (!canAnalyze.value) return; // Guard
+  
   isLoading.value = true;
   hasSearched.value = true;
   trendData.value = []; 
@@ -901,10 +1079,14 @@ const fetchData = async () => {
   showCorrGuide.value = false;
 
   try {
+    // Pass context filters to API
     const rawData = await waferApi.getOpticalTrend({
       eqpId: filter.eqpId,
       startDate: filter.startDate.toISOString(),
       endDate: filter.endDate.toISOString(),
+      cassetteRcp: filter.recipe, // API expects 'cassetteRcp' not 'recipe'
+      stageGroup: filter.stage,   // API expects 'stageGroup'
+      film: filter.film
     });
 
     trendData.value = (rawData as ExtendedOpticalTrendDto[]).sort(
@@ -917,7 +1099,6 @@ const fetchData = async () => {
   }
 };
 
-// [수정] 통합 진단 로직 (SNR 반영)
 const diagnostics = computed(() => {
   if (trendData.value.length < 2) {
     return {
@@ -932,25 +1113,21 @@ const diagnostics = computed(() => {
   const firstItem = trendData.value[0];
   const lastItem = trendData.value[trendData.value.length - 1];
 
-  // Trend Slope calculation
   const start = firstItem?.totalIntensity ?? 0;
   const end = lastItem?.totalIntensity ?? 0;
   const slope = (end - start) / trendData.value.length; 
 
-  // SNR Calculation
   const signal = lastItem?.peakIntensity ?? 0;
   const noise = lastItem?.darkNoise || 1; 
   const snr = noise > 0 && signal > 0 ? 20 * Math.log10(signal / noise) : 0;
   const snrValue = Math.round(snr * 10) / 10;
 
-  // Integrated Status Logic
   let trendStatus = "안정적 (Stable)";
   let trendColor = "bg-emerald-100 text-emerald-600";
   let trendMessage = "광량 및 신호 품질이 안정적입니다.";
   let actionGuide = "정기적인 모니터링으로 충분합니다.";
 
   if (snr < 20) {
-    // Low SNR takes priority
     trendStatus = "신호 불량 (Poor Signal)";
     trendColor = "bg-rose-100 text-rose-600";
     trendMessage = "노이즈가 심하여 신뢰할 수 없는 상태입니다.";
@@ -984,8 +1161,8 @@ const currentStats = computed(() => {
       avgWavelength: 0,
       avgSnr: 0,
       totalDiff: 0,
-      peakDiff: 0, // [추가]
-      waveShift: 0, // [추가]
+      peakDiff: 0,
+      waveShift: 0,
       stabilityScore: 0,
       healthStatus: "UNKNOWN",
       healthColor: "text-slate-400",
@@ -1015,7 +1192,6 @@ const currentStats = computed(() => {
   const avgWavelength = sumWave / len;
   const avgSnr = sumSnr / len;
 
-  // Baseline Comparison (First 10% or 1 item)
   const baselineCount = Math.max(1, Math.floor(len * 0.1));
   const baselineData = trendData.value.slice(0, baselineCount);
   
@@ -1027,7 +1203,6 @@ const currentStats = computed(() => {
       ? Math.round(((avgTotal - baselineTotal) / baselineTotal) * 100)
       : 0;
   
-  // [추가] Peak Diff & Wave Shift Calculation
   const peakDiff = baselinePeak !== 0
       ? Math.round(((avgPeak - baselinePeak) / baselinePeak) * 100)
       : 0;
@@ -1049,7 +1224,6 @@ const currentStats = computed(() => {
   let healthStatus = "HEALTHY";
   let healthColor = "text-emerald-500";
 
-  // Health logic update: check SNR as critical factor
   if (totalDiff < -20 || stabilityScore < 70 || avgSnr < 20) {
     healthStatus = "CRITICAL";
     healthColor = "text-rose-500";
@@ -1064,7 +1238,7 @@ const currentStats = computed(() => {
     avgWavelength,
     avgSnr,
     totalDiff,
-    peakDiff, // Return calculated values
+    peakDiff,
     waveShift,
     stabilityScore,
     healthStatus,
