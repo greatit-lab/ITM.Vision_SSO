@@ -61,6 +61,7 @@
             filter
             placeholder="EQP ID"
             :disabled="!filter.sdwt"
+            :loading="isEqpLoading"
             showClear
             class="w-full custom-dropdown small"
             overlayClass="custom-dropdown-panel small"
@@ -201,7 +202,7 @@ import {
   nextTick,
   watch,
 } from "vue";
-import { useAuthStore } from "@/stores/auth"; // [Add] Auth Store import
+import { useAuthStore } from "@/stores/auth";
 import { dashboardApi } from "@/api/dashboard";
 import { equipmentApi } from "@/api/equipment";
 import { preAlignApi, type PreAlignDataDto } from "@/api/prealign";
@@ -216,7 +217,6 @@ import ProgressSpinner from "primevue/progressspinner";
 
 // --- Store & Constants ---
 const authStore = useAuthStore();
-// [New] Page-specific LocalStorage Keys
 const LS_KEYS = {
   SITE: "prealign-view-site",
   SDWT: "prealign-view-sdwt",
@@ -237,6 +237,7 @@ const sdwts = ref<string[]>([]);
 const eqpIds = ref<string[]>([]);
 
 const isLoading = ref(false);
+const isEqpLoading = ref(false); // [추가] 장비 목록 로딩 상태
 const hasSearched = ref(false);
 const chartData = ref<PreAlignDataDto[]>([]);
 const searchedEqpId = ref("");
@@ -265,48 +266,52 @@ const handleResize = () => {
 onMounted(async () => {
   sites.value = await dashboardApi.getSites();
 
-  // [Logic] Initialize Filters: Auth Store > LocalStorage > Default
-  let initSite =
-    authStore.user?.site || localStorage.getItem(LS_KEYS.SITE) || "";
+  // 1. 초기 필터 결정 (우선순위: LocalStorage > Auth)
+  let targetSite = localStorage.getItem(LS_KEYS.SITE) || "";
+  let targetSdwt = "";
 
-  // Validate site existence
-  if (initSite && !sites.value.includes(initSite)) {
-    initSite = "";
+  if (targetSite) {
+     targetSdwt = localStorage.getItem(LS_KEYS.SDWT) || "";
+  } else {
+     targetSite = authStore.user?.site || "";
+     targetSdwt = authStore.user?.sdwt || "";
   }
 
-  if (initSite) {
-    filter.site = initSite;
-    // Load SDWTs for valid Site
+  // 2. Site 적용 및 SDWT 로드
+  if (targetSite && sites.value.includes(targetSite)) {
+    filter.site = targetSite;
     try {
-      sdwts.value = await dashboardApi.getSdwts(initSite);
+      sdwts.value = await dashboardApi.getSdwts(targetSite);
 
-      let initSdwt =
-        authStore.user?.sdwt || localStorage.getItem(LS_KEYS.SDWT) || "";
-
-      // Validate SDWT existence
-      if (initSdwt && !sdwts.value.includes(initSdwt)) {
-        initSdwt = "";
-      }
-
-      if (initSdwt) {
-        filter.sdwt = initSdwt;
-        // Load EqpIds for valid SDWT
-        eqpIds.value = await equipmentApi.getEqpIds(
-          undefined,
-          initSdwt,
-          "prealign"
-        );
-
-        // Restore EqpId (Page specific only)
-        const initEqpId = localStorage.getItem(LS_KEYS.EQPID) || "";
-        if (initEqpId && eqpIds.value.includes(initEqpId)) {
-          filter.eqpId = initEqpId;
-          // Auto Search if all conditions met
-          search();
+      // 3. SDWT 적용 및 장비 목록 로드
+      if (targetSdwt && sdwts.value.includes(targetSdwt)) {
+        filter.sdwt = targetSdwt;
+        
+        // [수정] 로딩 상태 표시
+        isEqpLoading.value = true;
+        try {
+          eqpIds.value = await equipmentApi.getEqpIds(
+            undefined,
+            targetSdwt,
+            "prealign"
+          );
+        } finally {
+          isEqpLoading.value = false;
         }
+
+        // 4. EQP ID 복원 및 자동 검색
+        const savedEqpId = localStorage.getItem(LS_KEYS.EQPID) || "";
+        if (savedEqpId && eqpIds.value.includes(savedEqpId)) {
+          filter.eqpId = savedEqpId;
+          search(); 
+        }
+      } else {
+         filter.sdwt = "";
+         filter.eqpId = "";
       }
     } catch (e) {
       console.error("Failed to restore filter state:", e);
+      isEqpLoading.value = false;
     }
   }
 
@@ -324,7 +329,6 @@ onUnmounted(() => {
 });
 
 // --- Watchers for Persistence ---
-// [New] Using watchers to save filter state automatically
 watch(
   () => filter.site,
   (newVal) => {
@@ -356,26 +360,28 @@ const onSiteChange = async () => {
   } else {
     sdwts.value = [];
   }
-  // Reset child filters
   filter.sdwt = "";
   filter.eqpId = "";
   eqpIds.value = [];
-  // Persistence handled by watchers
 };
 
 const onSdwtChange = async () => {
   if (filter.sdwt) {
-    eqpIds.value = await equipmentApi.getEqpIds(
-      undefined,
-      filter.sdwt,
-      "prealign"
-    );
+    // [수정] 로딩 상태 표시
+    isEqpLoading.value = true;
+    try {
+      eqpIds.value = await equipmentApi.getEqpIds(
+        undefined,
+        filter.sdwt,
+        "prealign"
+      );
+    } finally {
+      isEqpLoading.value = false;
+    }
   } else {
     eqpIds.value = [];
   }
-  // Reset child filter
   filter.eqpId = "";
-  // Persistence handled by watchers
 };
 
 const onEqpIdChange = () => {
@@ -411,22 +417,20 @@ const search = async () => {
 };
 
 const reset = () => {
-  // Reset Values
   filter.site = "";
   filter.sdwt = "";
   filter.eqpId = "";
   filter.startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   filter.endDate = new Date();
 
-  // Reset Lists & Data
   sdwts.value = [];
   eqpIds.value = [];
   chartData.value = [];
   hasSearched.value = false;
   isZoomed.value = false;
   searchedEqpId.value = "";
-
-  // Persistence cleared by watchers automatically
+  
+  // Watcher will handle LS cleanup
 };
 
 // --- Chart Helper (Zoom & Resize) ---
