@@ -559,43 +559,45 @@ const hoveredWaferId = ref<number | null>(null);
 const selectedTableRow = ref();
 const selectedModelWafer = ref<number | null>(null);
 
+// [수정] onMounted 로직 교체
 onMounted(async () => {
-  // 1. Site 목록 로드
   sites.value = await dashboardApi.getSites();
 
-  // 2. 기본 필터 결정 (우선순위: DB 사용자 설정 -> 페이지 전용 로컬 스토리지)
-  let defaultSite = authStore.user?.site;
-  let defaultSdwt = authStore.user?.sdwt;
+  // 2. 초기 필터 값 결정
+  let targetSite = filterStore.selectedSite;
+  let targetSdwt = filterStore.selectedSdwt;
 
-  // DB에 없으면 로컬 스토리지 확인 (페이지 전용 키: spec_site, spec_sdwt)
-  if (!defaultSite) {
-    defaultSite = localStorage.getItem("spec_site") || undefined;
-    if (defaultSite) {
-      defaultSdwt = localStorage.getItem("spec_sdwt") || undefined;
+  if (!targetSite) {
+    targetSite = localStorage.getItem("spec_site") || "";
+    if (targetSite) {
+      targetSdwt = localStorage.getItem("spec_sdwt") || "";
     }
   }
 
-  // 3. 결정된 Site가 유효하면 적용 및 SDWT 로드
-  if (defaultSite && sites.value.includes(defaultSite)) {
-    filterStore.selectedSite = defaultSite;
-    sdwts.value = await dashboardApi.getSdwts(defaultSite);
+  if (!targetSite) {
+    targetSite = authStore.user?.site || "";
+    targetSdwt = authStore.user?.sdwt || "";
+  }
 
-    // 4. SDWT 적용 및 EqpID 로드
-    if (defaultSdwt && sdwts.value.includes(defaultSdwt)) {
-      filterStore.selectedSdwt = defaultSdwt;
-      // Agent가 설치된 장비만 조회
-      eqpIds.value = await equipmentApi.getEqpIds(
-        undefined,
-        defaultSdwt,
-        "agent"
-      );
+  // 3. Site 적용 및 SDWT 로드
+  if (targetSite && sites.value.includes(targetSite)) {
+    filterStore.selectedSite = targetSite;
+    sdwts.value = await dashboardApi.getSdwts(targetSite);
 
-      // 5. EqpID 복원 (마지막 선택 장비, 페이지 전용 키: spec_eqp)
+    // 4. SDWT 적용 및 EQP 로드
+    if (targetSdwt && sdwts.value.includes(targetSdwt)) {
+      filterStore.selectedSdwt = targetSdwt;
+      eqpIds.value = await equipmentApi.getEqpIds(undefined, targetSdwt, "agent");
+
+      // 5. EQP ID 및 Lot 복원
       const savedEqp = localStorage.getItem("spec_eqp");
       if (savedEqp && eqpIds.value.includes(savedEqp)) {
         filters.eqpId = savedEqp;
-        await loadLotIds();
+        await loadLotIds(); // Lot 목록 로드
       }
+    } else {
+      filterStore.selectedSdwt = "";
+      filters.eqpId = "";
     }
   }
 
