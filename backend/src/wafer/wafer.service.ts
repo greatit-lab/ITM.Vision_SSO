@@ -104,6 +104,16 @@ export interface ComparisonRawResult {
   [key: string]: string | number | null; // 동적 Metric 컬럼 허용
 }
 
+// [추가] Optical Trend Raw Query 결과 매핑용 인터페이스
+interface OpticalTrendRawResult {
+  ts: Date;
+  lotid: string;
+  waferid: string;
+  point: number;
+  wavelengths: number[];
+  values: number[];
+}
+
 interface PopplerModule {
   convert: (file: string, options: any) => Promise<any>;
 }
@@ -1370,49 +1380,66 @@ export class WaferService {
   }
 
   /**
-   * [신규] Optical Trend Data 조회 (Real Calculation)
-   * - 스펙트럼 데이터를 집계하여 Total/Peak Intensity뿐 아니라 Peak Wavelength, Dark Noise도 계산하여 반환
+   * [수정됨] Optical Trend Data 조회
+   * - 기존: 조건 무시하고 단일 테이블 조회 (오류 원인)
+   * - 변경: Flat 테이블과 JOIN하여 Recipe, StageGroup, Film 조건 적용
    */
   async getOpticalTrend(params: WaferQueryParams) {
-    const { eqpId, startDate, endDate } = params;
+    const { eqpId, startDate, endDate, cassetteRcp, stageGroup, film } = params;
 
-    // 필수 파라미터 체크
     if (!eqpId || !startDate || !endDate) return [];
 
     try {
-      // 1. DB에서 원시 데이터(배열 포함) 조회
-      const rawData = await this.prisma.plgOntoSpectrum.findMany({
-        where: {
-          eqpid: eqpId,
-          ts: {
-            gte: new Date(startDate),
-            lte: new Date(endDate),
-          },
-        },
-        orderBy: {
-          ts: 'asc',
-        },
-        // 데이터 과부하 방지를 위해 제한 (필요시 조정)
-        take: 1000,
-        select: {
-          ts: true,
-          lotid: true,
-          waferid: true,
-          point: true,
-          wavelengths: true, // 파장 배열 (X축) - 피크 파장 추출용
-          values: true,      // 광량 배열 (Y축)
-        },
-      });
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // [수정] any[] -> (string | number | Date)[] 로 변경하여 Unsafe spread 방지
+      const queryParams: (string | number | Date)[] = [eqpId, start, end];
+      
+      let filterClause = "";
+      
+      if (cassetteRcp) {
+        filterClause += ` AND f.cassettercp = $${queryParams.length + 1}`;
+        queryParams.push(cassetteRcp);
+      }
+      if (stageGroup) {
+        filterClause += ` AND f.stagegroup = $${queryParams.length + 1}`;
+        queryParams.push(stageGroup);
+      }
+      if (film) {
+        filterClause += ` AND f.film = $${queryParams.length + 1}`;
+        queryParams.push(film);
+      }
 
-      // 2. 서버에서 데이터 가공 (Raw Array -> KPI Metric)
+      const sql = `
+        SELECT 
+          s.ts, s.lotid, s.waferid, s.point, s.wavelengths, s."values"
+        FROM public.plg_onto_spectrum s
+        JOIN public.plg_wf_flat f 
+          ON s.eqpid = f.eqpid 
+          AND s.lotid = f.lotid 
+          AND s.waferid = f.waferid::varchar 
+          AND s.point = f.point
+        WHERE s.eqpid = $1
+          AND s.ts >= $2
+          AND s.ts <= $3
+          ${filterClause}
+        ORDER BY s.ts ASC
+        LIMIT 2000
+      `;
+
+      // 타입이 명시되었으므로 안전하게 spread 가능
+      const rawData = await this.prisma.$queryRawUnsafe<OpticalTrendRawResult[]>(
+        sql,
+        ...queryParams 
+      );
+
       return rawData.map((d) => {
-        const values = (d.values as number[]) || [];
-        const wavelengths = (d.wavelengths as number[]) || [];
+        const values = d.values || [];
+        const wavelengths = d.wavelengths || [];
 
-        // (1) Total Intensity (기존)
         const totalIntensity = values.reduce((acc, v) => acc + v, 0);
 
-        // (2) Peak 찾기 (값과 인덱스)
         let maxVal = -Infinity;
         let minVal = Infinity;
         let maxIdx = 0;
@@ -1432,12 +1459,7 @@ export class WaferService {
           }
         }
 
-        // (3) Peak Wavelength 추출 (Real Data!)
-        // 가장 밝은 빛이 나온 파장 대역 (예: 550.5nm)
         const peakWavelength = wavelengths[maxIdx] || 0;
-
-        // (4) Dark Noise 추정 (Real Data!)
-        // 스펙트럼의 최소값을 노이즈 플로어(Noise Floor)로 가정
         const darkNoise = minVal === Infinity ? 0 : minVal;
 
         return {
@@ -1445,12 +1467,13 @@ export class WaferService {
           lotId: d.lotid,
           waferId: d.waferid,
           point: d.point,
-          totalIntensity,      // 총 광량
-          peakIntensity: maxVal === -Infinity ? 0 : maxVal, // 피크 광량
-          peakWavelength,      // [New] 피크 파장 (Shift 감지용)
-          darkNoise,           // [New] 노이즈 레벨 (SNR 계산용)
+          totalIntensity,
+          peakIntensity: maxVal === -Infinity ? 0 : maxVal,
+          peakWavelength,
+          darkNoise,
         };
       });
+
     } catch (e) {
       console.error('Error in getOpticalTrend:', e);
       return [];
