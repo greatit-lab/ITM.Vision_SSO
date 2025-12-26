@@ -87,7 +87,7 @@
               v-if="isDropdownOpen"
               class="absolute right-0 w-52 mt-2 origin-top-right bg-white border shadow-xl dark:bg-zinc-900 border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none z-50 overflow-hidden"
             >
-              <div class="py-1">
+              <div class="py-1" v-if="!authStore.isDemo">
                 <button
                   @click="openProfileSettings"
                   class="flex items-center w-full px-4 py-2.5 text-sm text-slate-700 transition-colors dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800/80"
@@ -95,7 +95,11 @@
                   <i class="mr-3 text-slate-400 pi pi-user"></i> Profile Settings
                 </button>
               </div>
-              <div class="py-1 border-t border-slate-100 dark:border-zinc-800">
+              
+              <div 
+                class="py-1" 
+                :class="{ 'border-t border-slate-100 dark:border-zinc-800': !authStore.isDemo }"
+              >
                 <button
                   @click="handleLogout"
                   class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
@@ -177,7 +181,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue"; // [수정] onUnmounted 제거
+import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useMenuStore } from "@/stores/menu"; 
@@ -190,7 +194,6 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const menuStore = useMenuStore(); 
-// [수정] unused 'dropdownRef' 제거
 
 const isDropdownOpen = ref(false);
 const isDark = ref(false);
@@ -201,7 +204,6 @@ const sdwts = ref<string[]>([]);
 const selectedSite = ref("");
 const selectedSdwt = ref("");
 const pendingRequestCount = ref(0);
-// [수정] unused 'notification' 제거
 
 // UserId의 첫 글자(대문자) 반환
 const userAvatarInitial = computed(() => {
