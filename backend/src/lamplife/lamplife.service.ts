@@ -21,7 +21,8 @@ export class LampLifeService {
     let sql = `
       SELECT
         l.eqpid,
-        l.lamp_id,
+        l.lamp_name as lamp_id,
+        l.lamp_no,
         l.age_hour,
         l.lifespan_hour,
         l.last_changed
