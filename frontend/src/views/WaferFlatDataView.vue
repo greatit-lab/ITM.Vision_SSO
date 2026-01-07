@@ -339,11 +339,12 @@
                 style="min-width: 120px"
               ></Column>
 
-              <Column field="film" header="FILM" style="min-width: 80px">
+              <Column field="film" header="FILM" style="min-width: 250px">
                 <template #body="{ data }">
-                  <span class="text-slate-600 dark:text-slate-300">{{
-                    data.film
-                  }}</span>
+                  <span
+                    class="text-slate-600 dark:text-slate-300 whitespace-nowrap"
+                    >{{ data.film }}</span
+                  >
                 </template>
               </Column>
 
@@ -819,7 +820,6 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, onUnmounted } from "vue";
-// [수정] 사용하지 않는 import 제거
 import { useFilterStore } from "@/stores/filter";
 import { useAuthStore } from "@/stores/auth";
 import { dashboardApi } from "@/api/dashboard";
@@ -841,7 +841,6 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import ProgressSpinner from "primevue/progressspinner";
 
-// [수정] 사용하지 않는 변수 선언 제거 (route, menuStore)
 const filterStore = useFilterStore();
 const authStore = useAuthStore();
 const showAdvanced = ref(false);
@@ -863,7 +862,6 @@ const filters = reactive({
 });
 
 const eqpIds = ref<string[]>([]);
-// [유지] EQP ID 로딩 상태 변수
 const isEqpLoading = ref(false);
 
 const lotIds = ref<string[]>([]);
@@ -906,58 +904,47 @@ onMounted(async () => {
   // 1. Site 목록 로드
   sites.value = await dashboardApi.getSites();
 
-  // 2. 초기 필터 값 결정 (우선순위: 1.현재 Store 상태 -> 2.로컬 스토리지 -> 3.DB/Demo 사용자 설정)
+  // 2. 초기 필터 값 결정 (우선순위: Store > LocalStorage > Auth)
   let targetSite = filterStore.selectedSite;
   let targetSdwt = filterStore.selectedSdwt;
 
-  // 2-1. Store에 값이 없으면 로컬 스토리지 확인 (새로고침 시 복원)
   if (!targetSite) {
     targetSite = localStorage.getItem("wafer_site") || "";
-    // 로컬 스토리지에서 복원 시, SDWT도 같이 복원 시도
     if (targetSite) {
       targetSdwt = localStorage.getItem("wafer_sdwt") || "";
     }
   }
 
-  // 2-2. 로컬 스토리지도 없으면 Auth/Demo 기본값 사용
   if (!targetSite) {
     targetSite = authStore.user?.site || "";
     targetSdwt = authStore.user?.sdwt || "";
   }
 
-  // 3. 결정된 Site 적용 및 하위 데이터(SDWT) 로드
+  // 3. Site 적용 및 SDWT 로드
   if (targetSite && sites.value.includes(targetSite)) {
     filterStore.selectedSite = targetSite;
-    
-    // [중요] 선택된 Site에 맞는 SDWT 목록을 즉시 로드해야 함
     sdwts.value = await dashboardApi.getSdwts(targetSite);
 
-    // 4. SDWT 적용 및 하위 데이터(EQP) 로드
-    // 로드된 SDWT 목록에 targetSdwt가 유효한지 확인 후 적용
+    // 4. SDWT 적용 및 EQP 로드
     if (targetSdwt && sdwts.value.includes(targetSdwt)) {
       filterStore.selectedSdwt = targetSdwt;
-      
-      // SDWT가 선택되었으므로 EQP ID 목록 로드
       await loadEqpIds();
 
-      // 5. EQP ID 및 나머지 필터 복원 (localStorage 사용)
+      // 5. EQP ID 및 나머지 필터 복원
       const savedEqpId = localStorage.getItem("wafer_eqpid");
       if (savedEqpId && eqpIds.value.includes(savedEqpId)) {
         filters.eqpId = savedEqpId;
-        await loadFilterOptions(); // 하위 옵션(Lot, Wafer 등) 로드
+        await loadFilterOptions();
       }
     } else {
-      // Site는 선택되었으나 SDWT가 유효하지 않으면 하위 필터 초기화
       filterStore.selectedSdwt = "";
       filters.eqpId = "";
     }
   } else {
-     // Site가 유효하지 않으면 전체 초기화
      filterStore.selectedSite = "";
      filterStore.selectedSdwt = "";
   }
 
-  // Theme Observer (Dark Mode) - 기존 코드 유지
   themeObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.attributeName === "class") {
@@ -1126,7 +1113,6 @@ const spectrumOption = computed(() => {
   };
 });
 
-// Site 변경 핸들러
 const onSiteChange = async () => {
   if (filterStore.selectedSite) {
     localStorage.setItem("wafer_site", filterStore.selectedSite);
@@ -1136,7 +1122,6 @@ const onSiteChange = async () => {
     sdwts.value = [];
   }
 
-  // 하위 필터 초기화
   filterStore.selectedSdwt = "";
   localStorage.removeItem("wafer_sdwt");
   localStorage.removeItem("wafer_eqpid");
@@ -1146,7 +1131,6 @@ const onSiteChange = async () => {
   filters.waferId = "";
 };
 
-// SDWT 변경 핸들러
 const onSdwtChange = () => {
   if (filterStore.selectedSdwt) {
     localStorage.setItem("wafer_sdwt", filterStore.selectedSdwt);
@@ -1162,7 +1146,6 @@ const onSdwtChange = () => {
   filters.waferId = "";
 };
 
-// [유지] EqpID 로딩 상태 처리
 const loadEqpIds = async () => {
   if (!filterStore.selectedSdwt) return;
   isEqpLoading.value = true;
@@ -1177,7 +1160,6 @@ const loadEqpIds = async () => {
   }
 };
 
-// EqpID 변경 핸들러
 const onEqpChange = () => {
   if (filters.eqpId) {
     localStorage.setItem("wafer_eqpid", filters.eqpId);
@@ -1213,20 +1195,33 @@ const loadFilterOptions = async () => {
     stageGroup: filters.stageGroup,
     film: filters.film,
   };
-  const [lots, wafers, cRcps, sRcps, sGrps, filmsList] = await Promise.all([
-    waferApi.getDistinctValues("lotids", params),
-    waferApi.getDistinctValues("waferids", params),
-    waferApi.getDistinctValues("cassettercps", params),
-    waferApi.getDistinctValues("stagercps", params),
-    waferApi.getDistinctValues("stagegroups", params),
-    waferApi.getDistinctValues("films", params),
-  ]);
-  lotIds.value = lots;
-  waferIds.value = wafers;
-  cassetteRcps.value = cRcps;
-  stageRcps.value = sRcps;
-  stageGroups.value = sGrps;
-  films.value = filmsList;
+
+  try {
+    // [유지] 필터 로딩도 순차 처리로 안정성 유지
+    const [lots, wafers] = await Promise.all([
+      waferApi.getDistinctValues("lotids", params),
+      waferApi.getDistinctValues("waferids", params),
+    ]);
+    lotIds.value = lots;
+    waferIds.value = wafers;
+
+    const [cRcps, sRcps] = await Promise.all([
+      waferApi.getDistinctValues("cassettercps", params),
+      waferApi.getDistinctValues("stagercps", params),
+    ]);
+    cassetteRcps.value = cRcps;
+    stageRcps.value = sRcps;
+
+    const [sGrps, filmsList] = await Promise.all([
+      waferApi.getDistinctValues("stagegroups", params),
+      waferApi.getDistinctValues("films", params),
+    ]);
+    stageGroups.value = sGrps;
+    films.value = filmsList;
+
+  } catch (error) {
+    console.error("Failed to load filter options completely:", error);
+  }
 };
 
 const searchData = async () => {
@@ -1279,6 +1274,7 @@ const lastPage = () => {
   loadDataGrid();
 };
 
+// [유지] 순차 실행 로직 (DB 연결 안정성)
 const onRowSelect = async (event: any) => {
   const row = event.data;
   selectedRow.value = row;
@@ -1300,14 +1296,12 @@ const onRowSelect = async (event: any) => {
       waferId: row.waferId,
       servTs: row.servTs,
     };
-    const [stats, pts, pdfCheck] = await Promise.all([
-      waferApi.getStatistics(params),
-      waferApi.getPointData(params),
-      waferApi.checkPdf(row.eqpId, row.lotId, row.waferId, row.servTs),
-    ]);
-    statistics.value = stats;
-    pointData.value = pts;
-    pdfExists.value = pdfCheck;
+    
+    // 순차 실행으로 DB 연결 풀 고갈 방지
+    statistics.value = await waferApi.getStatistics(params);
+    pointData.value = await waferApi.getPointData(params);
+    pdfExists.value = await waferApi.checkPdf(row.eqpId, row.lotId, row.waferId, row.servTs);
+
   } catch (error) {
     console.error("Failed to load details:", error);
   } finally {
@@ -1422,7 +1416,6 @@ const onPointClick = async (idx: number) => {
   }
 };
 
-// [수정] 초기화 시 로컬 스토리지 키도 함께 삭제
 const resetFilters = () => {
   filterStore.selectedSite = "";
   filterStore.selectedSdwt = "";
@@ -1581,4 +1574,3 @@ table td {
   font-size: 11px !important;
 }
 </style>
-
