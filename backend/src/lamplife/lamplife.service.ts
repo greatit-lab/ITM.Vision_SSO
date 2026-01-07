@@ -7,6 +7,7 @@ import { LampLifeDto } from '../models/LampLifeDto';
 interface LampLifeRaw {
   eqpid: string;
   lamp_id: string;
+  lamp_no: number | string; // [수정] lamp_no 추가
   age_hour: number;
   lifespan_hour: number;
   last_changed: Date | null;
@@ -46,8 +47,8 @@ export class LampLifeService {
       params.push(sdwt);
     }
 
-    // 정렬 (사용 시간 역순)
-    sql += ` ORDER BY l.age_hour DESC, l.eqpid`;
+    // [수정] 정렬 기준 변경: eqpid 오름차순, lamp_no 오름차순
+    sql += ` ORDER BY l.eqpid ASC, l.lamp_no ASC`;
 
     try {
       const rawData = await this.prisma.$queryRawUnsafe<LampLifeRaw[]>(
@@ -58,6 +59,8 @@ export class LampLifeService {
       return rawData.map((r) => ({
         eqpId: r.eqpid,
         lampId: r.lamp_id,
+        // [수정] lampNo 필드 추가 (DTO에 정의되어 있지 않더라도 JS 객체로 전달됨)
+        lampNo: r.lamp_no, 
         // 숫자가 아닐 경우 0으로 처리
         ageHour: Number(r.age_hour) || 0,
         lifespanHour: Number(r.lifespan_hour) || 0,
