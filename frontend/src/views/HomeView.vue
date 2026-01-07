@@ -190,7 +190,7 @@
                     : 'text-slate-500 dark:text-slate-400'
                 "
               >
-                Server Health ({{ summary.serverHealth }}%)
+                Online Agents ({{ summary.serverHealth }}%)
               </p>
               <p
                 class="text-2xl font-black tracking-tight"
@@ -200,7 +200,7 @@
                     : 'text-slate-700 dark:text-white'
                 "
               >
-                {{ summary.onlineAgentCount }} <span class="text-xs font-medium opacity-70">/ {{ summary.totalServers }}</span>
+                {{ summary.onlineAgentCount }} <span class="text-xs font-medium opacity-70">/ {{ summary.totalEqpCount }}</span>
               </p>
             </div>
             <div
@@ -235,7 +235,7 @@
                     : 'text-slate-500 dark:text-slate-400'
                 "
               >
-                Offline Servers
+                Offline Agents
               </p>
               <p
                 class="text-2xl font-black tracking-tight"
@@ -284,7 +284,7 @@
                     : 'text-slate-500 dark:text-slate-400'
                 "
               >
-                Alerts
+                Today Alerts
               </p>
               <div class="flex items-baseline gap-1.5">
                 <p
@@ -1269,4 +1269,3 @@ body .p-tooltip .p-tooltip-arrow {
   font-size: 12px !important;
 }
 </style>
-
